@@ -111,7 +111,7 @@ export default function CompanyProfilePage() {
             <h2 className="text-lg font-semibold text-neutral-900">Basic Information</h2>
 
             {/* Company Logo */}
-            <div className="flex items-start gap-6">
+            <div className="flex items-center gap-6">
               <div className="relative">
                 {logoPreview ? (
                   <div className="w-24 h-24 rounded-full bg-neutral-100 border-2 border-neutral-200 overflow-hidden flex items-center justify-center">
@@ -129,7 +129,7 @@ export default function CompanyProfilePage() {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex  gap-2">
                 <input
                   ref={logoInputRef}
                   type="file"

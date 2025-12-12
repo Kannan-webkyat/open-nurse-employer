@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw } from "lucide-react"
+import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
 
 interface Notification {
   id: number
@@ -109,11 +109,37 @@ const getNotificationIconColor = (type: Notification["type"]) => {
   }
 }
 
+// Function to generate initials from user name
+const getInitials = (name: string): string => {
+  if (!name) return "U"
+  
+  // Remove common prefixes and split into words
+  const words = name
+    .replace(/^(St\.|Mr\.|Mrs\.|Ms\.|Dr\.)\s+/i, "") // Remove titles
+    .split(/\s+/)
+    .filter(word => word.length > 0 && !word.match(/^(and|of|the|a|an)$/i)) // Filter out common words
+  
+  if (words.length === 0) return "U"
+  
+  // Get first letter of first two significant words
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase()
+  }
+  
+  // If only one word, use first two letters
+  return words[0].substring(0, 2).toUpperCase()
+}
 
 export function Header() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [filter, setFilter] = useState<"all" | "unread">("all")
   const notificationsRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // User data - this would typically come from a context or API
+  const userName = "St. Mary's NHS Trust" // Example: "NR SOMTHING" or "St. Mary's NHS Trust"
+  const userInitials = getInitials(userName)
 
   // Unread message count - this would typically come from a context or API
   const unreadMessageCount = 3
@@ -123,16 +149,19 @@ export function Header() {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
         setIsNotificationsOpen(false)
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
     }
 
-    if (isNotificationsOpen) {
+    if (isNotificationsOpen || isUserMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [isNotificationsOpen])
+  }, [isNotificationsOpen, isUserMenuOpen])
 
   const filteredNotifications = filter === "unread" 
     ? notifications.filter(n => n.isUnread)
@@ -250,9 +279,44 @@ export function Header() {
               )}
             </button>
           </Link>
-          <button className="p-2 hover:bg-[#D0ECFF] rounded-full text-neutral-800 border border-[#0576B8] bg-[#E9F7FF] transition-colors">
-            <User className="w-5 h-5 text-[#0576B8]" />
-          </button>
+
+          {/* User Menu */}
+          <div className="relative" ref={userMenuRef}>
+            <button 
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="p-2 hover:bg-[#D0ECFF] rounded-full text-neutral-800 border border-[#0576B8] bg-[#E9F7FF] transition-colors"
+            >
+              <User className="w-5 h-5 text-[#0576B8]" />
+            </button>
+
+            {/* User Dropdown Menu */}
+            {isUserMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg border border-neutral-200 shadow-xl z-50">
+                <div className="p-4 border-b border-neutral-200 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <span className="text-sky-600 font-semibold text-lg">{userInitials}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-neutral-900 truncate">{userName}</p>
+                    <p className="text-xs text-neutral-600 mt-1">HR Manager</p>
+                  </div>
+                </div>
+                <div className="p-2">
+                  <button
+                    onClick={() => {
+                      // TODO: Implement logout functionality
+                      console.log("Logging out...")
+                      setIsUserMenuOpen(false)
+                    }}
+                    className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

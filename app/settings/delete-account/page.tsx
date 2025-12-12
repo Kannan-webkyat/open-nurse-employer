@@ -56,7 +56,7 @@ export default function DeleteAccountPage() {
                   disabled={!isConfirmValid}
                   className="bg-red-600 text-white hover:bg-red-700 disabled:bg-neutral-300 disabled:cursor-not-allowed"
                 >
-                  Delete My Account
+                  Permanently Delete Account
                 </Button>
               </div>
             </div>
@@ -67,8 +67,10 @@ export default function DeleteAccountPage() {
           isOpen={isDeleteDialogOpen}
           onClose={() => setIsDeleteDialogOpen(false)}
           onConfirm={handleDelete}
-          title="Delete Account"
-          description="Are you sure you want to permanently delete your account? This action cannot be undone."
+          title="Are you sure?"
+          description="If you continue, it cannot be undone. Once you proceed, all associated data will be permanently deleted and cannot be recovered. Do you want to continue?"
+          confirmText="Yes, Delete Account"
+          cancelText="Cancel"
           variant="danger"
         />
       </div>
