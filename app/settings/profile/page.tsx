@@ -1,26 +1,29 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Upload, Trash2, X, Link as LinkIcon } from "lucide-react"
 import Image from "next/image"
+import { employerProfileApi } from "@/lib/api"
 
 export default function CompanyProfilePage() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    companyName: "St. Mary's NHS Trust",
-    contactPersonName: "John Doe",
-    businessEmail: "hr@yourcompany.com",
-    contactNumber: "+44 7123 456789",
-    companyWebsite: "stmarystrust.com",
-    companyAddress: "123 Main Street, London, UK, W1A 1AA",
-    aboutCompany: "St. Mary's NHS Trust, is a trusted healthcare recruitment provider connecting skilled professionals with leading hospitals and clinics across the UK. Our focus is on quality placements and compliance-driven solutions.",
-    registrationNumber: "ABC-123456",
-    vatTaxId: "GB123456789",
-    numberOfEmployees: "51-200",
-    yearEstablished: "2015",
-    averageMonthlyHiring: "Range",
+    companyName: "",
+    contactPersonName: "",
+    businessEmail: "",
+    contactNumber: "",
+    companyWebsite: "",
+    companyAddress: "",
+    aboutCompany: "",
+    registrationNumber: "",
+    vatTaxId: "",
+    numberOfEmployees: "",
+    yearEstablished: "",
+    averageMonthlyHiring: "",
     jobVisibility: "public",
     linkedin: "",
     facebook: "",
@@ -28,15 +31,12 @@ export default function CompanyProfilePage() {
     instagram: "",
   })
 
-  const [preferredCategories, setPreferredCategories] = useState([
-    "ICU Nurse",
-    "ER Nurse",
-    "Care Assistant",
-    "Surgical Nurse",
-  ])
+  const [preferredCategories, setPreferredCategories] = useState<string[]>([])
+  const [preferredCategoryIds, setPreferredCategoryIds] = useState<number[]>([])
 
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [kycFile, setKycFile] = useState<File | null>(null)
   const [kycFileName, setKycFileName] = useState<string>("")
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -61,6 +61,7 @@ export default function CompanyProfilePage() {
   const handleLogoDelete = () => {
     setLogoFile(null)
     setLogoPreview(null)
+    setLogoUrl(null)
     if (logoInputRef.current) {
       logoInputRef.current.value = ""
     }
@@ -85,15 +86,129 @@ export default function CompanyProfilePage() {
     }
   }
 
-  const handleSave = () => {
-    console.log("Saving company profile:", formData)
-    console.log("Logo:", logoFile)
-    console.log("KYC File:", kycFile)
-    console.log("Preferred Categories:", preferredCategories)
+  // Fetch profile data on component mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true)
+      try {
+        const response = await employerProfileApi.getProfile()
+        if (response.success && response.data) {
+          const user = response.data as any
+          const employer = user.employer || {}
+          
+          // Set form data
+          setFormData({
+            companyName: employer.company_name || "",
+            contactPersonName: employer.hiring_person_name || "",
+            businessEmail: user.email || "",
+            contactNumber: user.phone || "",
+            companyWebsite: employer.company_website || "",
+            companyAddress: employer.company_address || "",
+            aboutCompany: employer.about_company || "",
+            registrationNumber: employer.company_registration_number || "",
+            vatTaxId: employer.vat_tax_id || "",
+            numberOfEmployees: employer.number_of_employees || "",
+            yearEstablished: employer.year_established?.toString() || "",
+            averageMonthlyHiring: employer.average_monthly_hiring_volume || "",
+            jobVisibility: employer.job_visibility || "public",
+            linkedin: employer.linkedin_url || "",
+            facebook: employer.facebook_url || "",
+            twitter: employer.twitter_url || "",
+            instagram: employer.instagram_url || "",
+          })
+
+          // Set logo URL if exists
+          if (employer.company_logo) {
+            const logoUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${employer.company_logo}`
+            setLogoUrl(logoUrl)
+            setLogoPreview(logoUrl)
+          }
+
+          // Set KYC document name if exists
+          if (employer.kyc_document) {
+            const fileName = employer.kyc_document.split('/').pop() || "Document uploaded"
+            setKycFileName(fileName)
+          }
+
+          // Set preferred categories
+          if (employer.job_categories && Array.isArray(employer.job_categories)) {
+            const categoryNames = employer.job_categories.map((cat: any) => cat.name || cat.slug || "")
+            const categoryIds = employer.job_categories.map((cat: any) => cat.id)
+            setPreferredCategories(categoryNames.filter(Boolean))
+            setPreferredCategoryIds(categoryIds)
+          }
+        } else {
+          console.error('Failed to fetch profile:', response.message)
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const updateData: any = {
+        company_name: formData.companyName,
+        hiring_person_name: formData.contactPersonName,
+        company_website: formData.companyWebsite || undefined,
+        company_address: formData.companyAddress,
+        about_company: formData.aboutCompany,
+        company_registration_number: formData.registrationNumber,
+        vat_tax_id: formData.vatTaxId,
+        number_of_employees: formData.numberOfEmployees || undefined,
+        year_established: formData.yearEstablished ? parseInt(formData.yearEstablished) : undefined,
+        average_monthly_hiring_volume: formData.averageMonthlyHiring || undefined,
+        job_visibility: formData.jobVisibility as 'public' | 'limited',
+        linkedin_url: formData.linkedin || undefined,
+        twitter_url: formData.twitter || undefined,
+        facebook_url: formData.facebook || undefined,
+        instagram_url: formData.instagram || undefined,
+      }
+
+      // Add logo file if uploaded
+      if (logoFile) {
+        updateData.company_logo = logoFile
+      }
+
+      // Add KYC document if uploaded
+      if (kycFile) {
+        updateData.kyc_document = kycFile
+      }
+
+      // Add preferred job categories (using IDs if available, otherwise empty array)
+      // Note: For now, we'll send empty array since we don't have category ID mapping
+      // In production, you'd want to fetch available categories and map names to IDs
+      updateData.preferred_job_categories = preferredCategoryIds.length > 0 ? preferredCategoryIds : undefined
+
+      const response = await employerProfileApi.updateProfile(updateData)
+
+      if (response.success) {
+        alert('Profile updated successfully!')
+        // Refresh the page data
+        window.location.reload()
+      } else {
+        alert('Failed to update profile: ' + response.message)
+        console.error('Validation errors:', response.errors)
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      alert('An error occurred while updating the profile')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleCancel = () => {
-    console.log("Cancelled")
+    // Reload to reset form
+    window.location.reload()
   }
 
   return (
@@ -105,7 +220,12 @@ export default function CompanyProfilePage() {
           <p className="text-neutral-600">Manage your company information and preferences</p>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-8">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-neutral-600">Loading profile...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-8">
           {/* Basic Information Section */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Basic Information</h2>
@@ -115,13 +235,22 @@ export default function CompanyProfilePage() {
               <div className="relative">
                 {logoPreview ? (
                   <div className="w-24 h-24 rounded-full bg-neutral-100 border-2 border-neutral-200 overflow-hidden flex items-center justify-center">
-                    <Image
-                      src={logoPreview}
-                      alt="Company Logo"
-                      width={96}
-                      height={96}
-                      className="w-full h-full object-cover"
-                    />
+                    {logoFile ? (
+                      <img
+                        src={logoPreview}
+                        alt="Company Logo"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src={logoPreview}
+                        alt="Company Logo"
+                        width={96}
+                        height={96}
+                        className="w-full h-full object-cover"
+                        unoptimized={logoUrl ? true : false}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="w-24 h-24 rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center">
@@ -498,11 +627,13 @@ export default function CompanyProfilePage() {
             <Button
               type="submit"
               className="bg-sky-600 text-white hover:bg-sky-700"
+              disabled={isSubmitting}
             >
-              Save Changes
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
+        )}
       </div>
     </DashboardLayout>
   )

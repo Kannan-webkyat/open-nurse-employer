@@ -15,7 +15,6 @@ export default function CreateJobPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     jobTitle: "",
-    jobId: "",
     specialization: "",
     employmentType: "",
     yearsOfExperience: "",
@@ -110,19 +109,6 @@ export default function CreateJobPage() {
                   placeholder="Enter job title"
                   value={formData.jobTitle}
                   onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Job ID
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter job ID"
-                  value={formData.jobId}
-                  onChange={(e) => handleInputChange("jobId", e.target.value)}
                   className="w-full"
                 />
               </div>

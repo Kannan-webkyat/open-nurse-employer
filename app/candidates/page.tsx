@@ -10,6 +10,7 @@ import { TablePagination } from "@/components/ui/table-pagination"
 import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
+import { jobApplicationApi } from "@/lib/api"
 
 interface Candidate {
   id: number
@@ -21,23 +22,40 @@ interface Candidate {
   location: string
 }
 
-const candidatesData: Candidate[] = [
-  { id: 1, candidateName: "Emma Johnson", jobAppliedFor: "ICU Nurse", jobId: "JOB-8X2KLM", status: "rejected", applyDate: "Sep 20, 2025", location: "London" },
-  { id: 2, candidateName: "Olivia Smith", jobAppliedFor: "Pediatric Nurse", jobId: "JOB-Q9Z4HT", status: "shortlisted", applyDate: "Sep 21, 2025", location: "Manchester" },
-  { id: 3, candidateName: "Ava Brown", jobAppliedFor: "ER Nurse", jobId: "JOB-K7M3LD", status: "reviewed", applyDate: "Sep 22, 2025", location: "Birmingham" },
-  { id: 4, candidateName: "Sophia Davis", jobAppliedFor: "Surgical Nurse", jobId: "JOB-V4TUP", status: "shortlisted", applyDate: "Sep 23, 2025", location: "Liverpool" },
-  { id: 5, candidateName: "Isabella Wilson", jobAppliedFor: "Community Health Nurse", jobId: "JOB-A2R6BN", status: "rejected", applyDate: "Sep 24, 2025", location: "Leeds" },
-  { id: 6, candidateName: "Mia Martinez", jobAppliedFor: "Oncology Nurse", jobId: "JOB-P3X8WR", status: "reviewed", applyDate: "Sep 25, 2025", location: "Sheffield" },
-  { id: 7, candidateName: "Charlotte Anderson", jobAppliedFor: "Psychiatric Nurse", jobId: "JOB-N6D7QK", status: "shortlisted", applyDate: "Sep 26, 2025", location: "Bristol" },
-  { id: 8, candidateName: "Amelia Taylor", jobAppliedFor: "Dialysis Nurse", jobId: "JOB-H5Y9LM", status: "rejected", applyDate: "Sep 27, 2025", location: "Edinburgh" },
-  { id: 9, candidateName: "Harper Thomas", jobAppliedFor: "Geriatric Nurse", jobId: "JOB-J2F8XZ", status: "shortlisted", applyDate: "Sep 28, 2025", location: "Glasgow" },
-  { id: 10, candidateName: "Evelyn Jackson", jobAppliedFor: "Operating Room Nurse", jobId: "JOB-W9L6TR", status: "rejected", applyDate: "Sep 29, 2025", location: "Cardiff" },
-  { id: 11, candidateName: "Abigail White", jobAppliedFor: "ICU Nurse", jobId: "ICU-7K9M2B", status: "reviewed", applyDate: "Sep 30, 2025", location: "London" },
-  { id: 12, candidateName: "Emily Harris", jobAppliedFor: "Pediatric Nurse", jobId: "JOB-Q9Z4HT", status: "shortlisted", applyDate: "Oct 1, 2025", location: "Manchester" },
-  { id: 13, candidateName: "Elizabeth Martin", jobAppliedFor: "ER Nurse", jobId: "JOB-K7M3LD", status: "rejected", applyDate: "Oct 2, 2025", location: "Birmingham" },
-  { id: 14, candidateName: "Sofia Garcia", jobAppliedFor: "Surgical Nurse", jobId: "JOB-V4TUP", status: "reviewed", applyDate: "Oct 3, 2025", location: "Liverpool" },
-  { id: 15, candidateName: "Avery Rodriguez", jobAppliedFor: "Community Health Nurse", jobId: "JOB-A2R6BN", status: "shortlisted", applyDate: "Oct 4, 2025", location: "Leeds" },
-]
+// Format date helper
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return ""
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+// Map backend status to frontend status
+const mapStatus = (backendStatus: string): Candidate['status'] => {
+  const statusMap: Record<string, Candidate['status']> = {
+    'new': 'new',
+    'reviewed': 'reviewed',
+    'shortlisted': 'shortlisted',
+    'contacting': 'contacting',
+    'interviewing': 'interviewing',
+    'rejected': 'rejected',
+    'accepted': 'hired', // Backend uses 'accepted', frontend uses 'hired'
+  }
+  return statusMap[backendStatus] || 'new'
+}
+
+// Map frontend status to backend status
+const mapStatusToBackend = (frontendStatus: Candidate['status']): string => {
+  const statusMap: Record<Candidate['status'], string> = {
+    'new': 'new',
+    'reviewed': 'reviewed',
+    'shortlisted': 'shortlisted',
+    'contacting': 'contacting',
+    'interviewing': 'interviewing',
+    'rejected': 'rejected',
+    'hired': 'accepted', // Frontend uses 'hired', backend uses 'accepted'
+  }
+  return statusMap[frontendStatus] || 'new'
+}
 
 const statusVariantMap = {
   new: "new",
@@ -60,10 +78,13 @@ const statusLabels = {
 }
 
 export default function CandidatesPage() {
-  const [candidates, setCandidates] = useState<Candidate[]>(candidatesData)
+  const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(15)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
   const [activeTab, setActiveTab] = useState<"all" | "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "rejected" | "hired">("all")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [filters, setFilters] = useState({
@@ -89,6 +110,17 @@ export default function CandidatesPage() {
     time: "",
     meetingUrl: "",
   })
+  const [statusCounts, setStatusCounts] = useState({
+    all: 0,
+    new: 0,
+    reviewed: 0,
+    shortlisted: 0,
+    contacting: 0,
+    interviewing: 0,
+    rejected: 0,
+    hired: 0,
+  })
+  const [uniqueLocations, setUniqueLocations] = useState<string[]>([])
 
   const filterRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -100,33 +132,97 @@ export default function CandidatesPage() {
     "We would like to schedule an interview. Please share your availability."
   ]
 
-  // Filter candidates based on search, tab, and filters
+  // Fetch candidates from API
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      setIsLoading(true)
+      try {
+        // Map activeTab to backend status
+        const statusParam = activeTab === "all" ? undefined : activeTab === "hired" ? "accepted" : activeTab
+        
+        const response = await jobApplicationApi.getAll({
+          page: currentPage,
+          per_page: rowsPerPage,
+          status: statusParam,
+          search: searchQuery || undefined,
+          location: filters.location || undefined,
+        })
+
+        if (response.success && response.data) {
+          const data = response.data as any
+          
+          // Handle paginated response
+          if (data.applications) {
+            const paginatedData = data.applications
+            const applications = paginatedData.data || paginatedData
+            
+            // Transform backend data to frontend format
+            const transformedCandidates: Candidate[] = applications.map((app: any) => ({
+              id: app.id,
+              candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
+              jobAppliedFor: app.job_title || app.jobPost?.title || "",
+              jobId: app.job_id || app.jobPost?.job_id || "",
+              status: mapStatus(app.status),
+              applyDate: formatDate(app.submitted_at || app.created_at),
+              location: app.location || app.jobPost?.location || "",
+            }))
+            
+            setCandidates(transformedCandidates)
+            setTotalPages(paginatedData.last_page || 1)
+            setTotalItems(paginatedData.total || applications.length)
+          }
+
+          // Set status counts
+          if (data.status_counts) {
+            setStatusCounts({
+              all: data.status_counts.all || 0,
+              new: data.status_counts.new || 0,
+              reviewed: data.status_counts.reviewed || 0,
+              shortlisted: data.status_counts.shortlisted || 0,
+              contacting: data.status_counts.contacting || 0,
+              interviewing: data.status_counts.interviewing || 0,
+              rejected: data.status_counts.rejected || 0,
+              hired: (data.status_counts as any).accepted || 0, // Backend uses 'accepted'
+            })
+          }
+        } else {
+          console.error('Failed to fetch candidates:', response.message)
+        }
+      } catch (error) {
+        console.error('Error fetching candidates:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCandidates()
+  }, [currentPage, rowsPerPage, activeTab, searchQuery, filters.location])
+
+  // Fetch filter options
+  useEffect(() => {
+    const fetchFilters = async () => {
+      try {
+        const response = await jobApplicationApi.getFilters()
+        if (response.success && response.data) {
+          const data = response.data as any
+          if (data.locations) {
+            setUniqueLocations(data.locations)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching filters:', error)
+      }
+    }
+
+    fetchFilters()
+  }, [])
+
+  // Apply client-side filters for dates
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesSearch = 
-      candidate.candidateName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.jobAppliedFor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      candidate.jobId.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesTab = activeTab === "all" || candidate.status === activeTab
-    
-    const matchesLocation = !filters.location || candidate.location === filters.location
     const matchesDateFrom = !filters.applyDateFrom || candidate.applyDate >= filters.applyDateFrom
     const matchesDateTo = !filters.applyDateTo || candidate.applyDate <= filters.applyDateTo
-    
-    return matchesSearch && matchesTab && matchesLocation && matchesDateFrom && matchesDateTo
+    return matchesDateFrom && matchesDateTo
   })
-
-  // Count candidates by status
-  const statusCounts = {
-    all: candidates.length,
-    new: candidates.filter(c => c.status === "new").length,
-    reviewed: candidates.filter(c => c.status === "reviewed").length,
-    shortlisted: candidates.filter(c => c.status === "shortlisted").length,
-    contacting: candidates.filter(c => c.status === "contacting").length,
-    interviewing: candidates.filter(c => c.status === "interviewing").length,
-    rejected: candidates.filter(c => c.status === "rejected").length,
-    hired: candidates.filter(c => c.status === "hired").length,
-  }
 
   const activeFilterCount = Object.values(filters).filter(v => v !== "").length
 
@@ -218,33 +314,78 @@ export default function CandidatesPage() {
     setOpenMenuId(null)
   }
 
-  const handleShortlistConfirm = () => {
+  const handleShortlistConfirm = async () => {
     if (candidateToAction) {
-      // TODO: Implement shortlist functionality
-      console.log("Shortlisting candidate:", candidateToAction.candidateName)
-      setIsShortlistDialogOpen(false)
-      setCandidateToAction(null)
+      try {
+        const backendStatus = mapStatusToBackend('shortlisted')
+        const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
+        
+        if (response.success) {
+          setCandidates(prevCandidates =>
+            prevCandidates.map(c =>
+              c.id === candidateToAction.id ? { ...c, status: "shortlisted" as const } : c
+            )
+          )
+          setIsShortlistDialogOpen(false)
+          setCandidateToAction(null)
+          // Refresh data
+          window.location.reload()
+        } else {
+          alert('Failed to shortlist candidate: ' + response.message)
+        }
+      } catch (error) {
+        console.error('Error shortlisting candidate:', error)
+        alert('An error occurred while shortlisting the candidate')
+      }
     }
   }
 
-  const handleRejectConfirm = () => {
+  const handleRejectConfirm = async () => {
     if (candidateToAction) {
-      setCandidates(prevCandidates =>
-        prevCandidates.map(c =>
-          c.id === candidateToAction.id ? { ...c, status: "rejected" as const } : c
-        )
-      )
-      setIsRejectDialogOpen(false)
-      setCandidateToAction(null)
+      try {
+        const backendStatus = mapStatusToBackend('rejected')
+        const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
+        
+        if (response.success) {
+          setCandidates(prevCandidates =>
+            prevCandidates.map(c =>
+              c.id === candidateToAction.id ? { ...c, status: "rejected" as const } : c
+            )
+          )
+          setIsRejectDialogOpen(false)
+          setCandidateToAction(null)
+          // Refresh data
+          window.location.reload()
+        } else {
+          alert('Failed to reject candidate: ' + response.message)
+        }
+      } catch (error) {
+        console.error('Error rejecting candidate:', error)
+        alert('An error occurred while rejecting the candidate')
+      }
     }
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (candidateToAction) {
-      // TODO: Implement delete functionality
-      console.log("Deleting candidate:", candidateToAction.candidateName)
-      setIsDeleteDialogOpen(false)
-      setCandidateToAction(null)
+      try {
+        const response = await jobApplicationApi.delete(candidateToAction.id)
+        
+        if (response.success) {
+          setCandidates(prevCandidates =>
+            prevCandidates.filter(c => c.id !== candidateToAction.id)
+          )
+          setIsDeleteDialogOpen(false)
+          setCandidateToAction(null)
+          // Refresh data
+          window.location.reload()
+        } else {
+          alert('Failed to delete candidate: ' + response.message)
+        }
+      } catch (error) {
+        console.error('Error deleting candidate:', error)
+        alert('An error occurred while deleting the candidate')
+      }
     }
   }
 
@@ -266,23 +407,34 @@ export default function CandidatesPage() {
     })
   }
 
-  const handleInterviewSubmit = () => {
+  const handleInterviewSubmit = async () => {
     if (candidateToAction && interviewFormData.date && interviewFormData.time && interviewFormData.meetingUrl) {
-      // TODO: Implement interview setup functionality
-      console.log("Setting up interview for:", candidateToAction.candidateName, interviewFormData)
-      // Optionally update candidate status to "interviewing"
-      setCandidates(prevCandidates =>
-        prevCandidates.map(c =>
-          c.id === candidateToAction.id ? { ...c, status: "interviewing" as const } : c
-        )
-      )
-      setIsInterviewModalOpen(false)
-      setCandidateToAction(null)
-      setInterviewFormData({
-        date: "",
-        time: "",
-        meetingUrl: "",
-      })
+      try {
+        const backendStatus = mapStatusToBackend('interviewing')
+        const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
+        
+        if (response.success) {
+          setCandidates(prevCandidates =>
+            prevCandidates.map(c =>
+              c.id === candidateToAction.id ? { ...c, status: "interviewing" as const } : c
+            )
+          )
+          setIsInterviewModalOpen(false)
+          setCandidateToAction(null)
+          setInterviewFormData({
+            date: "",
+            time: "",
+            meetingUrl: "",
+          })
+          // Refresh data
+          window.location.reload()
+        } else {
+          alert('Failed to set up interview: ' + response.message)
+        }
+      } catch (error) {
+        console.error('Error setting up interview:', error)
+        alert('An error occurred while setting up the interview')
+      }
     }
   }
 
@@ -302,35 +454,62 @@ export default function CandidatesPage() {
     setOpenMenuId(null)
   }
 
-  const handleViewClick = (candidate: Candidate) => {
-    setViewCandidate(candidate)
-    setIsViewModalOpen(true)
-  }
-
-  const handleHiredConfirm = () => {
-    if (candidateToAction) {
-      setCandidates(prevCandidates =>
-        prevCandidates.map(c =>
-          c.id === candidateToAction.id ? { ...c, status: "hired" as const } : c
-        )
-      )
-      setIsHiredDialogOpen(false)
-      setCandidateToAction(null)
+  const handleViewClick = async (candidate: Candidate) => {
+    try {
+      const response = await jobApplicationApi.getById(candidate.id)
+      if (response.success && response.data) {
+        const app = response.data as any
+        const transformedCandidate: Candidate = {
+          id: app.id,
+          candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
+          jobAppliedFor: app.job_title || app.jobPost?.title || "",
+          jobId: app.job_id || app.jobPost?.job_id || "",
+          status: mapStatus(app.status),
+          applyDate: formatDate(app.submitted_at || app.created_at),
+          location: app.location || app.jobPost?.location || "",
+        }
+        setViewCandidate(transformedCandidate)
+        setIsViewModalOpen(true)
+      } else {
+        console.error('Failed to fetch candidate details:', response.message)
+      }
+    } catch (error) {
+      console.error('Error fetching candidate details:', error)
     }
   }
 
-  const startIndex = (currentPage - 1) * rowsPerPage
-  const endIndex = startIndex + rowsPerPage
-  const paginatedCandidates = filteredCandidates.slice(startIndex, endIndex)
-  const totalPages = Math.ceil(filteredCandidates.length / rowsPerPage)
+  const handleHiredConfirm = async () => {
+    if (candidateToAction) {
+      try {
+        const backendStatus = mapStatusToBackend('hired')
+        const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
+        
+        if (response.success) {
+          setCandidates(prevCandidates =>
+            prevCandidates.map(c =>
+              c.id === candidateToAction.id ? { ...c, status: "hired" as const } : c
+            )
+          )
+          setIsHiredDialogOpen(false)
+          setCandidateToAction(null)
+          // Refresh data
+          window.location.reload()
+        } else {
+          alert('Failed to mark as hired: ' + response.message)
+        }
+      } catch (error) {
+        console.error('Error marking as hired:', error)
+        alert('An error occurred while marking the candidate as hired')
+      }
+    }
+  }
+
+  const paginatedCandidates = filteredCandidates
 
   const handleRowsPerPageChange = (newRowsPerPage: number) => {
     setRowsPerPage(newRowsPerPage)
     setCurrentPage(1)
   }
-
-  // Get unique locations for dropdown
-  const uniqueLocations = Array.from(new Set(candidates.map(c => c.location))).sort()
 
   return (
     <DashboardLayout>
@@ -417,11 +596,24 @@ export default function CandidatesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedCandidates.map((candidate, index) => (
-                <TableRow key={candidate.id}>
-                  <TableCell className="text-neutral-800">
-                    {startIndex + index + 1}
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
+                    Loading...
                   </TableCell>
+                </TableRow>
+              ) : paginatedCandidates.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
+                    No candidates found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedCandidates.map((candidate, index) => (
+                  <TableRow key={candidate.id}>
+                    <TableCell className="text-neutral-800">
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </TableCell>
                   <TableCell className="text-neutral-800">
                     {candidate.candidateName}
                   </TableCell>
@@ -553,7 +745,8 @@ export default function CandidatesPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
           <TablePagination

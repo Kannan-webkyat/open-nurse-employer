@@ -1,37 +1,169 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff } from "lucide-react"
+import { employerProfileApi, accountSecurityApi } from "@/lib/api"
+
+interface ActiveSession {
+  id: number
+  name: string
+  is_current: boolean
+  last_used_at: string | null
+  created_at: string
+}
 
 export default function AccountSecurityPage() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([])
   const [formData, setFormData] = useState({
-    usernameEmail: "St. Mary's NHS Trust",
-    contactNumber: "+44 7123 456789",
+    usernameEmail: "",
+    contactNumber: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
-    twoFactorEnabled: true,
+    twoFactorEnabled: false,
     securityQuestions: "",
-    recoveryEmail: "hr@yourcompany.com",
+    recoveryEmail: "",
   })
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [lastLoginActivity, setLastLoginActivity] = useState<string>("")
+
+  // Fetch account data on component mount
+  useEffect(() => {
+    const fetchAccountData = async () => {
+      setIsLoading(true)
+      try {
+        // Fetch profile to get email and phone
+        const profileResponse = await employerProfileApi.getProfile()
+        if (profileResponse.success && profileResponse.data) {
+          const user = profileResponse.data as any
+          setFormData(prev => ({
+            ...prev,
+            usernameEmail: user.email || "",
+            contactNumber: user.phone || "",
+            recoveryEmail: user.email || "", // Using email as recovery email for now
+          }))
+        }
+
+        // Fetch active sessions
+        const sessionsResponse = await accountSecurityApi.getActiveSessions()
+        if (sessionsResponse.success && sessionsResponse.data) {
+          const sessions = sessionsResponse.data as ActiveSession[]
+          setActiveSessions(sessions)
+          
+          // Find current session and set last login activity
+          const currentSession = sessions.find(s => s.is_current)
+          if (currentSession && currentSession.last_used_at) {
+            setLastLoginActivity(currentSession.last_used_at)
+          } else if (currentSession) {
+            setLastLoginActivity(currentSession.created_at)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching account data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAccountData()
+  }, [])
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = () => {
-    console.log("Saving account security settings:", formData)
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const updates: Promise<any>[] = []
+
+      // Update account info if email or phone changed
+      if (formData.usernameEmail || formData.contactNumber) {
+        const accountInfoUpdate = accountSecurityApi.updateAccountInfo({
+          email: formData.usernameEmail || undefined,
+          phone: formData.contactNumber || undefined,
+        })
+        updates.push(accountInfoUpdate)
+      }
+
+      // Change password if provided
+      if (formData.currentPassword && formData.newPassword && formData.confirmPassword) {
+        if (formData.newPassword !== formData.confirmPassword) {
+          alert('New password and confirm password do not match')
+          setIsSubmitting(false)
+          return
+        }
+
+        const passwordUpdate = accountSecurityApi.changePassword({
+          current_password: formData.currentPassword,
+          password: formData.newPassword,
+          password_confirmation: formData.confirmPassword,
+        })
+        updates.push(passwordUpdate)
+      }
+
+      // Execute all updates
+      const results = await Promise.all(updates)
+      
+      // Check for errors
+      const hasErrors = results.some(result => !result.success)
+      if (hasErrors) {
+        const errorMessages = results
+          .filter(result => !result.success)
+          .map(result => result.message)
+          .join('\n')
+        alert('Some updates failed:\n' + errorMessages)
+      } else {
+        alert('Account security settings updated successfully!')
+        // Clear password fields
+        setFormData(prev => ({
+          ...prev,
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        }))
+        // Reload to get updated data
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Error updating account security:', error)
+      alert('An error occurred while updating account security')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleLogoutOtherDevices = () => {
-    console.log("Logging out from other devices...")
+  const handleLogoutOtherDevices = async () => {
+    if (!confirm('Are you sure you want to logout from all other devices?')) {
+      return
+    }
+
+    try {
+      const response = await accountSecurityApi.logoutOtherDevices()
+      if (response.success) {
+        alert('Successfully logged out from all other devices')
+        // Refresh sessions list
+        const sessionsResponse = await accountSecurityApi.getActiveSessions()
+        if (sessionsResponse.success && sessionsResponse.data) {
+          setActiveSessions(sessionsResponse.data as ActiveSession[])
+        }
+      } else {
+        alert('Failed to logout from other devices: ' + response.message)
+      }
+    } catch (error) {
+      console.error('Error logging out other devices:', error)
+      alert('An error occurred while logging out other devices')
+    }
   }
 
   return (
@@ -74,7 +206,7 @@ export default function AccountSecurityPage() {
                   Last Login Activity
                 </label>
                 <p className="text-sm text-neutral-600">
-                  09 Sept 2025, 14:32 GMT — Chrome on Windows 10
+                  {isLoading ? "Loading..." : lastLoginActivity || "No activity recorded"}
                 </p>
               </div>
             </div>
@@ -214,21 +346,53 @@ export default function AccountSecurityPage() {
               <label className="text-sm font-medium text-neutral-900 mb-3 block">
                 Active Sessions
               </label>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">London, UK</p>
-                    <p className="text-sm text-neutral-600 mt-1">Chrome</p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    onClick={handleLogoutOtherDevices}
-                  >
-                    Logout from Other Devices
-                  </Button>
+              {isLoading ? (
+                <p className="text-sm text-neutral-600">Loading sessions...</p>
+              ) : activeSessions.length === 0 ? (
+                <p className="text-sm text-neutral-600">No active sessions</p>
+              ) : (
+                <div className="space-y-3">
+                  {activeSessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900">
+                          {session.name || 'Unknown Device'}
+                          {session.is_current && (
+                            <span className="ml-2 text-xs text-sky-600 font-normal">(Current Session)</span>
+                          )}
+                        </p>
+                        <p className="text-sm text-neutral-600 mt-1">
+                          Last used: {session.last_used_at || session.created_at}
+                        </p>
+                      </div>
+                      {!session.is_current && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          onClick={handleLogoutOtherDevices}
+                        >
+                          Logout
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  {activeSessions.filter(s => !s.is_current).length > 0 && (
+                    <div className="pt-2">
+                      <Button
+                        type="button"
+                        variant="danger"
+                        onClick={handleLogoutOtherDevices}
+                        className="w-full"
+                      >
+                        Logout from All Other Devices
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
@@ -244,8 +408,9 @@ export default function AccountSecurityPage() {
             <Button
               type="submit"
               className="bg-sky-600 text-white hover:bg-sky-700"
+              disabled={isSubmitting}
             >
-              Save Changes
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
