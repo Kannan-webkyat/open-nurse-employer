@@ -1,14 +1,18 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Calendar, X } from "lucide-react"
 import Link from "next/link"
+import { jobPostApi } from "@/lib/api"
 
 export default function CreateJobPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     jobTitle: "",
     jobId: "",
@@ -33,6 +37,56 @@ export default function CreateJobPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      // Prepare API payload
+      const payload: any = {
+        title: formData.jobTitle,
+        specialization: formData.specialization,
+        employment_type: formData.employmentType,
+        posted_date: formData.postedDate,
+        closed_date: formData.closedDate,
+        number_of_openings: parseInt(formData.numberOfOpenings) || 1,
+        status: formData.status as 'active' | 'paused' | 'draft' | 'closed',
+        payment_type: formData.paymentType === "Range" ? "range" : "starting_amount",
+        rate: formData.rate,
+        overview: formData.overview,
+        qualifications: formData.qualifications,
+        application_process: formData.applicationProcess,
+      }
+
+      // Add payment fields based on payment type
+      if (formData.paymentType === "Range") {
+        payload.minimum_amount = parseFloat(formData.minimum) || 0
+        payload.maximum_amount = parseFloat(formData.maximum) || 0
+      } else {
+        payload.amount = parseFloat(formData.startingAmount) || 0
+      }
+
+      // Add years of experience if provided
+      if (formData.yearsOfExperience) {
+        payload.years_of_experience = parseInt(formData.yearsOfExperience) || 0
+      }
+
+      const response = await jobPostApi.create(payload)
+
+      if (response.success) {
+        router.push("/jobs")
+      } else {
+        alert('Failed to create job: ' + response.message)
+        console.error('Validation errors:', response.errors)
+      }
+    } catch (error) {
+      console.error('Error creating job:', error)
+      alert('An error occurred while creating the job')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -41,7 +95,7 @@ export default function CreateJobPage() {
           <h1 className="text-2xl font-bold text-neutral-900">Create Job</h1>
         </div>
 
-        <form className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Job Details Section */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
@@ -383,8 +437,8 @@ export default function CreateJobPage() {
                 Cancel
               </Button>
             </Link>
-            <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full">
-              Save
+            <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </div>
         </form>
