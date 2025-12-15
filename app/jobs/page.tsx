@@ -11,48 +11,31 @@ import { Modal } from "@/components/ui/modal"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Search, Filter, Eye, Pencil, Trash2, X } from "lucide-react"
 import Link from "next/link"
+import { jobPostApi } from "@/lib/api"
 
 interface Job {
   id: number
   title: string
-  jobId: string
-  employmentType: string
-  postedDate: string
-  closedDate: string
+  job_id: string
+  employment_type: string
+  posted_date: string
+  closed_date: string
   status: "active" | "paused" | "draft" | "closed"
 }
 
 interface JobDetails extends Job {
   specialization?: string
-  yearsOfExperience?: string
-  numberOfOpenings?: string
-  paymentType?: string
-  minimum?: string
-  maximum?: string
-  startingAmount?: string
+  years_of_experience?: number
+  number_of_openings?: number
+  payment_type?: string
+  minimum_amount?: number
+  maximum_amount?: number
+  amount?: number
   rate?: string
   overview?: string
   qualifications?: string
-  applicationProcess?: string
+  application_process?: string
 }
-
-const jobsData: Job[] = [
-  { id: 1, title: "ICU Nurse", jobId: "JOB-8X2KLM", employmentType: "Full-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "active" },
-  { id: 2, title: "Pediatric Nurse", jobId: "JOB-Q9Z4HT", employmentType: "Part-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "active" },
-  { id: 3, title: "ER Nurse", jobId: "JOB-K7M3LD", employmentType: "Full-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "paused" },
-  { id: 4, title: "Surgical Nurse", jobId: "JOB-V4TUP", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "draft" },
-  { id: 5, title: "Community Health Nurse", jobId: "JOB-A2R6BN", employmentType: "Part-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "closed" },
-  { id: 6, title: "Oncology Nurse", jobId: "JOB-P3X8WR", employmentType: "Full-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "active" },
-  { id: 7, title: "Psychiatric Nurse", jobId: "JOB-N6D7QK", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "active" },
-  { id: 8, title: "Dialysis Nurse", jobId: "JOB-H5Y9LM", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "paused" },
-  { id: 9, title: "Geriatric Nurse", jobId: "JOB-J2F8XZ", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "draft" },
-  { id: 10, title: "Operating Room Nurse", jobId: "JOB-W9L6TR", employmentType: "Full-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "closed" },
-  { id: 11, title: "ICU Nurse", jobId: "ICU-7K9M2B", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "closed" },
-  { id: 12, title: "ICU Nurse", jobId: "ICU-7K9M2B", employmentType: "Full-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "active" },
-  { id: 13, title: "Dialysis Nurse", jobId: "JOB-H5Y9LM", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "paused" },
-  { id: 14, title: "Geriatric Nurse", jobId: "JOB-J2F8XZ", employmentType: "Temporary", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "draft" },
-  { id: 15, title: "Operating Room Nurse", jobId: "JOB-W9L6TR", employmentType: "Full-time", postedDate: "Sep 25, 2025", closedDate: "Sep 30, 2025", status: "closed" },
-]
 
 const statusVariantMap = {
   active: "active",
@@ -61,6 +44,12 @@ const statusVariantMap = {
   closed: "closed",
 } as const
 
+// Format date helper
+const formatDate = (dateString: string) => {
+  if (!dateString) return ""
+  const date = new Date(dateString)
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
 
 export default function JobsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -70,28 +59,16 @@ export default function JobsPage() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [jobs, setJobs] = useState<Job[]>(jobsData)
+  const [jobs, setJobs] = useState<Job[]>([])
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
   const [filters, setFilters] = useState({
     status: "" as "" | "active" | "paused" | "draft" | "closed",
     employmentType: "",
     postedDateFrom: "",
     postedDateTo: "",
-  })
-
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = 
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.jobId.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    const matchesStatus = !filters.status || job.status === filters.status
-    const matchesEmploymentType = !filters.employmentType || job.employmentType === filters.employmentType
-    
-    // Date filtering (simple string comparison for demo)
-    const matchesDateFrom = !filters.postedDateFrom || job.postedDate >= filters.postedDateFrom
-    const matchesDateTo = !filters.postedDateTo || job.postedDate <= filters.postedDateTo
-    
-    return matchesSearch && matchesStatus && matchesEmploymentType && matchesDateFrom && matchesDateTo
   })
 
   const activeFilterCount = Object.values(filters).filter(v => v !== "").length
@@ -125,39 +102,75 @@ export default function JobsPage() {
     }
   }, [isFilterOpen])
 
-  const startIndex = (currentPage - 1) * rowsPerPage
-  const endIndex = startIndex + rowsPerPage
-  const paginatedJobs = filteredJobs.slice(startIndex, endIndex)
-  const totalPages = Math.ceil(filteredJobs.length / rowsPerPage)
+  // Fetch jobs from API
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setIsLoading(true)
+      try {
+        const response = await jobPostApi.getAll({
+          page: currentPage,
+          per_page: rowsPerPage,
+          status: filters.status || undefined,
+          search: searchQuery || undefined,
+        })
+
+        if (response.success && response.data) {
+          // Handle Laravel pagination response
+          const paginatedData = response.data as any
+          if (paginatedData.data) {
+            // Laravel paginated response
+            setJobs(paginatedData.data)
+            setTotalPages(paginatedData.last_page || 1)
+            setTotalItems(paginatedData.total || 0)
+          } else if (Array.isArray(paginatedData)) {
+            // Direct array response
+            setJobs(paginatedData)
+            setTotalPages(1)
+            setTotalItems(paginatedData.length)
+          }
+        } else {
+          console.error('Failed to fetch jobs:', response.message)
+        }
+      } catch (error) {
+        console.error('Error fetching jobs:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchJobs()
+  }, [currentPage, rowsPerPage, filters.status, searchQuery])
+
+  // Apply client-side filters for employment type and dates
+  const filteredJobs = jobs.filter(job => {
+    const matchesEmploymentType = !filters.employmentType || job.employment_type === filters.employmentType
+    
+    // Date filtering
+    const matchesDateFrom = !filters.postedDateFrom || job.posted_date >= filters.postedDateFrom
+    const matchesDateTo = !filters.postedDateTo || job.posted_date <= filters.postedDateTo
+    
+    return matchesEmploymentType && matchesDateFrom && matchesDateTo
+  })
+
+  const paginatedJobs = filteredJobs
 
   const handleRowsPerPageChange = (newRowsPerPage: number) => {
     setRowsPerPage(newRowsPerPage)
     setCurrentPage(1) // Reset to first page when changing rows per page
   }
 
-  const getJobDetails = (jobId: number): JobDetails => {
-    const baseJob = jobs.find((j: Job) => j.id === jobId)
-    if (!baseJob) return {} as JobDetails
-  
-    return {
-      ...baseJob,
-      specialization: "Intensive Care",
-      yearsOfExperience: "3+ years",
-      numberOfOpenings: "2",
-      paymentType: "Range",
-      minimum: "£3,000",
-      maximum: "£4,000",
-      rate: "per month",
-      overview: "We are looking for an experienced ICU Nurse to join our team. The ideal candidate will have extensive experience in critical care settings and be able to work in a fast-paced environment.",
-      qualifications: "• Registered Nurse (RN) license\n• BSN degree preferred\n• ICU certification\n• Minimum 3 years of ICU experience\n• BLS and ACLS certification\n• Strong communication skills",
-      applicationProcess: "1. Submit your application through our portal\n2. Complete the online assessment\n3. Attend the initial interview\n4. Complete skills assessment\n5. Final interview with the hiring manager\n6. Background check and onboarding"
+  const handleViewJob = async (job: Job) => {
+    try {
+      const response = await jobPostApi.getById(job.id)
+      if (response.success && response.data) {
+        setSelectedJob(response.data as JobDetails)
+        setIsViewModalOpen(true)
+      } else {
+        console.error('Failed to fetch job details:', response.message)
+      }
+    } catch (error) {
+      console.error('Error fetching job details:', error)
     }
-  }
-
-  const handleViewJob = (job: Job) => {
-    const jobDetails = getJobDetails(job.id)
-    setSelectedJob(jobDetails)
-    setIsViewModalOpen(true)
   }
 
   const closeModal = () => {
@@ -170,15 +183,41 @@ export default function JobsPage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (jobToDelete) {
-      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobToDelete.id))
-      setJobToDelete(null)
-      // Reset to first page if current page becomes empty
-      const remainingJobs = jobs.filter(job => job.id !== jobToDelete.id)
-      const newTotalPages = Math.ceil(remainingJobs.length / rowsPerPage)
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(newTotalPages)
+      try {
+        const response = await jobPostApi.delete(jobToDelete.id)
+        if (response.success) {
+          // Refresh the jobs list
+          const refreshResponse = await jobPostApi.getAll({
+            page: currentPage,
+            per_page: rowsPerPage,
+            status: filters.status || undefined,
+            search: searchQuery || undefined,
+          })
+          
+          if (refreshResponse.success && refreshResponse.data) {
+            const paginatedData = refreshResponse.data as any
+            if (paginatedData.data) {
+              setJobs(paginatedData.data)
+              setTotalPages(paginatedData.last_page || 1)
+              setTotalItems(paginatedData.total || 0)
+            } else if (Array.isArray(paginatedData)) {
+              setJobs(paginatedData)
+              setTotalPages(1)
+              setTotalItems(paginatedData.length)
+            }
+          }
+          
+          setJobToDelete(null)
+          setIsDeleteDialogOpen(false)
+        } else {
+          console.error('Failed to delete job:', response.message)
+          alert('Failed to delete job: ' + response.message)
+        }
+      } catch (error) {
+        console.error('Error deleting job:', error)
+        alert('An error occurred while deleting the job')
       }
     }
   }
@@ -242,54 +281,68 @@ export default function JobsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedJobs.map((job, index) => (
-                <TableRow key={job.id}>
-                  <TableCell className="text-neutral-800">
-                    {startIndex + index + 1}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {job.title}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {job.jobId}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {job.employmentType}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {job.postedDate}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {job.closedDate}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariantMap[job.status]}>
-                      {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => handleViewJob(job)}
-                        className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <Link href={`/jobs/edit/${job.id}`}>
-                        <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors">
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                      </Link>
-                      <button 
-                        onClick={() => handleDeleteClick(job)}
-                        className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-neutral-600">
+                    Loading...
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : paginatedJobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-neutral-600">
+                    No jobs found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedJobs.map((job, index) => (
+                  <TableRow key={job.id}>
+                    <TableCell className="text-neutral-800">
+                      {(currentPage - 1) * rowsPerPage + index + 1}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {job.title}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {job.job_id}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {job.employment_type}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {formatDate(job.posted_date)}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {formatDate(job.closed_date)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariantMap[job.status]}>
+                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => handleViewJob(job)}
+                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <Link href={`/jobs/edit/${job.id}`}>
+                          <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors">
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </Link>
+                        <button 
+                          onClick={() => handleDeleteClick(job)}
+                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
           <TablePagination
@@ -331,7 +384,7 @@ export default function JobsPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Job ID</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.jobId}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.job_id}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Specialization</label>
@@ -339,23 +392,23 @@ export default function JobsPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Employment Type</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.employmentType}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.employment_type}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Years of Experience</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.yearsOfExperience || "N/A"}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.years_of_experience ? `${selectedJob.years_of_experience}+ years` : "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Number of Openings</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.numberOfOpenings || "N/A"}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.number_of_openings || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Posted Date</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.postedDate}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{formatDate(selectedJob.posted_date)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Closed Date</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.closedDate}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{formatDate(selectedJob.closed_date)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Status</label>
@@ -374,23 +427,31 @@ export default function JobsPage() {
                 <div className="grid grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Payment Type</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.paymentType || "N/A"}</p>
+                    <p className="text-sm text-neutral-900 mt-1">
+                      {selectedJob.payment_type === 'range' ? 'Range' : selectedJob.payment_type === 'starting_amount' ? 'Starting Amount' : 'N/A'}
+                    </p>
                   </div>
-                  {selectedJob.paymentType === "Range" ? (
+                  {selectedJob.payment_type === "range" ? (
                     <>
                       <div>
                         <label className="text-sm font-medium text-neutral-600">Minimum</label>
-                        <p className="text-sm text-neutral-900 mt-1">{selectedJob.minimum || "N/A"}</p>
+                        <p className="text-sm text-neutral-900 mt-1">
+                          {selectedJob.minimum_amount ? `£${selectedJob.minimum_amount.toLocaleString()}` : "N/A"}
+                        </p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-neutral-600">Maximum</label>
-                        <p className="text-sm text-neutral-900 mt-1">{selectedJob.maximum || "N/A"}</p>
+                        <p className="text-sm text-neutral-900 mt-1">
+                          {selectedJob.maximum_amount ? `£${selectedJob.maximum_amount.toLocaleString()}` : "N/A"}
+                        </p>
                       </div>
                     </>
                   ) : (
                     <div>
                       <label className="text-sm font-medium text-neutral-600">Starting Amount</label>
-                      <p className="text-sm text-neutral-900 mt-1">{selectedJob.startingAmount || "N/A"}</p>
+                      <p className="text-sm text-neutral-900 mt-1">
+                        {selectedJob.amount ? `£${selectedJob.amount.toLocaleString()}` : "N/A"}
+                      </p>
                     </div>
                   )}
                   <div>
@@ -414,7 +475,7 @@ export default function JobsPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Application Process</label>
-                    <p className="text-sm text-neutral-900 mt-2 whitespace-pre-line">{selectedJob.applicationProcess || "N/A"}</p>
+                    <p className="text-sm text-neutral-900 mt-2 whitespace-pre-line">{selectedJob.application_process || "N/A"}</p>
                   </div>
                 </div>
               </div>

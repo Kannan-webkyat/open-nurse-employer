@@ -7,28 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "lucide-react"
 import Link from "next/link"
-
-// Mock data - in real app, fetch from API
-const mockJobData = {
-  id: 1,
-  jobTitle: "ICU Nurse",
-  jobId: "JOB-8X2KLM",
-  specialization: "Intensive Care",
-  employmentType: "Full-time",
-  yearsOfExperience: "3",
-  postedDate: "2025-09-25",
-  closedDate: "2025-09-30",
-  numberOfOpenings: "2",
-  status: "active",
-  paymentType: "Range",
-  minimum: "3000",
-  maximum: "4000",
-  startingAmount: "",
-  rate: "per month",
-  overview: "We are looking for an experienced ICU Nurse...",
-  qualifications: "Registered Nurse with ICU certification...",
-  applicationProcess: "Submit your application through our portal...",
-}
+import { jobPostApi } from "@/lib/api"
 
 export default function EditJobPage() {
   const params = useParams()
@@ -36,6 +15,8 @@ export default function EditJobPage() {
   const jobId = params.id as string
   
   const [activeTab, setActiveTab] = useState("overview")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     jobTitle: "",
     jobId: "",
@@ -57,40 +38,110 @@ export default function EditJobPage() {
   })
 
   useEffect(() => {
-    // In real app, fetch job data by ID from API
-    // For now, using mock data
-    if (jobId) {
-      setFormData({
-        jobTitle: mockJobData.jobTitle,
-        jobId: mockJobData.jobId,
-        specialization: mockJobData.specialization,
-        employmentType: mockJobData.employmentType,
-        yearsOfExperience: mockJobData.yearsOfExperience,
-        postedDate: mockJobData.postedDate,
-        closedDate: mockJobData.closedDate,
-        numberOfOpenings: mockJobData.numberOfOpenings,
-        status: mockJobData.status,
-        paymentType: mockJobData.paymentType,
-        minimum: mockJobData.minimum,
-        maximum: mockJobData.maximum,
-        startingAmount: mockJobData.startingAmount,
-        rate: mockJobData.rate,
-        overview: mockJobData.overview,
-        qualifications: mockJobData.qualifications,
-        applicationProcess: mockJobData.applicationProcess,
-      })
+    const fetchJob = async () => {
+      if (!jobId) return
+      
+      setIsLoading(true)
+      try {
+        const response = await jobPostApi.getById(jobId)
+        if (response.success && response.data) {
+          const job = response.data as any
+          
+          // Format dates for input fields (YYYY-MM-DD)
+          const formatDateForInput = (dateString: string) => {
+            if (!dateString) return ""
+            const date = new Date(dateString)
+            return date.toISOString().split('T')[0]
+          }
+
+          setFormData({
+            jobTitle: job.title || "",
+            jobId: job.job_id || "",
+            specialization: job.specialization || "",
+            employmentType: job.employment_type || "",
+            yearsOfExperience: job.years_of_experience?.toString() || "",
+            postedDate: formatDateForInput(job.posted_date),
+            closedDate: formatDateForInput(job.closed_date),
+            numberOfOpenings: job.number_of_openings?.toString() || "",
+            status: job.status || "",
+            paymentType: job.payment_type === "range" ? "Range" : "Starting amount",
+            minimum: job.minimum_amount?.toString() || "",
+            maximum: job.maximum_amount?.toString() || "",
+            startingAmount: job.amount?.toString() || "",
+            rate: job.rate || "per month",
+            overview: job.overview || "",
+            qualifications: job.qualifications || "",
+            applicationProcess: job.application_process || "",
+          })
+        } else {
+          console.error('Failed to fetch job:', response.message)
+          alert('Failed to load job: ' + response.message)
+          router.push("/jobs")
+        }
+      } catch (error) {
+        console.error('Error fetching job:', error)
+        alert('An error occurred while loading the job')
+        router.push("/jobs")
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [jobId])
+
+    fetchJob()
+  }, [jobId, router])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission - update job data
-    console.log("Updating job:", formData)
-    router.push("/jobs")
+    setIsSubmitting(true)
+
+    try {
+      // Prepare API payload
+      const payload: any = {
+        title: formData.jobTitle,
+        specialization: formData.specialization,
+        employment_type: formData.employmentType,
+        posted_date: formData.postedDate,
+        closed_date: formData.closedDate,
+        number_of_openings: parseInt(formData.numberOfOpenings) || 1,
+        status: formData.status as 'active' | 'paused' | 'draft' | 'closed',
+        payment_type: formData.paymentType === "Range" ? "range" : "starting_amount",
+        rate: formData.rate,
+        overview: formData.overview,
+        qualifications: formData.qualifications,
+        application_process: formData.applicationProcess,
+      }
+
+      // Add payment fields based on payment type
+      if (formData.paymentType === "Range") {
+        payload.minimum_amount = parseFloat(formData.minimum) || 0
+        payload.maximum_amount = parseFloat(formData.maximum) || 0
+      } else {
+        payload.amount = parseFloat(formData.startingAmount) || 0
+      }
+
+      // Add years of experience if provided
+      if (formData.yearsOfExperience) {
+        payload.years_of_experience = parseInt(formData.yearsOfExperience) || 0
+      }
+
+      const response = await jobPostApi.update(jobId, payload)
+
+      if (response.success) {
+        router.push("/jobs")
+      } else {
+        alert('Failed to update job: ' + response.message)
+        console.error('Validation errors:', response.errors)
+      }
+    } catch (error) {
+      console.error('Error updating job:', error)
+      alert('An error occurred while updating the job')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -101,7 +152,12 @@ export default function EditJobPage() {
           <h1 className="text-2xl font-bold text-neutral-900">Edit Job</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-neutral-600">Loading job details...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-8">
           {/* Job Details Section */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
@@ -441,11 +497,12 @@ export default function EditJobPage() {
                 Cancel
               </Button>
             </Link>
-            <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full">
-              Update Job
+            <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full" disabled={isSubmitting}>
+              {isSubmitting ? "Updating..." : "Update Job"}
             </Button>
           </div>
         </form>
+        )}
       </div>
     </DashboardLayout>
   )
