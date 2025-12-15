@@ -148,7 +148,7 @@ export default function CandidatesPage() {
           location: filters.location || undefined,
         })
 
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           const data = response.data as any
           
           // Handle paginated response
@@ -203,7 +203,7 @@ export default function CandidatesPage() {
     const fetchFilters = async () => {
       try {
         const response = await jobApplicationApi.getFilters()
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           const data = response.data as any
           if (data.locations) {
             setUniqueLocations(data.locations)
@@ -457,7 +457,7 @@ export default function CandidatesPage() {
   const handleViewClick = async (candidate: Candidate) => {
     try {
       const response = await jobApplicationApi.getById(candidate.id)
-      if (response.success && response.data) {
+      if (response.success && 'data' in response && response.data) {
         const app = response.data as any
         const transformedCandidate: Candidate = {
           id: app.id,

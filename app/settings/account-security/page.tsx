@@ -42,7 +42,7 @@ export default function AccountSecurityPage() {
       try {
         // Fetch profile to get email and phone
         const profileResponse = await employerProfileApi.getProfile()
-        if (profileResponse.success && profileResponse.data) {
+        if (profileResponse.success && 'data' in profileResponse && profileResponse.data) {
           const user = profileResponse.data as any
           setFormData(prev => ({
             ...prev,
@@ -54,7 +54,7 @@ export default function AccountSecurityPage() {
 
         // Fetch active sessions
         const sessionsResponse = await accountSecurityApi.getActiveSessions()
-        if (sessionsResponse.success && sessionsResponse.data) {
+        if (sessionsResponse.success && 'data' in sessionsResponse && sessionsResponse.data) {
           const sessions = sessionsResponse.data as ActiveSession[]
           setActiveSessions(sessions)
           
@@ -154,7 +154,7 @@ export default function AccountSecurityPage() {
         alert('Successfully logged out from all other devices')
         // Refresh sessions list
         const sessionsResponse = await accountSecurityApi.getActiveSessions()
-        if (sessionsResponse.success && sessionsResponse.data) {
+        if (sessionsResponse.success && 'data' in sessionsResponse && sessionsResponse.data) {
           setActiveSessions(sessionsResponse.data as ActiveSession[])
         }
       } else {
@@ -174,7 +174,7 @@ export default function AccountSecurityPage() {
           <p className="text-neutral-600">Manage your account security settings</p>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-8">
+        <form onSubmit={handleSave} className="space-y-8">
           {/* Account Information Section */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Account Information</h2>

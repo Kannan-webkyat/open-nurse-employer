@@ -44,7 +44,7 @@ export default function EditJobPage() {
       setIsLoading(true)
       try {
         const response = await jobPostApi.getById(jobId)
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           const job = response.data as any
           
           // Format dates for input fields (YYYY-MM-DD)

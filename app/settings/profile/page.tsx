@@ -92,7 +92,7 @@ export default function CompanyProfilePage() {
       setIsLoading(true)
       try {
         const response = await employerProfileApi.getProfile()
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           const user = response.data as any
           const employer = user.employer || {}
           

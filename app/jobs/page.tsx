@@ -114,7 +114,7 @@ export default function JobsPage() {
           search: searchQuery || undefined,
         })
 
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           // Handle Laravel pagination response
           const paginatedData = response.data as any
           if (paginatedData.data) {
@@ -162,7 +162,7 @@ export default function JobsPage() {
   const handleViewJob = async (job: Job) => {
     try {
       const response = await jobPostApi.getById(job.id)
-      if (response.success && response.data) {
+      if (response.success && 'data' in response && response.data) {
         setSelectedJob(response.data as JobDetails)
         setIsViewModalOpen(true)
       } else {
@@ -196,7 +196,7 @@ export default function JobsPage() {
             search: searchQuery || undefined,
           })
           
-          if (refreshResponse.success && refreshResponse.data) {
+          if (refreshResponse.success && 'data' in refreshResponse && refreshResponse.data) {
             const paginatedData = refreshResponse.data as any
             if (paginatedData.data) {
               setJobs(paginatedData.data)
