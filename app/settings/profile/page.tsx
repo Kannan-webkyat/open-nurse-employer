@@ -230,6 +230,13 @@ export default function CompanyProfilePage() {
         
         // Refresh profile data without page reload
         await fetchProfile()
+        
+        // Dispatch custom event to notify header to refresh
+        // Use a small delay to ensure profile is saved before refreshing header
+        setTimeout(() => {
+          console.log('Dispatching profileUpdated event...')
+          window.dispatchEvent(new Event('profileUpdated'))
+        }, 500)
       } else {
         const errorMessage = response.message || 'Failed to update profile'
         toast.error(errorMessage, {

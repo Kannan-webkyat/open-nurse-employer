@@ -1,6 +1,8 @@
 "use client"
 
+import { Suspense } from 'react'
 import { DashboardLayout } from "@/components/dashboard/layout"
+import { TokenHandler } from "@/components/auth/token-handler"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -106,6 +108,9 @@ const recentActivities: RecentActivity[] = [
 export default function DashboardPage() {
   return (
     <DashboardLayout>
+      <Suspense fallback={null}>
+        <TokenHandler />
+      </Suspense>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

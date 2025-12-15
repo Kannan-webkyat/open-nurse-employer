@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
+import { authApi, employerProfileApi } from "@/lib/api"
 
 interface Notification {
   id: number
@@ -134,15 +135,98 @@ export function Header() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [filter, setFilter] = useState<"all" | "unread">("all")
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [userData, setUserData] = useState<{
+    companyName: string
+    hiringPersonName: string
+    userName: string
+    userInitials: string
+    companyLogo: string | null
+  } | null>(null)
+  const [isLoadingUser, setIsLoadingUser] = useState(true)
+  const [imageError, setImageError] = useState(false)
+  const [buttonImageError, setButtonImageError] = useState(false)
   const notificationsRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
-  // User data - this would typically come from a context or API
-  const userName = "St. Mary's NHS Trust" // Example: "NR SOMTHING" or "St. Mary's NHS Trust"
-  const userInitials = getInitials(userName)
-
   // Unread message count - this would typically come from a context or API
   const unreadMessageCount = 3
+
+  // Fetch user data function - using useCallback to avoid dependency issues
+  const fetchUserData = useCallback(async () => {
+    try {
+      setImageError(false) // Reset image error state
+      setButtonImageError(false) // Reset button image error state
+      const response = await employerProfileApi.getProfile()
+      if (response.success && response.data) {
+        const user = response.data as any
+        const employer = user.employer || {}
+        
+        // Get company name or fallback to user name
+        const companyName = employer.company_name || user.name || 'Company'
+        const hiringPersonName = employer.hiring_person_name || user.name || 'User'
+        
+        // Use company name for display, fallback to hiring person name
+        const displayName = companyName || hiringPersonName
+        
+        // Construct company logo URL if exists
+        let companyLogoUrl = null
+        if (employer.company_logo) {
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
+          companyLogoUrl = `${apiBaseUrl}/storage/${employer.company_logo}`
+          // Add timestamp to force refresh if image was just updated
+          companyLogoUrl += `?t=${Date.now()}`
+        }
+        
+        setUserData({
+          companyName: companyName,
+          hiringPersonName: hiringPersonName,
+          userName: displayName,
+          userInitials: getInitials(displayName),
+          companyLogo: companyLogoUrl
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error)
+      // Set fallback values
+      setUserData({
+        companyName: 'Company',
+        hiringPersonName: 'User',
+        userName: 'User',
+        userInitials: 'U',
+        companyLogo: null
+      })
+    } finally {
+      setIsLoadingUser(false)
+    }
+  }, [])
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
+
+  // Listen for profile update events to refresh header data
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log('Profile updated event received, refreshing header...')
+      fetchUserData()
+    }
+
+    // Listen for custom event when profile is updated
+    window.addEventListener('profileUpdated', handleProfileUpdate)
+    
+    // Also refresh when window regains focus (user might have updated profile in another tab)
+    const handleFocus = () => {
+      fetchUserData()
+    }
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate)
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [fetchUserData])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -284,34 +368,103 @@ export function Header() {
           <div className="relative" ref={userMenuRef}>
             <button 
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-              className="p-2 hover:bg-[#D0ECFF] rounded-full text-neutral-800 border border-[#0576B8] bg-[#E9F7FF] transition-colors"
+              className="p-0 hover:opacity-80 rounded-full text-neutral-800 border-2 border-[#0576B8] bg-[#E9F7FF] transition-all overflow-hidden w-10 h-10 flex items-center justify-center"
             >
-              <User className="w-5 h-5 text-[#0576B8]" />
+              {isLoadingUser ? (
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+              ) : userData?.companyLogo && !buttonImageError ? (
+                <Image
+                  src={userData.companyLogo}
+                  alt={userData.companyName || 'Company Logo'}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover rounded-full"
+                  unoptimized
+                  onError={(e) => {
+                    console.error('Failed to load company logo in button:', userData.companyLogo)
+                    setButtonImageError(true)
+                  }}
+                />
+              ) : (
+                <User className="w-5 h-5 text-[#0576B8]" />
+              )}
             </button>
 
             {/* User Dropdown Menu */}
             {isUserMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg border border-neutral-200 shadow-xl z-50">
                 <div className="p-4 border-b border-neutral-200 flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    <span className="text-sky-600 font-semibold text-lg">{userInitials}</span>
+                  <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-sky-200">
+                    {isLoadingUser ? (
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+                    ) : userData?.companyLogo && !imageError ? (
+                      <Image
+                        src={userData.companyLogo}
+                        alt={userData.companyName || 'Company Logo'}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover rounded-full"
+                        unoptimized
+                        onError={(e) => {
+                          console.error('Failed to load company logo:', userData.companyLogo)
+                          setImageError(true)
+                        }}
+                        onLoad={() => {
+                          console.log('Company logo loaded successfully:', userData.companyLogo)
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sky-600 font-semibold text-lg">
+                        {userData?.userInitials || 'U'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-neutral-900 truncate">{userName}</p>
-                    <p className="text-xs text-neutral-600 mt-1">HR Manager</p>
+                    {isLoadingUser ? (
+                      <div className="space-y-2">
+                        <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse"></div>
+                        <div className="h-3 w-24 bg-neutral-200 rounded animate-pulse"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-neutral-900 truncate">
+                          {userData?.companyName || userData?.userName || 'Company'}
+                        </p>
+                        <p className="text-xs text-neutral-600 mt-1">
+                          {userData?.hiringPersonName || 'User'}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="p-2">
                   <button
-                    onClick={() => {
-                      // TODO: Implement logout functionality
-                      console.log("Logging out...")
+                    onClick={async () => {
+                      if (isLoggingOut) return
+                      
+                      setIsLoggingOut(true)
                       setIsUserMenuOpen(false)
+                      
+                      try {
+                        // Call logout API
+                        await authApi.logout()
+                      } catch (error) {
+                        // Even if API call fails, clear local storage and redirect
+                        console.error('Logout error:', error)
+                      } finally {
+                        // Clear token from localStorage
+                        localStorage.removeItem('auth_token')
+                        
+                        // Redirect to login page
+                        const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3001/signin'
+                        window.location.href = `${loginUrl}?role=employer`
+                      }
                     }}
-                    className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                    disabled={isLoggingOut}
+                    className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <LogOut className="w-4 h-4" />
-                    Logout
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </button>
                 </div>
               </div>
