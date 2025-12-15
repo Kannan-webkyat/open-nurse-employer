@@ -8,10 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 export default function EditJobPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const jobId = params.id as string
   
   const [activeTab, setActiveTab] = useState("overview")
@@ -75,13 +82,24 @@ export default function EditJobPage() {
           })
         } else {
           console.error('Failed to fetch job:', response.message)
-          alert('Failed to load job: ' + response.message)
-          router.push("/jobs")
+          const errorMessage = response.message || 'Failed to load job'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
+          setTimeout(() => {
+            router.push("/jobs")
+          }, 1000)
         }
       } catch (error) {
         console.error('Error fetching job:', error)
-        alert('An error occurred while loading the job')
-        router.push("/jobs")
+        toast.error('An error occurred while loading the job', {
+          title: 'Error',
+          duration: 5000,
+        })
+        setTimeout(() => {
+          router.push("/jobs")
+        }, 1000)
       } finally {
         setIsLoading(false)
       }
@@ -131,14 +149,29 @@ export default function EditJobPage() {
       const response = await jobPostApi.update(jobId, payload)
 
       if (response.success) {
-        router.push("/jobs")
+        toast.success('Job updated successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
+        setTimeout(() => {
+          router.push("/jobs")
+        }, 500)
       } else {
-        alert('Failed to update job: ' + response.message)
-        console.error('Validation errors:', response.errors)
+        const errorMessage = response.message || 'Failed to update job'
+        toast.error(errorMessage, {
+          title: 'Error',
+          duration: 5000,
+        })
+        if (response.errors) {
+          console.error('Validation errors:', response.errors)
+        }
       }
     } catch (error) {
       console.error('Error updating job:', error)
-      alert('An error occurred while updating the job')
+      toast.error('An error occurred while updating the job', {
+        title: 'Error',
+        duration: 5000,
+      })
     } finally {
       setIsSubmitting(false)
     }

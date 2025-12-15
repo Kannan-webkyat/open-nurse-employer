@@ -8,9 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Calendar, X } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 export default function CreateJobPage() {
   const router = useRouter()
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const [activeTab, setActiveTab] = useState("overview")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -73,14 +80,29 @@ export default function CreateJobPage() {
       const response = await jobPostApi.create(payload)
 
       if (response.success) {
-        router.push("/jobs")
+        toast.success('Job created successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
+        setTimeout(() => {
+          router.push("/jobs")
+        }, 500)
       } else {
-        alert('Failed to create job: ' + response.message)
-        console.error('Validation errors:', response.errors)
+        const errorMessage = response.message || 'Failed to create job'
+        toast.error(errorMessage, {
+          title: 'Error',
+          duration: 5000,
+        })
+        if (response.errors) {
+          console.error('Validation errors:', response.errors)
+        }
       }
     } catch (error) {
       console.error('Error creating job:', error)
-      alert('An error occurred while creating the job')
+      toast.error('An error occurred while creating the job', {
+        title: 'Error',
+        duration: 5000,
+      })
     } finally {
       setIsSubmitting(false)
     }

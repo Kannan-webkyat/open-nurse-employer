@@ -11,6 +11,7 @@ import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, 
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import { jobApplicationApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 interface Candidate {
   id: number
@@ -78,6 +79,12 @@ const statusLabels = {
 }
 
 export default function CandidatesPage() {
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -132,69 +139,70 @@ export default function CandidatesPage() {
     "We would like to schedule an interview. Please share your availability."
   ]
 
+  // Reusable function to fetch candidates
+  const fetchCandidates = async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
+    try {
+      // Map activeTab to backend status
+      const statusParam = activeTab === "all" ? undefined : activeTab === "hired" ? "accepted" : activeTab
+      
+      const response = await jobApplicationApi.getAll({
+        page: currentPage,
+        per_page: rowsPerPage,
+        status: statusParam,
+        search: searchQuery || undefined,
+        location: filters.location || undefined,
+      })
+
+      if (response.success && 'data' in response && response.data) {
+        const data = response.data as any
+        
+        // Handle paginated response
+        if (data.applications) {
+          const paginatedData = data.applications
+          const applications = paginatedData.data || paginatedData
+          
+          // Transform backend data to frontend format
+          const transformedCandidates: Candidate[] = applications.map((app: any) => ({
+            id: app.id,
+            candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
+            jobAppliedFor: app.job_title || app.jobPost?.title || "",
+            jobId: app.job_id || app.jobPost?.job_id || "",
+            status: mapStatus(app.status),
+            applyDate: formatDate(app.submitted_at || app.created_at),
+            location: app.location || app.jobPost?.location || "",
+          }))
+          
+          setCandidates(transformedCandidates)
+          setTotalPages(paginatedData.last_page || 1)
+          setTotalItems(paginatedData.total || applications.length)
+        }
+
+        // Set status counts
+        if (data.status_counts) {
+          setStatusCounts({
+            all: data.status_counts.all || 0,
+            new: data.status_counts.new || 0,
+            reviewed: data.status_counts.reviewed || 0,
+            shortlisted: data.status_counts.shortlisted || 0,
+            contacting: data.status_counts.contacting || 0,
+            interviewing: data.status_counts.interviewing || 0,
+            rejected: data.status_counts.rejected || 0,
+            hired: (data.status_counts as any).accepted || 0, // Backend uses 'accepted'
+          })
+        }
+      } else {
+        console.error('Failed to fetch candidates:', response.message)
+      }
+    } catch (error) {
+      console.error('Error fetching candidates:', error)
+    } finally {
+      if (showLoading) setIsLoading(false)
+    }
+  }
+
   // Fetch candidates from API
   useEffect(() => {
-    const fetchCandidates = async () => {
-      setIsLoading(true)
-      try {
-        // Map activeTab to backend status
-        const statusParam = activeTab === "all" ? undefined : activeTab === "hired" ? "accepted" : activeTab
-        
-        const response = await jobApplicationApi.getAll({
-          page: currentPage,
-          per_page: rowsPerPage,
-          status: statusParam,
-          search: searchQuery || undefined,
-          location: filters.location || undefined,
-        })
-
-        if (response.success && 'data' in response && response.data) {
-          const data = response.data as any
-          
-          // Handle paginated response
-          if (data.applications) {
-            const paginatedData = data.applications
-            const applications = paginatedData.data || paginatedData
-            
-            // Transform backend data to frontend format
-            const transformedCandidates: Candidate[] = applications.map((app: any) => ({
-              id: app.id,
-              candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
-              jobAppliedFor: app.job_title || app.jobPost?.title || "",
-              jobId: app.job_id || app.jobPost?.job_id || "",
-              status: mapStatus(app.status),
-              applyDate: formatDate(app.submitted_at || app.created_at),
-              location: app.location || app.jobPost?.location || "",
-            }))
-            
-            setCandidates(transformedCandidates)
-            setTotalPages(paginatedData.last_page || 1)
-            setTotalItems(paginatedData.total || applications.length)
-          }
-
-          // Set status counts
-          if (data.status_counts) {
-            setStatusCounts({
-              all: data.status_counts.all || 0,
-              new: data.status_counts.new || 0,
-              reviewed: data.status_counts.reviewed || 0,
-              shortlisted: data.status_counts.shortlisted || 0,
-              contacting: data.status_counts.contacting || 0,
-              interviewing: data.status_counts.interviewing || 0,
-              rejected: data.status_counts.rejected || 0,
-              hired: (data.status_counts as any).accepted || 0, // Backend uses 'accepted'
-            })
-          }
-        } else {
-          console.error('Failed to fetch candidates:', response.message)
-        }
-      } catch (error) {
-        console.error('Error fetching candidates:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchCandidates()
   }, [currentPage, rowsPerPage, activeTab, searchQuery, filters.location])
 
@@ -321,6 +329,10 @@ export default function CandidatesPage() {
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
         
         if (response.success) {
+          toast.success('Candidate shortlisted successfully!', {
+            title: 'Success',
+            duration: 3000,
+          })
           setCandidates(prevCandidates =>
             prevCandidates.map(c =>
               c.id === candidateToAction.id ? { ...c, status: "shortlisted" as const } : c
@@ -328,14 +340,21 @@ export default function CandidatesPage() {
           )
           setIsShortlistDialogOpen(false)
           setCandidateToAction(null)
-          // Refresh data
-          window.location.reload()
+          // Refresh data without page reload
+          await fetchCandidates(false)
         } else {
-          alert('Failed to shortlist candidate: ' + response.message)
+          const errorMessage = response.message || 'Failed to shortlist candidate'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error shortlisting candidate:', error)
-        alert('An error occurred while shortlisting the candidate')
+        toast.error('An error occurred while shortlisting the candidate', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }
@@ -347,6 +366,10 @@ export default function CandidatesPage() {
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
         
         if (response.success) {
+          toast.success('Candidate rejected successfully', {
+            title: 'Success',
+            duration: 3000,
+          })
           setCandidates(prevCandidates =>
             prevCandidates.map(c =>
               c.id === candidateToAction.id ? { ...c, status: "rejected" as const } : c
@@ -354,14 +377,21 @@ export default function CandidatesPage() {
           )
           setIsRejectDialogOpen(false)
           setCandidateToAction(null)
-          // Refresh data
-          window.location.reload()
+          // Refresh data without page reload
+          await fetchCandidates(false)
         } else {
-          alert('Failed to reject candidate: ' + response.message)
+          const errorMessage = response.message || 'Failed to reject candidate'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error rejecting candidate:', error)
-        alert('An error occurred while rejecting the candidate')
+        toast.error('An error occurred while rejecting the candidate', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }
@@ -372,19 +402,30 @@ export default function CandidatesPage() {
         const response = await jobApplicationApi.delete(candidateToAction.id)
         
         if (response.success) {
+          toast.success('Candidate deleted successfully', {
+            title: 'Success',
+            duration: 3000,
+          })
           setCandidates(prevCandidates =>
             prevCandidates.filter(c => c.id !== candidateToAction.id)
           )
           setIsDeleteDialogOpen(false)
           setCandidateToAction(null)
-          // Refresh data
-          window.location.reload()
+          // Refresh data without page reload
+          await fetchCandidates(false)
         } else {
-          alert('Failed to delete candidate: ' + response.message)
+          const errorMessage = response.message || 'Failed to delete candidate'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error deleting candidate:', error)
-        alert('An error occurred while deleting the candidate')
+        toast.error('An error occurred while deleting the candidate', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }
@@ -414,6 +455,10 @@ export default function CandidatesPage() {
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
         
         if (response.success) {
+          toast.success('Interview scheduled successfully!', {
+            title: 'Success',
+            duration: 3000,
+          })
           setCandidates(prevCandidates =>
             prevCandidates.map(c =>
               c.id === candidateToAction.id ? { ...c, status: "interviewing" as const } : c
@@ -426,14 +471,21 @@ export default function CandidatesPage() {
             time: "",
             meetingUrl: "",
           })
-          // Refresh data
-          window.location.reload()
+          // Refresh data without page reload
+          await fetchCandidates(false)
         } else {
-          alert('Failed to set up interview: ' + response.message)
+          const errorMessage = response.message || 'Failed to set up interview'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error setting up interview:', error)
-        alert('An error occurred while setting up the interview')
+        toast.error('An error occurred while setting up the interview', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }
@@ -485,6 +537,10 @@ export default function CandidatesPage() {
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
         
         if (response.success) {
+          toast.success('Candidate marked as hired successfully!', {
+            title: 'Success',
+            duration: 3000,
+          })
           setCandidates(prevCandidates =>
             prevCandidates.map(c =>
               c.id === candidateToAction.id ? { ...c, status: "hired" as const } : c
@@ -492,14 +548,21 @@ export default function CandidatesPage() {
           )
           setIsHiredDialogOpen(false)
           setCandidateToAction(null)
-          // Refresh data
-          window.location.reload()
+          // Refresh data without page reload
+          await fetchCandidates(false)
         } else {
-          alert('Failed to mark as hired: ' + response.message)
+          const errorMessage = response.message || 'Failed to mark as hired'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error marking as hired:', error)
-        alert('An error occurred while marking the candidate as hired')
+        toast.error('An error occurred while marking the candidate as hired', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }

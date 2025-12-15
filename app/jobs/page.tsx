@@ -12,6 +12,7 @@ import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Search, Filter, Eye, Pencil, Trash2, X } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 interface Job {
   id: number
@@ -52,6 +53,12 @@ const formatDate = (dateString: string) => {
 }
 
 export default function JobsPage() {
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -211,13 +218,24 @@ export default function JobsPage() {
           
           setJobToDelete(null)
           setIsDeleteDialogOpen(false)
+          toast.success('Job deleted successfully!', {
+            title: 'Success',
+            duration: 3000,
+          })
         } else {
           console.error('Failed to delete job:', response.message)
-          alert('Failed to delete job: ' + response.message)
+          const errorMessage = response.message || 'Failed to delete job'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error deleting job:', error)
-        alert('An error occurred while deleting the job')
+        toast.error('An error occurred while deleting the job', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }

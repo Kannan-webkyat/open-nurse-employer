@@ -7,8 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Upload, Trash2, X, Link as LinkIcon } from "lucide-react"
 import Image from "next/image"
 import { employerProfileApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 export default function CompanyProfilePage() {
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -37,6 +44,7 @@ export default function CompanyProfilePage() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [shouldDeleteLogo, setShouldDeleteLogo] = useState(false)
   const [kycFile, setKycFile] = useState<File | null>(null)
   const [kycFileName, setKycFileName] = useState<string>("")
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -50,6 +58,7 @@ export default function CompanyProfilePage() {
     const file = e.target.files?.[0]
     if (file) {
       setLogoFile(file)
+      setShouldDeleteLogo(false) // Reset delete flag when new file is uploaded
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result as string)
@@ -62,6 +71,7 @@ export default function CompanyProfilePage() {
     setLogoFile(null)
     setLogoPreview(null)
     setLogoUrl(null)
+    setShouldDeleteLogo(true) // Mark logo for deletion
     if (logoInputRef.current) {
       logoInputRef.current.value = ""
     }
@@ -86,67 +96,80 @@ export default function CompanyProfilePage() {
     }
   }
 
+  // Fetch profile data function (reusable)
+  const fetchProfile = async () => {
+    setIsLoading(true)
+    try {
+      const response = await employerProfileApi.getProfile()
+      if (response.success && 'data' in response && response.data) {
+        const user = response.data as any
+        const employer = user.employer || {}
+        
+        // Set form data
+        setFormData({
+          companyName: employer.company_name || "",
+          contactPersonName: employer.hiring_person_name || "",
+          businessEmail: user.email || "",
+          contactNumber: user.phone || "",
+          companyWebsite: employer.company_website || "",
+          companyAddress: employer.company_address || "",
+          aboutCompany: employer.about_company || "",
+          registrationNumber: employer.company_registration_number || "",
+          vatTaxId: employer.vat_tax_id || "",
+          numberOfEmployees: employer.number_of_employees || "",
+          yearEstablished: employer.year_established?.toString() || "",
+          averageMonthlyHiring: employer.average_monthly_hiring_volume || "",
+          jobVisibility: employer.job_visibility || "public",
+          linkedin: employer.linkedin_url || "",
+          facebook: employer.facebook_url || "",
+          twitter: employer.twitter_url || "",
+          instagram: employer.instagram_url || "",
+        })
+
+        // Set logo URL if exists
+        if (employer.company_logo) {
+          const logoUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${employer.company_logo}`
+          setLogoUrl(logoUrl)
+          setLogoPreview(logoUrl)
+          setShouldDeleteLogo(false) // Reset delete flag when fetching profile
+        } else {
+          // Clear logo if not present
+          setLogoUrl(null)
+          setLogoPreview(null)
+          setShouldDeleteLogo(false) // Reset delete flag
+        }
+
+        // Set KYC document name if exists
+        if (employer.kyc_document) {
+          const fileName = employer.kyc_document.split('/').pop() || "Document uploaded"
+          setKycFileName(fileName)
+        } else {
+          // Clear KYC file name if not present
+          setKycFileName("")
+        }
+
+        // Set preferred categories
+        if (employer.job_categories && Array.isArray(employer.job_categories)) {
+          const categoryNames = employer.job_categories.map((cat: any) => cat.name || cat.slug || "")
+          const categoryIds = employer.job_categories.map((cat: any) => cat.id)
+          setPreferredCategories(categoryNames.filter(Boolean))
+          setPreferredCategoryIds(categoryIds)
+        } else {
+          setPreferredCategories([])
+          setPreferredCategoryIds([])
+        }
+      } else {
+        console.error('Failed to fetch profile:', response.message)
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Fetch profile data on component mount
   useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true)
-      try {
-        const response = await employerProfileApi.getProfile()
-        if (response.success && 'data' in response && response.data) {
-          const user = response.data as any
-          const employer = user.employer || {}
-          
-          // Set form data
-          setFormData({
-            companyName: employer.company_name || "",
-            contactPersonName: employer.hiring_person_name || "",
-            businessEmail: user.email || "",
-            contactNumber: user.phone || "",
-            companyWebsite: employer.company_website || "",
-            companyAddress: employer.company_address || "",
-            aboutCompany: employer.about_company || "",
-            registrationNumber: employer.company_registration_number || "",
-            vatTaxId: employer.vat_tax_id || "",
-            numberOfEmployees: employer.number_of_employees || "",
-            yearEstablished: employer.year_established?.toString() || "",
-            averageMonthlyHiring: employer.average_monthly_hiring_volume || "",
-            jobVisibility: employer.job_visibility || "public",
-            linkedin: employer.linkedin_url || "",
-            facebook: employer.facebook_url || "",
-            twitter: employer.twitter_url || "",
-            instagram: employer.instagram_url || "",
-          })
-
-          // Set logo URL if exists
-          if (employer.company_logo) {
-            const logoUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${employer.company_logo}`
-            setLogoUrl(logoUrl)
-            setLogoPreview(logoUrl)
-          }
-
-          // Set KYC document name if exists
-          if (employer.kyc_document) {
-            const fileName = employer.kyc_document.split('/').pop() || "Document uploaded"
-            setKycFileName(fileName)
-          }
-
-          // Set preferred categories
-          if (employer.job_categories && Array.isArray(employer.job_categories)) {
-            const categoryNames = employer.job_categories.map((cat: any) => cat.name || cat.slug || "")
-            const categoryIds = employer.job_categories.map((cat: any) => cat.id)
-            setPreferredCategories(categoryNames.filter(Boolean))
-            setPreferredCategoryIds(categoryIds)
-          }
-        } else {
-          console.error('Failed to fetch profile:', response.message)
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchProfile()
   }, [])
 
@@ -173,9 +196,13 @@ export default function CompanyProfilePage() {
         instagram_url: formData.instagram || undefined,
       }
 
-      // Add logo file if uploaded
+      // Add logo file if uploaded, or mark for deletion
       if (logoFile) {
         updateData.company_logo = logoFile
+        updateData.delete_company_logo = false // Don't delete if new file is uploaded
+      } else if (shouldDeleteLogo) {
+        // Mark logo for deletion by sending empty string or null
+        updateData.delete_company_logo = true
       }
 
       // Add KYC document if uploaded
@@ -191,16 +218,34 @@ export default function CompanyProfilePage() {
       const response = await employerProfileApi.updateProfile(updateData)
 
       if (response.success) {
-        alert('Profile updated successfully!')
-        // Refresh the page data
-        window.location.reload()
+        toast.success('Profile updated successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
+        
+        // Clear file uploads and delete flags after successful update
+        setLogoFile(null)
+        setKycFile(null)
+        setShouldDeleteLogo(false)
+        
+        // Refresh profile data without page reload
+        await fetchProfile()
       } else {
-        alert('Failed to update profile: ' + response.message)
-        console.error('Validation errors:', response.errors)
+        const errorMessage = response.message || 'Failed to update profile'
+        toast.error(errorMessage, {
+          title: 'Error',
+          duration: 5000,
+        })
+        if (response.errors) {
+          console.error('Validation errors:', response.errors)
+        }
       }
     } catch (error) {
       console.error('Error updating profile:', error)
-      alert('An error occurred while updating the profile')
+      toast.error('An error occurred while updating the profile', {
+        title: 'Error',
+        duration: 5000,
+      })
     } finally {
       setIsSubmitting(false)
     }

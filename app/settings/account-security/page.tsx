@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Eye, EyeOff } from "lucide-react"
 import { employerProfileApi, accountSecurityApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 interface ActiveSession {
   id: number
@@ -16,6 +17,12 @@ interface ActiveSession {
 }
 
 export default function AccountSecurityPage() {
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [activeSessions, setActiveSessions] = useState<ActiveSession[]>([])
@@ -99,7 +106,10 @@ export default function AccountSecurityPage() {
       // Change password if provided
       if (formData.currentPassword && formData.newPassword && formData.confirmPassword) {
         if (formData.newPassword !== formData.confirmPassword) {
-          alert('New password and confirm password do not match')
+          toast.error('New password and confirm password do not match', {
+            title: 'Validation Error',
+            duration: 5000,
+          })
           setIsSubmitting(false)
           return
         }
@@ -121,10 +131,16 @@ export default function AccountSecurityPage() {
         const errorMessages = results
           .filter(result => !result.success)
           .map(result => result.message)
-          .join('\n')
-        alert('Some updates failed:\n' + errorMessages)
+          .join(', ')
+        toast.error(errorMessages, {
+          title: 'Update Failed',
+          duration: 5000,
+        })
       } else {
-        alert('Account security settings updated successfully!')
+        toast.success('Account security settings updated successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
         // Clear password fields
         setFormData(prev => ({
           ...prev,
@@ -132,12 +148,47 @@ export default function AccountSecurityPage() {
           newPassword: "",
           confirmPassword: "",
         }))
-        // Reload to get updated data
-        window.location.reload()
+        // Refresh account data without page reload
+        const fetchAccountData = async () => {
+          try {
+            // Fetch profile to get updated email and phone
+            const profileResponse = await employerProfileApi.getProfile()
+            if (profileResponse.success && 'data' in profileResponse && profileResponse.data) {
+              const user = profileResponse.data as any
+              setFormData(prev => ({
+                ...prev,
+                usernameEmail: user.email || "",
+                contactNumber: user.phone || "",
+                recoveryEmail: user.email || "",
+              }))
+            }
+
+            // Refresh active sessions
+            const sessionsResponse = await accountSecurityApi.getActiveSessions()
+            if (sessionsResponse.success && 'data' in sessionsResponse && sessionsResponse.data) {
+              const sessions = sessionsResponse.data as ActiveSession[]
+              setActiveSessions(sessions)
+              
+              // Update last login activity
+              const currentSession = sessions.find(s => s.is_current)
+              if (currentSession && currentSession.last_used_at) {
+                setLastLoginActivity(currentSession.last_used_at)
+              } else if (currentSession) {
+                setLastLoginActivity(currentSession.created_at)
+              }
+            }
+          } catch (error) {
+            console.error('Error refreshing account data:', error)
+          }
+        }
+        await fetchAccountData()
       }
     } catch (error) {
       console.error('Error updating account security:', error)
-      alert('An error occurred while updating account security')
+      toast.error('An error occurred while updating account security', {
+        title: 'Error',
+        duration: 5000,
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -151,18 +202,28 @@ export default function AccountSecurityPage() {
     try {
       const response = await accountSecurityApi.logoutOtherDevices()
       if (response.success) {
-        alert('Successfully logged out from all other devices')
+        toast.success('Successfully logged out from all other devices', {
+          title: 'Success',
+          duration: 3000,
+        })
         // Refresh sessions list
         const sessionsResponse = await accountSecurityApi.getActiveSessions()
         if (sessionsResponse.success && 'data' in sessionsResponse && sessionsResponse.data) {
           setActiveSessions(sessionsResponse.data as ActiveSession[])
         }
       } else {
-        alert('Failed to logout from other devices: ' + response.message)
+        const errorMessage = response.message || 'Failed to logout from other devices'
+        toast.error(errorMessage, {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     } catch (error) {
       console.error('Error logging out other devices:', error)
-      alert('An error occurred while logging out other devices')
+      toast.error('An error occurred while logging out other devices', {
+        title: 'Error',
+        duration: 5000,
+      })
     }
   }
 
