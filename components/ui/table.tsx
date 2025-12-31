@@ -1,11 +1,11 @@
 import * as React from "react"
 
-export interface TableProps extends React.HTMLAttributes<HTMLTableElement> {}
+export interface TableProps extends React.HTMLAttributes<HTMLTableElement> { }
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
   ({ className = "", children, ...props }, ref) => {
     return (
-      <div className="overflow-x-auto">
+      <div className="w-full overflow-visible">
         <table ref={ref} className={`w-full ${className}`} {...props}>
           {children}
         </table>
@@ -15,7 +15,7 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
 )
 Table.displayName = "Table"
 
-export interface TableHeaderProps extends React.HTMLAttributes<HTMLTableSectionElement> {}
+export interface TableHeaderProps extends React.HTMLAttributes<HTMLTableSectionElement> { }
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, TableHeaderProps>(
   ({ className = "", ...props }, ref) => {
@@ -30,7 +30,7 @@ const TableHeader = React.forwardRef<HTMLTableSectionElement, TableHeaderProps>(
 )
 TableHeader.displayName = "TableHeader"
 
-export interface TableBodyProps extends React.HTMLAttributes<HTMLTableSectionElement> {}
+export interface TableBodyProps extends React.HTMLAttributes<HTMLTableSectionElement> { }
 
 const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
   ({ className = "", ...props }, ref) => {
@@ -45,7 +45,7 @@ const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
 )
 TableBody.displayName = "TableBody"
 
-export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {}
+export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> { }
 
 const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
   ({ className = "", ...props }, ref) => {
@@ -60,7 +60,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 )
 TableRow.displayName = "TableRow"
 
-export interface TableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {}
+export interface TableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> { }
 
 const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
   ({ className = "", ...props }, ref) => {
@@ -75,7 +75,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
 )
 TableHead.displayName = "TableHead"
 
-export interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> {}
+export interface TableCellProps extends React.TdHTMLAttributes<HTMLTableCellElement> { }
 
 const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
   ({ className = "", ...props }, ref) => {

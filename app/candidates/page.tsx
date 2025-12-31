@@ -21,6 +21,30 @@ interface Candidate {
   status: "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "rejected" | "hired"
   applyDate: string
   location: string
+  // Additional application details
+  email?: string
+  contactNumber?: string
+  willingToRelocate?: boolean
+  inUK?: boolean
+  jobRole?: string
+  contractType?: string
+  registrationStatus?: string
+  notes?: string
+  resumeUrl?: string
+  certificatesUrl?: string
+  nhsBand?: string
+  justStartingOut?: boolean
+  keySkills?: string
+  workRole?: string
+  employer?: string
+  countryOfWork?: string
+  jobLocationArea?: string
+  isCurrentJob?: boolean
+  fromMonth?: string
+  fromYear?: string
+  toMonth?: string
+  toYear?: string
+  workNotes?: string
 }
 
 // Format date helper
@@ -145,7 +169,7 @@ export default function CandidatesPage() {
     try {
       // Map activeTab to backend status
       const statusParam = activeTab === "all" ? undefined : activeTab === "hired" ? "accepted" : activeTab
-      
+
       const response = await jobApplicationApi.getAll({
         page: currentPage,
         per_page: rowsPerPage,
@@ -156,12 +180,12 @@ export default function CandidatesPage() {
 
       if (response.success && 'data' in response && response.data) {
         const data = response.data as any
-        
+
         // Handle paginated response
         if (data.applications) {
           const paginatedData = data.applications
           const applications = paginatedData.data || paginatedData
-          
+
           // Transform backend data to frontend format
           const transformedCandidates: Candidate[] = applications.map((app: any) => ({
             id: app.id,
@@ -172,7 +196,7 @@ export default function CandidatesPage() {
             applyDate: formatDate(app.submitted_at || app.created_at),
             location: app.location || app.jobPost?.location || "",
           }))
-          
+
           setCandidates(transformedCandidates)
           setTotalPages(paginatedData.last_page || 1)
           setTotalItems(paginatedData.total || applications.length)
@@ -327,7 +351,7 @@ export default function CandidatesPage() {
       try {
         const backendStatus = mapStatusToBackend('shortlisted')
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
-        
+
         if (response.success) {
           toast.success('Candidate shortlisted successfully!', {
             title: 'Success',
@@ -364,7 +388,7 @@ export default function CandidatesPage() {
       try {
         const backendStatus = mapStatusToBackend('rejected')
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
-        
+
         if (response.success) {
           toast.success('Candidate rejected successfully', {
             title: 'Success',
@@ -400,7 +424,7 @@ export default function CandidatesPage() {
     if (candidateToAction) {
       try {
         const response = await jobApplicationApi.delete(candidateToAction.id)
-        
+
         if (response.success) {
           toast.success('Candidate deleted successfully', {
             title: 'Success',
@@ -453,7 +477,7 @@ export default function CandidatesPage() {
       try {
         const backendStatus = mapStatusToBackend('interviewing')
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
-        
+
         if (response.success) {
           toast.success('Interview scheduled successfully!', {
             title: 'Success',
@@ -519,14 +543,41 @@ export default function CandidatesPage() {
           status: mapStatus(app.status),
           applyDate: formatDate(app.submitted_at || app.created_at),
           location: app.location || app.jobPost?.location || "",
+          // Additional details
+          email: app.email,
+          contactNumber: app.contact_number,
+          willingToRelocate: app.willing_to_relocate,
+          inUK: app.in_uk,
+          jobRole: app.job_role,
+          contractType: app.contract_type,
+          registrationStatus: app.registration_status,
+          notes: app.notes,
+          resumeUrl: app.resume_url,
+          certificatesUrl: app.certificates_url,
+          nhsBand: app.nhs_band,
+          justStartingOut: app.just_starting_out,
+          keySkills: app.key_skills,
+          workRole: app.work_role,
+          employer: app.employer,
+          countryOfWork: app.country_of_work,
+          jobLocationArea: app.job_location_area,
+          isCurrentJob: app.is_current_job,
+          fromMonth: app.from_month,
+          fromYear: app.from_year,
+          toMonth: app.to_month,
+          toYear: app.to_year,
+          workNotes: app.work_notes,
         }
         setViewCandidate(transformedCandidate)
         setIsViewModalOpen(true)
       } else {
+        const errorMessage = response.message || 'Failed to fetch candidate details'
+        toast.error(errorMessage, { title: 'Error', duration: 5000 })
         console.error('Failed to fetch candidate details:', response.message)
       }
     } catch (error) {
       console.error('Error fetching candidate details:', error)
+      toast.error('An error occurred while fetching candidate details', { title: 'Error', duration: 5000 })
     }
   }
 
@@ -535,7 +586,7 @@ export default function CandidatesPage() {
       try {
         const backendStatus = mapStatusToBackend('hired')
         const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
-        
+
         if (response.success) {
           toast.success('Candidate marked as hired successfully!', {
             title: 'Success',
@@ -591,8 +642,8 @@ export default function CandidatesPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="bg-white border-neutral-300 text-neutral-700 relative"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
@@ -625,19 +676,17 @@ export default function CandidatesPage() {
                 setActiveTab(key)
                 setCurrentPage(1)
               }}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === key
-                  ? "border-sky-500 text-sky-600"
-                  : "border-transparent text-neutral-600 hover:text-neutral-900"
-              }`}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === key
+                ? "border-sky-500 text-sky-600"
+                : "border-transparent text-neutral-600 hover:text-neutral-900"
+                }`}
             >
               {label}
               {statusCounts[key] > 0 && (
-                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                  activeTab === key
-                    ? "bg-sky-100 text-sky-700"
-                    : "bg-neutral-100 text-neutral-600"
-                }`}>
+                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === key
+                  ? "bg-sky-100 text-sky-700"
+                  : "bg-neutral-100 text-neutral-600"
+                  }`}>
                   {statusCounts[key]}
                 </span>
               )}
@@ -646,7 +695,7 @@ export default function CandidatesPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-neutral-200">
           <Table>
             <TableHeader>
               <TableRow>
@@ -677,137 +726,137 @@ export default function CandidatesPage() {
                     <TableCell className="text-neutral-800">
                       {(currentPage - 1) * rowsPerPage + index + 1}
                     </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {candidate.candidateName}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {candidate.jobAppliedFor}
-                  </TableCell>
-                  <TableCell className="text-neutral-800">
-                    {candidate.jobId}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
-                      {statusLabels[candidate.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-3 relative">
-                      {candidate.status === "rejected" ? (
-                        <button 
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-700 hover:bg-red-100 transition-colors group relative"
-                          title="Rejected"
-                        >
-                          <XCircle className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            Rejected
-                          </span>
-                        </button>
-                      ) : (
-                        <button 
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-green-700 hover:bg-green-100 transition-colors group relative"
-                          title="Shortlisted"
-                          onClick={() => handleShortlistClick(candidate)}
-                        >
-                          <Check className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            Shortlisted
-                          </span>
-                        </button>
-                      )}
-                      <button 
-                        className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors group relative"
-                        title="View"
-                        onClick={() => handleViewClick(candidate)}
-                      >
-                        <Eye className="w-4 h-4" />
-                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                          View
-                        </span>
-                      </button>
-                      <div className="relative" ref={menuRef}>
-                        <button 
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors group relative"
-                          title="More options"
-                          onClick={() => setOpenMenuId(openMenuId === candidate.id ? null : candidate.id)}
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            More options
-                          </span>
-                        </button>
-                        {openMenuId === candidate.id && (
-                          <div 
-                            className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-50 py-1"
-                            onClick={(e) => e.stopPropagation()}
+                    <TableCell className="text-neutral-800">
+                      {candidate.candidateName}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {candidate.jobAppliedFor}
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {candidate.jobId}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
+                        {statusLabels[candidate.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3 relative">
+                        {candidate.status === "rejected" ? (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-700 hover:bg-red-100 transition-colors group relative"
+                            title="Rejected"
                           >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleMessageClick(candidate)
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                            >
-                              <MessageSquare className="w-4 h-4" />
-                              Message
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRejectClick(candidate)
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                            >
-                              <XCircle className="w-4 h-4" />
-                              Reject
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCall(candidate)
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                            >
-                              <Phone className="w-4 h-4" />
-                              Call (Optional)
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleSetUpInterview(candidate)
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                            >
-                              <Calendar className="w-4 h-4" />
-                              Set up interview
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleMarkAsHired(candidate)
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                            >
-                              <UserCheck className="w-4 h-4" />
-                              Mark as hired
-                            </button>
-                            <div className="border-t border-neutral-200 my-1"></div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteClick(candidate)
-                              }}
-                              className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Delete
-                            </button>
-                          </div>
+                            <XCircle className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Rejected
+                            </span>
+                          </button>
+                        ) : (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-green-700 hover:bg-green-100 transition-colors group relative"
+                            title="Shortlisted"
+                            onClick={() => handleShortlistClick(candidate)}
+                          >
+                            <Check className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Shortlisted
+                            </span>
+                          </button>
                         )}
+                        <button
+                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors group relative"
+                          title="View"
+                          onClick={() => handleViewClick(candidate)}
+                        >
+                          <Eye className="w-4 h-4" />
+                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                            View
+                          </span>
+                        </button>
+                        <div className="relative z-[9999]" ref={menuRef}>
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors group relative"
+                            title="More options"
+                            onClick={() => setOpenMenuId(openMenuId === candidate.id ? null : candidate.id)}
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              More options
+                            </span>
+                          </button>
+                          {openMenuId === candidate.id && (
+                            <div
+                              className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-[9999] py-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMessageClick(candidate)
+                                }}
+                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                                Message
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleRejectClick(candidate)
+                                }}
+                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                              >
+                                <XCircle className="w-4 h-4" />
+                                Reject
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCall(candidate)
+                                }}
+                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                              >
+                                <Phone className="w-4 h-4" />
+                                Call (Optional)
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleSetUpInterview(candidate)
+                                }}
+                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                              >
+                                <Calendar className="w-4 h-4" />
+                                Set up interview
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleMarkAsHired(candidate)
+                                }}
+                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                              >
+                                <UserCheck className="w-4 h-4" />
+                                Mark as hired
+                              </button>
+                              <div className="border-t border-neutral-200 my-1"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleDeleteClick(candidate)
+                                }}
+                                className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
             </TableBody>
@@ -825,13 +874,13 @@ export default function CandidatesPage() {
         {isFilterOpen && (
           <>
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[55] transition-opacity"
               onClick={() => setIsFilterOpen(false)}
             />
-            
+
             {/* Slide-in Panel */}
-            <div 
+            <div
               ref={filterRef}
               className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out overflow-y-auto"
             >
@@ -927,13 +976,13 @@ export default function CandidatesPage() {
         {isMessageOpen && selectedCandidate && (
           <>
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[65] transition-opacity"
               onClick={() => setIsMessageOpen(false)}
             />
-            
+
             {/* Slide-in Message Panel */}
-            <div 
+            <div
               ref={messageRef}
               className="fixed right-0 top-0 h-screen w-full max-w-lg bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-in-out flex flex-col"
               onClick={(e) => e.stopPropagation()}
@@ -970,11 +1019,10 @@ export default function CandidatesPage() {
                       <button
                         key={index}
                         onClick={() => handleTemplateClick(index)}
-                        className={`w-full text-left px-4 py-3 rounded-lg border transition-all text-sm ${
-                          selectedTemplate === index
-                            ? "border-sky-500 bg-sky-50 text-neutral-900"
-                            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
-                        }`}
+                        className={`w-full text-left px-4 py-3 rounded-lg border transition-all text-sm ${selectedTemplate === index
+                          ? "border-sky-500 bg-sky-50 text-neutral-900"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
+                          }`}
                       >
                         {template}
                       </button>
@@ -1104,7 +1152,7 @@ export default function CandidatesPage() {
               {/* Candidate Details Section */}
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">Candidate Details</h3>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Candidate Name</label>
                     <p className="text-sm text-neutral-900 mt-1">{viewCandidate.candidateName}</p>
@@ -1135,6 +1183,169 @@ export default function CandidatesPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Personal Information Section */}
+              {(viewCandidate.email || viewCandidate.contactNumber) && (
+                <div className="border-t border-neutral-200 pt-6">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Personal Information</h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {viewCandidate.email && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Email</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.email}</p>
+                      </div>
+                    )}
+                    {viewCandidate.contactNumber && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Contact Number</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.contactNumber}</p>
+                      </div>
+                    )}
+                    {viewCandidate.willingToRelocate !== undefined && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Willing to Relocate</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.willingToRelocate ? 'Yes' : 'No'}</p>
+                      </div>
+                    )}
+                    {viewCandidate.inUK !== undefined && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Location Status</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.inUK ? 'UK' : 'Non-UK'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Work Information Section */}
+              {(viewCandidate.jobRole || viewCandidate.contractType || viewCandidate.registrationStatus) && (
+                <div className="border-t border-neutral-200 pt-6">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Work Information</h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {viewCandidate.jobRole && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Job Role</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.jobRole}</p>
+                      </div>
+                    )}
+                    {viewCandidate.contractType && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Contract Type</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.contractType}</p>
+                      </div>
+                    )}
+                    {viewCandidate.registrationStatus && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Registration Status</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.registrationStatus}</p>
+                      </div>
+                    )}
+                  </div>
+                  {viewCandidate.notes && (
+                    <div className="mt-4">
+                      <label className="text-sm font-medium text-neutral-600">Additional Notes</label>
+                      <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">{viewCandidate.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Work Experience Section */}
+              {(viewCandidate.nhsBand || viewCandidate.keySkills || viewCandidate.workRole || viewCandidate.employer) && (
+                <div className="border-t border-neutral-200 pt-6">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Work Experience</h3>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {viewCandidate.nhsBand && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">NHS Band</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.nhsBand}</p>
+                      </div>
+                    )}
+                    {viewCandidate.justStartingOut !== undefined && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Career Level</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.justStartingOut ? 'Just Starting Out' : 'Experienced'}</p>
+                      </div>
+                    )}
+                    {viewCandidate.workRole && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Previous Role</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.workRole}</p>
+                      </div>
+                    )}
+                    {viewCandidate.employer && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Employer</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.employer}</p>
+                      </div>
+                    )}
+                    {viewCandidate.countryOfWork && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Country of Work</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.countryOfWork}</p>
+                      </div>
+                    )}
+                    {viewCandidate.jobLocationArea && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Work Location</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.jobLocationArea}</p>
+                      </div>
+                    )}
+                  </div>
+                  {viewCandidate.keySkills && (
+                    <div className="mt-4">
+                      <label className="text-sm font-medium text-neutral-600">Key Skills</label>
+                      <p className="text-sm text-neutral-900 mt-1">{viewCandidate.keySkills}</p>
+                    </div>
+                  )}
+                  {(viewCandidate.fromMonth || viewCandidate.fromYear) && (
+                    <div className="mt-4">
+                      <label className="text-sm font-medium text-neutral-600">Employment Period</label>
+                      <p className="text-sm text-neutral-900 mt-1">
+                        {viewCandidate.fromMonth && viewCandidate.fromYear && `${viewCandidate.fromMonth} ${viewCandidate.fromYear}`}
+                        {viewCandidate.isCurrentJob ? ' - Present' : (viewCandidate.toMonth && viewCandidate.toYear && ` - ${viewCandidate.toMonth} ${viewCandidate.toYear}`)}
+                      </p>
+                    </div>
+                  )}
+                  {viewCandidate.workNotes && (
+                    <div className="mt-4">
+                      <label className="text-sm font-medium text-neutral-600">Work Experience Notes</label>
+                      <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">{viewCandidate.workNotes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Documents Section */}
+              {(viewCandidate.resumeUrl || viewCandidate.certificatesUrl) && (
+                <div className="border-t border-neutral-200 pt-6">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Documents</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {viewCandidate.resumeUrl && (
+                      <a
+                        href={viewCandidate.resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                        <span className="text-sm font-medium">View Resume</span>
+                      </a>
+                    )}
+                    {viewCandidate.certificatesUrl && (
+                      <a
+                        href={viewCandidate.certificatesUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                        <span className="text-sm font-medium">View Certificates</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </Modal>
         )}
