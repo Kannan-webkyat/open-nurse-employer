@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
-import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle } from "lucide-react"
+import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import { jobApplicationApi } from "@/lib/api"
@@ -18,7 +18,7 @@ interface Candidate {
   candidateName: string
   jobAppliedFor: string
   jobId: string
-  status: "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "rejected" | "hired"
+  status: "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "interviewed" | "rejected" | "hired"
   applyDate: string
   location: string
   // Additional application details
@@ -62,6 +62,7 @@ const mapStatus = (backendStatus: string): Candidate['status'] => {
     'shortlisted': 'shortlisted',
     'contacting': 'contacting',
     'interviewing': 'interviewing',
+    'interviewed': 'interviewed',
     'rejected': 'rejected',
     'accepted': 'hired', // Backend uses 'accepted', frontend uses 'hired'
   }
@@ -76,6 +77,7 @@ const mapStatusToBackend = (frontendStatus: Candidate['status']): string => {
     'shortlisted': 'shortlisted',
     'contacting': 'contacting',
     'interviewing': 'interviewing',
+    'interviewed': 'interviewed',
     'rejected': 'rejected',
     'hired': 'accepted', // Frontend uses 'hired', backend uses 'accepted'
   }
@@ -88,16 +90,18 @@ const statusVariantMap = {
   shortlisted: "shortlisted",
   contacting: "contacting",
   interviewing: "interviewing",
+  interviewed: "interviewed",
   rejected: "rejected",
   hired: "hired",
 } as const
 
 const statusLabels = {
   new: "New",
-  reviewed: "Viewed",
+  reviewed: "Reviewed",
   shortlisted: "Shortlisted",
   contacting: "Contacting",
   interviewing: "Interviewing",
+  interviewed: "Interviewed",
   rejected: "Rejected",
   hired: "Hired",
 }
@@ -116,7 +120,7 @@ export default function CandidatesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(15)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const [activeTab, setActiveTab] = useState<"all" | "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "rejected" | "hired">("all")
+  const [activeTab, setActiveTab] = useState<"all" | "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "interviewed" | "rejected" | "hired">("all")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [filters, setFilters] = useState({
     location: "",
@@ -132,6 +136,7 @@ export default function CandidatesPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false)
   const [isShortlistDialogOpen, setIsShortlistDialogOpen] = useState(false)
   const [isHiredDialogOpen, setIsHiredDialogOpen] = useState(false)
+  const [isInterviewedDialogOpen, setIsInterviewedDialogOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [viewCandidate, setViewCandidate] = useState<Candidate | null>(null)
   const [candidateToAction, setCandidateToAction] = useState<Candidate | null>(null)
@@ -148,6 +153,7 @@ export default function CandidatesPage() {
     shortlisted: 0,
     contacting: 0,
     interviewing: 0,
+    interviewed: 0,
     rejected: 0,
     hired: 0,
   })
@@ -211,6 +217,7 @@ export default function CandidatesPage() {
             shortlisted: data.status_counts.shortlisted || 0,
             contacting: data.status_counts.contacting || 0,
             interviewing: data.status_counts.interviewing || 0,
+            interviewed: data.status_counts.interviewed || 0,
             rejected: data.status_counts.rejected || 0,
             hired: (data.status_counts as any).accepted || 0, // Backend uses 'accepted'
           })
@@ -530,6 +537,48 @@ export default function CandidatesPage() {
     setOpenMenuId(null)
   }
 
+  const handleMarkAsInterviewed = (candidate: Candidate) => {
+    setCandidateToAction(candidate)
+    setIsInterviewedDialogOpen(true)
+    setOpenMenuId(null)
+  }
+
+  const handleInterviewedConfirm = async () => {
+    if (candidateToAction) {
+      try {
+        const response = await jobApplicationApi.updateStatus(candidateToAction.id, 'interviewed' as any)
+
+        if (response.success) {
+          toast.success('Candidate marked as interviewed!', {
+            title: 'Success',
+            duration: 3000,
+          })
+          setCandidates(prevCandidates =>
+            prevCandidates.map(c =>
+              c.id === candidateToAction.id ? { ...c, status: "interviewed" as const } : c
+            )
+          )
+          setIsInterviewedDialogOpen(false)
+          setCandidateToAction(null)
+          // Refresh data without page reload
+          await fetchCandidates(false)
+        } else {
+          const errorMessage = response.message || 'Failed to mark as interviewed'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
+        }
+      } catch (error) {
+        console.error('Error marking as interviewed:', error)
+        toast.error('An error occurred while marking the candidate as interviewed', {
+          title: 'Error',
+          duration: 5000,
+        })
+      }
+    }
+  }
+
   const handleViewClick = async (candidate: Candidate) => {
     try {
       const response = await jobApplicationApi.getById(candidate.id)
@@ -667,6 +716,7 @@ export default function CandidatesPage() {
             { key: "shortlisted", label: "Shortlist" },
             { key: "contacting", label: "Contacting" },
             { key: "interviewing", label: "Interviewing" },
+            { key: "interviewed", label: "Interviewed" },
             { key: "rejected", label: "Rejected" },
             { key: "hired", label: "Hired" },
           ] as const).map(({ key, label }) => (
@@ -742,28 +792,74 @@ export default function CandidatesPage() {
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3 relative">
-                        {candidate.status === "rejected" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-700 hover:bg-red-100 transition-colors group relative"
-                            title="Rejected"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Rejected
-                            </span>
-                          </button>
-                        ) : (
+                        {/* Quick Action Button - context aware based on status */}
+                        {candidate.status === "new" || candidate.status === "reviewed" ? (
                           <button
                             className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-green-700 hover:bg-green-100 transition-colors group relative"
-                            title="Shortlisted"
+                            title="Shortlist"
                             onClick={() => handleShortlistClick(candidate)}
                           >
                             <Check className="w-4 h-4" />
                             <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Shortlisted
+                              Shortlist
                             </span>
                           </button>
-                        )}
+                        ) : candidate.status === "shortlisted" ? (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-purple-700 hover:bg-purple-100 transition-colors group relative"
+                            title="Setup Interview"
+                            onClick={() => handleSetUpInterview(candidate)}
+                          >
+                            <Calendar className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Setup Interview
+                            </span>
+                          </button>
+                        ) : candidate.status === "interviewing" ? (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-emerald-700 hover:bg-emerald-100 transition-colors group relative"
+                            title="Mark as Interviewed"
+                            onClick={() => handleMarkAsInterviewed(candidate)}
+                          >
+                            <ClipboardCheck className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Mark Interviewed
+                            </span>
+                          </button>
+                        ) : candidate.status === "interviewed" ? (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-teal-700 hover:bg-teal-100 transition-colors group relative"
+                            title="Mark as Hired"
+                            onClick={() => handleMarkAsHired(candidate)}
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Mark as Hired
+                            </span>
+                          </button>
+                        ) : candidate.status === "rejected" ? (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 cursor-not-allowed group relative"
+                            title="Rejected"
+                            disabled
+                          >
+                            <XCircle className="w-4 h-4 text-red-500" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Rejected
+                            </span>
+                          </button>
+                        ) : candidate.status === "hired" ? (
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 cursor-not-allowed group relative"
+                            title="Hired"
+                            disabled
+                          >
+                            <UserCheck className="w-4 h-4 text-teal-500" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Hired
+                            </span>
+                          </button>
+                        ) : null}
                         <button
                           className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors group relative"
                           title="View"
@@ -790,6 +886,7 @@ export default function CandidatesPage() {
                               className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-[9999] py-1"
                               onClick={(e) => e.stopPropagation()}
                             >
+                              {/* Message - always available */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -800,16 +897,78 @@ export default function CandidatesPage() {
                                 <MessageSquare className="w-4 h-4" />
                                 Message
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleRejectClick(candidate)
-                                }}
-                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                              >
-                                <XCircle className="w-4 h-4" />
-                                Reject
-                              </button>
+
+                              {/* Shortlist - only for new/reviewed status */}
+                              {(candidate.status === "new" || candidate.status === "reviewed") && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleShortlistClick(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  Shortlist
+                                </button>
+                              )}
+
+                              {/* Setup Interview - only for shortlisted status */}
+                              {candidate.status === "shortlisted" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleSetUpInterview(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                  Setup Interview
+                                </button>
+                              )}
+
+                              {/* Mark as Interviewed - only for interviewing status */}
+                              {candidate.status === "interviewing" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleMarkAsInterviewed(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <ClipboardCheck className="w-4 h-4" />
+                                  Mark as Interviewed
+                                </button>
+                              )}
+
+                              {/* Mark as Hired - only for interviewed status */}
+                              {candidate.status === "interviewed" && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleMarkAsHired(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                >
+                                  <UserCheck className="w-4 h-4" />
+                                  Mark as Hired
+                                </button>
+                              )}
+
+                              {/* Reject - available for most statuses except final ones */}
+                              {!["rejected", "hired"].includes(candidate.status) && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleRejectClick(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                  Reject
+                                </button>
+                              )}
+
+                              {/* Call - optional, always available */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -818,29 +977,12 @@ export default function CandidatesPage() {
                                 className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
                               >
                                 <Phone className="w-4 h-4" />
-                                Call (Optional)
+                                Call
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleSetUpInterview(candidate)
-                                }}
-                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                              >
-                                <Calendar className="w-4 h-4" />
-                                Set up interview
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMarkAsHired(candidate)
-                                }}
-                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                              >
-                                <UserCheck className="w-4 h-4" />
-                                Mark as hired
-                              </button>
+
                               <div className="border-t border-neutral-200 my-1"></div>
+
+                              {/* Delete - always available */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -1124,6 +1266,21 @@ export default function CandidatesPage() {
           title="Mark as Hired"
           description={`Are you sure you want to mark ${candidateToAction?.candidateName} as hired?`}
           confirmText="Mark as Hired"
+          cancelText="Cancel"
+          variant="success"
+        />
+
+        {/* Mark as Interviewed Alert Dialog */}
+        <AlertDialog
+          isOpen={isInterviewedDialogOpen}
+          onClose={() => {
+            setIsInterviewedDialogOpen(false)
+            setCandidateToAction(null)
+          }}
+          onConfirm={handleInterviewedConfirm}
+          title="Mark as Interviewed"
+          description={`Has the interview with ${candidateToAction?.candidateName} been completed?`}
+          confirmText="Yes, Interview Completed"
           cancelText="Cancel"
           variant="success"
         />
