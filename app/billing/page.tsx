@@ -29,20 +29,20 @@ interface Invoice {
 }
 
 const paymentMethods: PaymentMethod[] = [
-  { 
-    id: 1, 
-    type: "visa", 
-    lastFour: "1234", 
+  {
+    id: 1,
+    type: "visa",
+    lastFour: "1234",
     isDefault: true,
     cardholderName: "John Doe",
     cardNumber: "4111111111111234",
     expiryDate: "12/25",
     cvv: "123"
   },
-  { 
-    id: 2, 
-    type: "mastercard", 
-    lastFour: "5678", 
+  {
+    id: 2,
+    type: "mastercard",
+    lastFour: "5678",
     isDefault: false,
     cardholderName: "Jane Smith",
     cardNumber: "5555555555555678",
@@ -138,7 +138,7 @@ export default function BillingPage() {
         <div className="bg-white rounded-lg border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-6">
             <h2 className="text-lg font-semibold text-neutral-900">Payment Method</h2>
-            <Button 
+            <Button
               className="text-white bg-neutral-950 hover:bg-neutral-900"
               onClick={() => setIsAddPaymentModalOpen(true)}
             >
@@ -254,7 +254,7 @@ export default function BillingPage() {
           }
         >
           <div className="space-y-3">
-            
+
             {/* Credit Card Option */}
             <div>
               <button
@@ -287,12 +287,12 @@ export default function BillingPage() {
               {isCreditCardExpanded && (
                 <div className="mt-4 p-6 bg-neutral-50 rounded-lg border border-neutral-200">
                   <div className="space-y-6">
-                
+
 
                     {/* Two Column Layout */}
                     <div className="grid grid-cols-2 gap-4">
-                        {/* Cardholder Name */}
-                        <div>
+                      {/* Cardholder Name */}
+                      <div>
                         <label className="text-sm font-medium text-neutral-900 mb-2 block">Cardholder Name</label>
                         <Input
                           type="text"
