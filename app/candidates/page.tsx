@@ -619,6 +619,21 @@ export default function CandidatesPage() {
         }
         setViewCandidate(transformedCandidate)
         setIsViewModalOpen(true)
+
+        // If status was 'new', user has now 'reviewed' it.
+        // The backend 'show' endpoint auto-updates status to 'reviewed', so we update frontend state to match.
+        if (candidate.status === 'new') {
+          setCandidates(prev => prev.map(c =>
+            c.id === candidate.id ? { ...c, status: 'reviewed' } : c
+          ))
+
+          // Update counts (new--, reviewed++)
+          setStatusCounts(prev => ({
+            ...prev,
+            new: Math.max(0, prev.new - 1),
+            reviewed: prev.reviewed + 1
+          }))
+        }
       } else {
         const errorMessage = response.message || 'Failed to fetch candidate details'
         toast.error(errorMessage, { title: 'Error', duration: 5000 })
@@ -793,7 +808,10 @@ export default function CandidatesPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3 relative">
                         {/* Quick Action Button - context aware based on status */}
-                        {candidate.status === "new" || candidate.status === "reviewed" ? (
+                        {candidate.status === "new" ? (
+                          /* No quick action for new candidates - must review first */
+                          null
+                        ) : candidate.status === "reviewed" ? (
                           <button
                             className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-green-700 hover:bg-green-100 transition-colors group relative"
                             title="Shortlist"
@@ -898,8 +916,8 @@ export default function CandidatesPage() {
                                 Message
                               </button>
 
-                              {/* Shortlist - only for new/reviewed status */}
-                              {(candidate.status === "new" || candidate.status === "reviewed") && (
+                              {/* Shortlist - only for reviewed status */}
+                              {candidate.status === "reviewed" && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
