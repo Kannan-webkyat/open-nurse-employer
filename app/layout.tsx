@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { ToastProvider } from '@/components/ui/toast'
+import { NotificationProvider } from '@/components/providers/notification-provider'
 
 export const metadata: Metadata = {
   title: 'Open Nurses - Dashboard',
@@ -20,7 +21,9 @@ export default function RootLayout({
       </head>
       <body className="font-satoshi">
         <ToastProvider>
-          {children}
+          <NotificationProvider>
+            {children}
+          </NotificationProvider>
         </ToastProvider>
       </body>
     </html>

@@ -93,15 +93,15 @@ function Toast({ toast, onClose }) {
   const styles = {
     success: {
       bg: 'bg-white',
-      border: 'border-green-200',
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-600',
+      border: 'border-emerald-100',
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-600',
       text: 'text-neutral-900',
       message: 'text-neutral-600',
     },
     error: {
       bg: 'bg-white',
-      border: 'border-red-200',
+      border: 'border-red-100',
       iconBg: 'bg-red-50',
       iconColor: 'text-red-600',
       text: 'text-neutral-900',
@@ -109,17 +109,17 @@ function Toast({ toast, onClose }) {
     },
     info: {
       bg: 'bg-white',
-      border: 'border-blue-200',
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      border: 'border-sky-100',
+      iconBg: 'bg-sky-50',
+      iconColor: 'text-sky-600',
       text: 'text-neutral-900',
       message: 'text-neutral-600',
     },
     warning: {
       bg: 'bg-white',
-      border: 'border-yellow-200',
-      iconBg: 'bg-yellow-50',
-      iconColor: 'text-yellow-600',
+      border: 'border-amber-100',
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-600',
       text: 'text-neutral-900',
       message: 'text-neutral-600',
     },
@@ -131,30 +131,37 @@ function Toast({ toast, onClose }) {
   return (
     <div
       className={`
-        ${style.bg} ${style.border} border rounded-lg shadow-lg p-4
-        flex items-start gap-3 min-w-[320px] max-w-sm
-        transition-all duration-300 ease-in-out
-        ${isExiting ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}
+        ${style.bg} ${style.border} border rounded-xl shadow-2xl p-4
+        flex items-start gap-4 min-w-[340px] max-w-md
+        transition-all duration-500 ease-out transform
+        ${isExiting ? 'opacity-0 translate-x-full scale-95' : 'opacity-100 translate-x-0 scale-100'}
+        backdrop-blur-sm bg-opacity-95
       `}
     >
-      <div className={`${style.iconBg} p-2 rounded-lg flex-shrink-0`}>
+      <div className={`${style.iconBg} p-2.5 rounded-full flex-shrink-0 mt-0.5 ring-1 ring-inset ring-black/5`}>
         <Icon className={`w-5 h-5 ${style.iconColor}`} />
       </div>
-      
-      <div className="flex-1 min-w-0">
+
+      <div className="flex-1 min-w-0 py-0.5">
         {toast.title && (
-          <h4 className={`text-sm font-semibold ${style.text} mb-1`}>
+          <h4 className={`text-sm font-bold ${style.text} mb-1 leading-none`}>
             {toast.title}
           </h4>
         )}
-        <p className={`text-sm ${style.message}`}>
+        <div className={`text-sm ${style.message} leading-relaxed`}>
           {toast.message}
-        </p>
+        </div>
+
+        {toast.action && (
+          <div className="mt-3">
+            {typeof toast.action === 'function' ? toast.action(handleClose) : toast.action}
+          </div>
+        )}
       </div>
 
       <button
         onClick={handleClose}
-        className="flex-shrink-0 text-neutral-400 hover:text-neutral-600 transition-colors"
+        className="flex-shrink-0 text-neutral-400 hover:text-neutral-600 transition-colors p-1 rounded-md hover:bg-neutral-100"
         aria-label="Close"
       >
         <X className="w-4 h-4" />

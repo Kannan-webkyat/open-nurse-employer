@@ -3,61 +3,21 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
 import { authApi, employerProfileApi } from "@/lib/api"
+import { notificationApi } from "@/lib/api/notifications" // Correct import
+import { useNotifications } from "@/components/providers/notification-provider"
 
 interface Notification {
-  id: number
+  id: string
   type: "application" | "message" | "interview" | "expiry" | "system"
   title: string
   description: string
   timestamp: string
   isUnread: boolean
+  data?: any
 }
-
-
-const notifications: Notification[] = [
-  {
-    id: 1,
-    type: "application",
-    title: "New Application Received",
-    description: "Emma Johnson applied for ICU Nurse — Night Shift.",
-    timestamp: "2 hours ago",
-    isUnread: true,
-  },
-  {
-    id: 2,
-    type: "message",
-    title: "Candidate Message",
-    description: "Michael sent you a message about General Ward Nurse.",
-    timestamp: "1 day ago",
-    isUnread: false,
-  },
-  {
-    id: 3,
-    type: "interview",
-    title: "Interview scheduled",
-    description: "Interview with Ria for Pediatric Nurse - Sep 12, 11:00 AM.",
-    timestamp: "1 day ago",
-    isUnread: false,
-  },
-  {
-    id: 4,
-    type: "expiry",
-    title: "Job Posting About to Expire",
-    description: 'Your posting "ER Nurse" will expire in 3 days.',
-    timestamp: "3 day ago",
-    isUnread: true,
-  },
-  {
-    id: 5,
-    type: "system",
-    title: "System Update",
-    description: "Dashboard updated for easier navigation.",
-    timestamp: "3 day ago",
-    isUnread: true,
-  },
-]
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -79,7 +39,7 @@ const getNotificationIcon = (type: Notification["type"]) => {
 const getNotificationIconBg = (type: Notification["type"]) => {
   switch (type) {
     case "application":
-      return "bg-orange-200" 
+      return "bg-orange-200"
     case "message":
       return "bg-blue-200"
     case "interview":
@@ -113,29 +73,35 @@ const getNotificationIconColor = (type: Notification["type"]) => {
 // Function to generate initials from user name
 const getInitials = (name: string): string => {
   if (!name) return "U"
-  
+
   // Remove common prefixes and split into words
   const words = name
     .replace(/^(St\.|Mr\.|Mrs\.|Ms\.|Dr\.)\s+/i, "") // Remove titles
     .split(/\s+/)
     .filter(word => word.length > 0 && !word.match(/^(and|of|the|a|an)$/i)) // Filter out common words
-  
+
   if (words.length === 0) return "U"
-  
+
   // Get first letter of first two significant words
   if (words.length >= 2) {
     return (words[0][0] + words[1][0]).toUpperCase()
   }
-  
+
   // If only one word, use first two letters
   return words[0].substring(0, 2).toUpperCase()
 }
 
 export function Header() {
+  const router = useRouter()
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [filter, setFilter] = useState<"all" | "unread">("all")
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  // Notification State
+  const [notifications, setDesktopNotifications] = useState<Notification[]>([])
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
+
   const [userData, setUserData] = useState<{
     companyName: string
     hiringPersonName: string
@@ -149,6 +115,9 @@ export function Header() {
   const notificationsRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
+  // Real-time updates
+  const { notifications: realtimeNotifications } = useNotifications()
+
   // Unread message count - this would typically come from a context or API
   const unreadMessageCount = 3
 
@@ -161,14 +130,14 @@ export function Header() {
       if (response.success && response.data) {
         const user = response.data as any
         const employer = user.employer || {}
-        
+
         // Get company name or fallback to user name
         const companyName = employer.company_name || user.name || 'Company'
         const hiringPersonName = employer.hiring_person_name || user.name || 'User'
-        
+
         // Use company name for display, fallback to hiring person name
         const displayName = companyName || hiringPersonName
-        
+
         // Construct company logo URL if exists
         let companyLogoUrl = null
         if (employer.company_logo) {
@@ -177,7 +146,7 @@ export function Header() {
           // Add timestamp to force refresh if image was just updated
           companyLogoUrl += `?t=${Date.now()}`
         }
-        
+
         setUserData({
           companyName: companyName,
           hiringPersonName: hiringPersonName,
@@ -201,10 +170,52 @@ export function Header() {
     }
   }, [])
 
-  // Fetch user data on component mount
+  // Fetch notifications
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await notificationApi.getNotifications()
+      if (response.success && Array.isArray(response.data?.data)) {
+        // response.data used to be the paginated object if using Laravel paginate
+        setDesktopNotifications(response.data.data)
+      } else if (response.success && Array.isArray(response.data)) {
+        setDesktopNotifications(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error)
+    } finally {
+      setIsLoadingNotifications(false)
+    }
+  }, [])
+
+  // Mark as read
+  const handleMarkAsRead = async (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation()
+    }
+
+    try {
+      await notificationApi.markAsRead(id)
+      setDesktopNotifications(prev => prev.map(n =>
+        n.id === id ? { ...n, isUnread: false } : n
+      ))
+    } catch (error) {
+      console.error('Error marking as read:', error)
+    }
+  }
+
+  // Handle incoming real-time notifications
+  useEffect(() => {
+    if (realtimeNotifications.length > 0) {
+      // Refresh full list to keep sync or append locally
+      fetchNotifications()
+    }
+  }, [realtimeNotifications, fetchNotifications])
+
+  // Initial fetch
   useEffect(() => {
     fetchUserData()
-  }, [fetchUserData])
+    fetchNotifications()
+  }, [fetchUserData, fetchNotifications])
 
   // Listen for profile update events to refresh header data
   useEffect(() => {
@@ -215,18 +226,26 @@ export function Header() {
 
     // Listen for custom event when profile is updated
     window.addEventListener('profileUpdated', handleProfileUpdate)
-    
+
+    // Listen for custom event to open notification panel
+    const handleOpenPanel = () => {
+      setIsNotificationsOpen(true)
+    }
+    window.addEventListener('open-notification-panel', handleOpenPanel)
+
     // Also refresh when window regains focus (user might have updated profile in another tab)
     const handleFocus = () => {
       fetchUserData()
+      fetchNotifications() // also refresh notifications
     }
     window.addEventListener('focus', handleFocus)
 
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate)
+      window.removeEventListener('open-notification-panel', handleOpenPanel)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [fetchUserData])
+  }, [fetchUserData, fetchNotifications])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -247,7 +266,7 @@ export function Header() {
     }
   }, [isNotificationsOpen, isUserMenuOpen])
 
-  const filteredNotifications = filter === "unread" 
+  const filteredNotifications = filter === "unread"
     ? notifications.filter(n => n.isUnread)
     : notifications
 
@@ -261,7 +280,7 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4 relative">
           <div className="relative" ref={notificationsRef}>
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="p-2 hover:bg-neutral-100 rounded-full text-neutral-800 transition-colors relative"
             >
@@ -282,30 +301,49 @@ export function Header() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setFilter("all")}
-                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                        filter === "all"
-                          ? "bg-neutral-200 text-neutral-900 font-medium"
-                          : "text-neutral-600 hover:text-neutral-900"
-                      }`}
+                      className={`px-3 py-1 text-sm rounded-full transition-colors ${filter === "all"
+                        ? "bg-neutral-200 text-neutral-900 font-medium"
+                        : "text-neutral-600 hover:text-neutral-900"
+                        }`}
                     >
                       All
                     </button>
                     <button
                       onClick={() => setFilter("unread")}
-                      className={`px-3 py-1 text-sm rounded transition-colors ${
-                        filter === "unread"
-                          ? "bg-neutral-200 text-neutral-900 font-medium"
-                          : "text-neutral-600 hover:text-neutral-900"
-                      }`}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${filter === "unread"
+                        ? "bg-neutral-200 text-neutral-900 font-medium"
+                        : "text-neutral-600 hover:text-neutral-900"
+                        }`}
                     >
                       Unread
+                    </button>
+                    <button
+                      onClick={async () => {
+                        try {
+                          setIsLoadingNotifications(true)
+                          await notificationApi.deleteRead()
+                          await fetchNotifications()
+                        } catch (error) {
+                          console.error('Error clearing read notifications:', error)
+                        } finally {
+                          setIsLoadingNotifications(false)
+                        }
+                      }}
+                      className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors ml-2"
+                      title="Clear all read notifications"
+                    >
+                      Clear Read
                     </button>
                   </div>
                 </div>
 
                 {/* Notifications List */}
                 <div className="overflow-y-auto flex-1">
-                  {filteredNotifications.length === 0 ? (
+                  {isLoadingNotifications ? (
+                    <div className="p-8 text-center text-neutral-600">
+                      <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-r-transparent"></div>
+                    </div>
+                  ) : filteredNotifications.length === 0 ? (
                     <div className="p-8 text-center text-neutral-600">
                       <p className="text-sm">No notifications</p>
                     </div>
@@ -315,11 +353,20 @@ export function Header() {
                         const Icon = getNotificationIcon(notification.type)
                         const iconBg = getNotificationIconBg(notification.type)
                         const iconColor = getNotificationIconColor(notification.type)
-                        
+
                         return (
                           <div
                             key={notification.id}
-                            className="p-3 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer mb-2 flex items-start gap-3 relative"
+                            className={`p-3 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer mb-2 flex items-start gap-3 relative ${notification.isUnread ? 'bg-blue-50/50' : ''}`}
+                            onClick={(e) => {
+                              if (notification.isUnread) {
+                                handleMarkAsRead(notification.id, e)
+                              }
+                              if (notification.type === 'application') {
+                                setIsNotificationsOpen(false)
+                                router.push('/candidates')
+                              }
+                            }}
                           >
                             {/* Icon */}
                             <div className={`${iconBg} w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}>
@@ -341,7 +388,11 @@ export function Header() {
 
                             {/* Unread Indicator */}
                             {notification.isUnread && (
-                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                              <button
+                                onClick={(e) => handleMarkAsRead(notification.id, e)}
+                                className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2 hover:scale-150 transition-transform"
+                                title="Mark as read"
+                              ></button>
                             )}
                           </div>
                         )
@@ -366,7 +417,7 @@ export function Header() {
 
           {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
-            <button 
+            <button
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="p-0 hover:opacity-80 rounded-full text-neutral-800 border-2 border-[#0576B8] bg-[#E9F7FF] transition-all overflow-hidden w-10 h-10 flex items-center justify-center"
             >
@@ -441,10 +492,10 @@ export function Header() {
                   <button
                     onClick={async () => {
                       if (isLoggingOut) return
-                      
+
                       setIsLoggingOut(true)
                       setIsUserMenuOpen(false)
-                      
+
                       try {
                         // Call logout API
                         await authApi.logout()
@@ -454,7 +505,7 @@ export function Header() {
                       } finally {
                         // Clear token from localStorage
                         localStorage.removeItem('auth_token')
-                        
+
                         // Redirect to login page
                         const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3001/signin'
                         window.location.href = `${loginUrl}?role=employer`
