@@ -22,6 +22,7 @@ interface Job {
   posted_date: string
   closed_date: string
   status: "active" | "paused" | "draft" | "closed"
+  admin_status: "pending" | "approved" | "rejected" | "hidden"
 }
 
 interface JobDetails extends Job {
@@ -43,6 +44,13 @@ const statusVariantMap = {
   paused: "paused",
   draft: "draft",
   closed: "closed",
+} as const
+
+const adminStatusVariantMap = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  hidden: "hidden",
 } as const
 
 // Format date helper
@@ -151,11 +159,11 @@ export default function JobsPage() {
   // Apply client-side filters for employment type and dates
   const filteredJobs = jobs.filter(job => {
     const matchesEmploymentType = !filters.employmentType || job.employment_type === filters.employmentType
-    
+
     // Date filtering
     const matchesDateFrom = !filters.postedDateFrom || job.posted_date >= filters.postedDateFrom
     const matchesDateTo = !filters.postedDateTo || job.posted_date <= filters.postedDateTo
-    
+
     return matchesEmploymentType && matchesDateFrom && matchesDateTo
   })
 
@@ -202,7 +210,7 @@ export default function JobsPage() {
             status: filters.status || undefined,
             search: searchQuery || undefined,
           })
-          
+
           if (refreshResponse.success && 'data' in refreshResponse && refreshResponse.data) {
             const paginatedData = refreshResponse.data as any
             if (paginatedData.data) {
@@ -215,7 +223,7 @@ export default function JobsPage() {
               setTotalItems(paginatedData.length)
             }
           }
-          
+
           setJobToDelete(null)
           setIsDeleteDialogOpen(false)
           toast.success('Job deleted successfully!', {
@@ -262,8 +270,8 @@ export default function JobsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="bg-white border-neutral-300 text-neutral-700 relative"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
@@ -295,19 +303,20 @@ export default function JobsPage() {
                 <TableHead>Posted Date</TableHead>
                 <TableHead>Closed Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Approval</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-neutral-600">
+                  <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : paginatedJobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-neutral-600">
+                  <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
                     No jobs found
                   </TableCell>
                 </TableRow>
@@ -337,9 +346,14 @@ export default function JobsPage() {
                         {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Badge variant={adminStatusVariantMap[job.admin_status] || "default"}>
+                        {job.admin_status ? job.admin_status.charAt(0).toUpperCase() + job.admin_status.slice(1) : 'Pending'}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
-                        <button 
+                        <button
                           onClick={() => handleViewJob(job)}
                           className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
                         >
@@ -350,7 +364,7 @@ export default function JobsPage() {
                             <Pencil className="w-4 h-4" />
                           </button>
                         </Link>
-                        <button 
+                        <button
                           onClick={() => handleDeleteClick(job)}
                           className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
                         >
@@ -436,6 +450,14 @@ export default function JobsPage() {
                       </Badge>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-neutral-600">Approval</label>
+                    <div className="mt-1">
+                      <Badge variant={adminStatusVariantMap[selectedJob.admin_status] || "default"}>
+                        {selectedJob.admin_status ? selectedJob.admin_status.charAt(0).toUpperCase() + selectedJob.admin_status.slice(1) : 'Pending'}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -516,13 +538,13 @@ export default function JobsPage() {
         {isFilterOpen && (
           <>
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[55] transition-opacity"
               onClick={() => setIsFilterOpen(false)}
             />
-            
+
             {/* Slide-in Panel */}
-            <div 
+            <div
               ref={filterRef}
               className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out overflow-y-auto"
             >
@@ -554,11 +576,10 @@ export default function JobsPage() {
                       <button
                         key={status}
                         onClick={() => handleFilterChange("status", filters.status === status ? "" : status)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${
-                          filters.status === status
-                            ? "border-sky-500 bg-sky-50 text-sky-700"
-                            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
-                        }`}
+                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${filters.status === status
+                          ? "border-sky-500 bg-sky-50 text-sky-700"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
+                          }`}
                       >
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </button>
@@ -574,11 +595,10 @@ export default function JobsPage() {
                       <button
                         key={type}
                         onClick={() => handleFilterChange("employmentType", filters.employmentType === type ? "" : type)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium text-left ${
-                          filters.employmentType === type
-                            ? "border-sky-500 bg-sky-50 text-sky-700"
-                            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
-                        }`}
+                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium text-left ${filters.employmentType === type
+                          ? "border-sky-500 bg-sky-50 text-sky-700"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
+                          }`}
                       >
                         {type}
                       </button>

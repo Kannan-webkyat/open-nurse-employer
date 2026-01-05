@@ -6,18 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
 import { authApi, employerProfileApi } from "@/lib/api"
-import { notificationApi } from "@/lib/api/notifications" // Correct import
-import { useNotifications } from "@/components/providers/notification-provider"
-
-interface Notification {
-  id: string
-  type: "application" | "message" | "interview" | "expiry" | "system"
-  title: string
-  description: string
-  timestamp: string
-  isUnread: boolean
-  data?: any
-}
+import { useNotifications, Notification } from "@/components/providers/notification-provider"
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -31,6 +20,8 @@ const getNotificationIcon = (type: Notification["type"]) => {
       return Briefcase
     case "system":
       return RefreshCw
+    case "job":
+      return Briefcase
     default:
       return Bell
   }
@@ -48,6 +39,8 @@ const getNotificationIconBg = (type: Notification["type"]) => {
       return "bg-pink-200"
     case "system":
       return "bg-green-200"
+    case "job":
+      return "bg-indigo-200"
     default:
       return "bg-neutral-200"
   }
@@ -65,6 +58,8 @@ const getNotificationIconColor = (type: Notification["type"]) => {
       return "text-pink-600"
     case "system":
       return "text-green-600"
+    case "job":
+      return "text-indigo-600"
     default:
       return "text-neutral-600"
   }
@@ -93,14 +88,12 @@ const getInitials = (name: string): string => {
 
 export function Header() {
   const router = useRouter()
+  const { notifications, unreadCount, markAsRead, clearNotifications } = useNotifications()
+
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [filter, setFilter] = useState<"all" | "unread">("all")
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-
-  // Notification State
-  const [notifications, setDesktopNotifications] = useState<Notification[]>([])
-  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
 
   const [userData, setUserData] = useState<{
     companyName: string
@@ -114,9 +107,6 @@ export function Header() {
   const [buttonImageError, setButtonImageError] = useState(false)
   const notificationsRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
-
-  // Real-time updates
-  const { notifications: realtimeNotifications } = useNotifications()
 
   // Unread message count - this would typically come from a context or API
   const unreadMessageCount = 3
@@ -170,52 +160,10 @@ export function Header() {
     }
   }, [])
 
-  // Fetch notifications
-  const fetchNotifications = useCallback(async () => {
-    try {
-      const response = await notificationApi.getNotifications()
-      if (response.success && Array.isArray(response.data?.data)) {
-        // response.data used to be the paginated object if using Laravel paginate
-        setDesktopNotifications(response.data.data)
-      } else if (response.success && Array.isArray(response.data)) {
-        setDesktopNotifications(response.data)
-      }
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
-    } finally {
-      setIsLoadingNotifications(false)
-    }
-  }, [])
-
-  // Mark as read
-  const handleMarkAsRead = async (id: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation()
-    }
-
-    try {
-      await notificationApi.markAsRead(id)
-      setDesktopNotifications(prev => prev.map(n =>
-        n.id === id ? { ...n, isUnread: false } : n
-      ))
-    } catch (error) {
-      console.error('Error marking as read:', error)
-    }
-  }
-
-  // Handle incoming real-time notifications
-  useEffect(() => {
-    if (realtimeNotifications.length > 0) {
-      // Refresh full list to keep sync or append locally
-      fetchNotifications()
-    }
-  }, [realtimeNotifications, fetchNotifications])
-
   // Initial fetch
   useEffect(() => {
     fetchUserData()
-    fetchNotifications()
-  }, [fetchUserData, fetchNotifications])
+  }, [fetchUserData])
 
   // Listen for profile update events to refresh header data
   useEffect(() => {
@@ -236,7 +184,6 @@ export function Header() {
     // Also refresh when window regains focus (user might have updated profile in another tab)
     const handleFocus = () => {
       fetchUserData()
-      fetchNotifications() // also refresh notifications
     }
     window.addEventListener('focus', handleFocus)
 
@@ -245,7 +192,7 @@ export function Header() {
       window.removeEventListener('open-notification-panel', handleOpenPanel)
       window.removeEventListener('focus', handleFocus)
     }
-  }, [fetchUserData, fetchNotifications])
+  }, [fetchUserData])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -269,8 +216,6 @@ export function Header() {
   const filteredNotifications = filter === "unread"
     ? notifications.filter(n => n.isUnread)
     : notifications
-
-  const unreadCount = notifications.filter(n => n.isUnread).length
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-neutral-50">
@@ -318,53 +263,48 @@ export function Header() {
                       Unread
                     </button>
                     <button
-                      onClick={async () => {
-                        try {
-                          setIsLoadingNotifications(true)
-                          await notificationApi.deleteRead()
-                          await fetchNotifications()
-                        } catch (error) {
-                          console.error('Error clearing read notifications:', error)
-                        } finally {
-                          setIsLoadingNotifications(false)
-                        }
+                      onClick={() => {
+                        clearNotifications();
+                        // Optional: Call API to clear all if needed
+                        // notificationApi.deleteRead().catch(console.error); 
                       }}
                       className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors ml-2"
-                      title="Clear all read notifications"
+                      title="Clear Notifications"
                     >
-                      Clear Read
+                      Clear
                     </button>
                   </div>
                 </div>
 
                 {/* Notifications List */}
                 <div className="overflow-y-auto flex-1">
-                  {isLoadingNotifications ? (
-                    <div className="p-8 text-center text-neutral-600">
-                      <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-r-transparent"></div>
-                    </div>
-                  ) : filteredNotifications.length === 0 ? (
+                  {filteredNotifications.length === 0 ? (
                     <div className="p-8 text-center text-neutral-600">
                       <p className="text-sm">No notifications</p>
                     </div>
                   ) : (
                     <div className="p-2">
                       {filteredNotifications.map((notification) => {
-                        const Icon = getNotificationIcon(notification.type)
-                        const iconBg = getNotificationIconBg(notification.type)
-                        const iconColor = getNotificationIconColor(notification.type)
+                        const Icon = getNotificationIcon(notification.type as any)
+                        const iconBg = getNotificationIconBg(notification.type as any)
+                        const iconColor = getNotificationIconColor(notification.type as any)
 
                         return (
                           <div
                             key={notification.id}
                             className={`p-3 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer mb-2 flex items-start gap-3 relative ${notification.isUnread ? 'bg-blue-50/50' : ''}`}
-                            onClick={(e) => {
+                            onClick={() => {
                               if (notification.isUnread) {
-                                handleMarkAsRead(notification.id, e)
+                                markAsRead(notification.id)
                               }
+                              // Handle redirects based on type
                               if (notification.type === 'application') {
                                 setIsNotificationsOpen(false)
                                 router.push('/candidates')
+                              }
+                              if (notification.type === 'job') {
+                                setIsNotificationsOpen(false)
+                                router.push('/jobs')
                               }
                             }}
                           >
@@ -389,7 +329,10 @@ export function Header() {
                             {/* Unread Indicator */}
                             {notification.isUnread && (
                               <button
-                                onClick={(e) => handleMarkAsRead(notification.id, e)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
                                 className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2 hover:scale-150 transition-transform"
                                 title="Mark as read"
                               ></button>
