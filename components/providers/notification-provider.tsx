@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import createEcho from '@/lib/echo'
 // @ts-ignore
 import { employerProfileApi } from '@/lib/api/profile'
+import { notificationApi } from '@/lib/api/notifications'
 // @ts-ignore
 import { useToast } from '@/components/ui/toast'
 
@@ -19,7 +20,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [notifications, setNotifications] = useState<any[]>([])
     const { info, success } = useToast() as any
 
+    const [realTimeAlertsEnabled, setRealTimeAlertsEnabled] = useState(true)
+
+    // Fetch settings to determine if real-time alerts are enabled
+    const fetchSettings = async () => {
+        try {
+            const response: any = await notificationApi.getSettings()
+            if (response.success && response.data && response.data.in_app_notifications) {
+                setRealTimeAlertsEnabled(!!response.data.in_app_notifications.real_time_alerts)
+            }
+        } catch (error) {
+            console.error('Failed to fetch notification settings:', error)
+        }
+    }
+
     useEffect(() => {
+        fetchSettings()
+
+        // Listen for settings updates
+        const handleSettingsUpdate = () => {
+            fetchSettings()
+        }
+        window.addEventListener('notificationSettingsUpdated', handleSettingsUpdate)
+
+        return () => {
+            window.removeEventListener('notificationSettingsUpdated', handleSettingsUpdate)
+        }
+    }, [])
+
+    useEffect(() => {
+        let echoInstance: any;
+
         const setupEcho = async () => {
             const token = localStorage.getItem('auth_token')
             if (!token) return
@@ -28,21 +59,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 const response: any = await employerProfileApi.getProfile()
 
                 if (response.success || (response.data && response.data.id)) {
-                    // Handle both response structures just in case
                     const data = response.success ? response.data : response
                     const userId = data.id
 
                     if (!userId) return
 
-                    const echo = createEcho(token)
+                    echoInstance = createEcho(token)
 
-                    // Listen to private channel
-                    console.log(`Subscribing to channel: user.${userId}`);
-                    const channel = echo.private(`user.${userId}`);
+                    console.log(`Subscribing to channel: user.${userId} with RealTimeAlerts: ${realTimeAlertsEnabled}`);
+                    const channel = echoInstance.private(`user.${userId}`);
 
                     channel
                         .listen('.job.application.received', (e: any) => {
-                            console.log('EVENT RECEIVED [.job.application.received]:', e);
+                            console.log('EVENT [.job.application.received]:', { event: e, alertsEnabled: realTimeAlertsEnabled });
+                            setNotifications(prev => [e, ...prev]);
+
+                            if (!realTimeAlertsEnabled) {
+                                console.log('Real-time alerts disabled, suppressing toast.');
+                                return;
+                            }
+
                             const title = e.title || (e.data && e.data.title) || 'New Notification';
                             const message = e.message || (e.data && e.data.message) || 'You have received a new notification.';
 
@@ -67,10 +103,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                                     )
                                 }
                             );
-                            setNotifications(prev => [e, ...prev]);
                         })
                         .listen('job.application.received', (e: any) => {
-                            console.log('EVENT RECEIVED [job.application.received]:', e);
+                            console.log('EVENT [job.application.received]:', { event: e, alertsEnabled: realTimeAlertsEnabled });
+                            setNotifications(prev => [e, ...prev]);
+
+                            if (!realTimeAlertsEnabled) {
+                                console.log('Real-time alerts disabled, suppressing toast.');
+                                return;
+                            }
+
                             const title = e.title || (e.data && e.data.title) || 'New Notification';
                             const message = e.message || (e.data && e.data.message) || 'You have received a new notification.';
 
@@ -95,22 +137,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                                     )
                                 }
                             );
-                            setNotifications(prev => [e, ...prev]);
                         })
                         .listen('.notification.sent', (e: any) => {
-                            console.log('EVENT RECEIVED [.notification.sent]:', e);
-                            info(e.title || "Notification", { description: e.message });
+                            if (realTimeAlertsEnabled) {
+                                info(e.title || "Notification", { description: e.message });
+                            }
                         })
                         .error((error: any) => {
                             console.error('Echo Channel Error:', error);
                         });
-
-                    // Cleanup function
-
-                    // Cleanup function
-                    return () => {
-                        echo.leave(`user.${userId}`)
-                    }
                 }
             } catch (error) {
                 console.error('Failed to setup notification listener:', error)
@@ -118,7 +153,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
 
         setupEcho()
-    }, [success, info])
+
+        return () => {
+            if (echoInstance) {
+                console.log('Disconnecting Echo instance');
+                echoInstance.disconnect();
+            }
+        }
+    }, [success, info, realTimeAlertsEnabled])
 
     return (
         <NotificationContext.Provider value={{ notifications }}>
