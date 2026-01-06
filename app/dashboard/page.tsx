@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { TokenHandler } from "@/components/auth/token-handler"
 import { Badge } from "@/components/ui/badge"
@@ -23,18 +23,25 @@ import {
   Activity,
   ChevronDown,
   Filter,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2
 } from "lucide-react"
+import { dashboardApi } from '@/lib/api'
 
+
+// Interfaces (kept as is)
 interface StatCard {
   title: string
-  value: string
+  value: string | number
   change: string
   changeType: "increase" | "decrease"
   icon: React.ElementType
   color: string
   description: string
 }
+
+// ... other interfaces kept or updated if needed
+
 
 interface RecentJob {
   id: number
@@ -56,68 +63,91 @@ interface RecentActivity {
   color: string
 }
 
-const stats: StatCard[] = [
-  {
-    title: "Active Jobs",
-    value: "12",
-    change: "+25%",
-    changeType: "increase",
-    icon: Briefcase,
-    color: "sky",
-    description: "Jobs currently live"
-  },
-  {
-    title: "Total Applications",
-    value: "248",
-    change: "+12%",
-    changeType: "increase",
-    icon: FileText,
-    color: "emerald",
-    description: "Applications received"
-  },
-  {
-    title: "New Candidates",
-    value: "45",
-    change: "+18%",
-    changeType: "increase",
-    icon: Users,
-    color: "violet",
-    description: "This week"
-  },
-  {
-    title: "Interview Scheduled",
-    value: "8",
-    change: "+37%",
-    changeType: "increase",
-    icon: Calendar,
-    color: "amber",
-    description: "Upcoming interviews"
-  }
-]
 
-const recentJobs: RecentJob[] = [
-  { id: 1, title: "ICU Nurse", jobId: "JOB-8X2KLM", applications: 24, status: "active", postedDate: "Sep 25, 2025" },
-  { id: 2, title: "Pediatric Nurse", jobId: "JOB-Q9Z4HT", applications: 18, status: "active", postedDate: "Sep 25, 2025" },
-  { id: 3, title: "ER Nurse", jobId: "JOB-K7M3LD", applications: 32, status: "paused", postedDate: "Sep 24, 2025" },
-  { id: 4, title: "Surgical Nurse", jobId: "JOB-V4TUP", applications: 15, status: "draft", postedDate: "Sep 23, 2025" },
-]
 
-const recentActivities: RecentActivity[] = [
-  { id: 1, type: "application", title: "Emma Johnson applied for ICU Nurse", user: "Emma J.", action: "applied for ICU Nurse", time: "2m ago", icon: FileText, color: "text-blue-600" },
-  { id: 2, type: "message", title: "New message from Michael", user: "Michael", action: "sent a message", time: "12m ago", icon: MessageCircle, color: "text-green-600" },
-  { id: 3, type: "interview", title: "Interview scheduled with Ria for Pediatric Nurse", user: "Ria K.", action: "interview scheduled", time: "1h ago", icon: Calendar, color: "text-purple-600" },
-]
-
-const applicationStats = [
-  { name: 'New Applications', status: 'Processing', fill: 45, color: 'sky', value: 45 },
-  { name: 'Shortlisted', status: 'In Review', fill: 62, color: 'amber', value: 28 },
-  { name: 'Interviewing', status: 'Active', fill: 27, color: 'violet', value: 12 },
-  { name: 'Hired', status: 'Complete', fill: 18, color: 'emerald', value: 8 },
-]
-
-export default function DashboardPage() {
+const DashboardPage = () => {
   const [isDateMenuOpen, setIsDateMenuOpen] = useState(false)
   const [selectedRange, setSelectedRange] = useState('Last 7 Days')
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<any>({
+    stats: {
+      active_jobs: 0,
+      total_applications: 0,
+      new_candidates: 0,
+      interviews_scheduled: 0
+    },
+    recent_jobs: [],
+    application_pipeline: [],
+    recent_activities: [],
+    traffic: []
+  })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response: any = await dashboardApi.getDashboardStats()
+        if (response.success) {
+          setData(response.data)
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const statsCards: StatCard[] = [
+    {
+      title: "Active Jobs",
+      value: data.stats.active_jobs,
+      change: "+0%", // Needs comparison data
+      changeType: "increase",
+      icon: Briefcase,
+      color: "sky",
+      description: "Jobs currently live"
+    },
+    {
+      title: "Total Applications",
+      value: data.stats.total_applications,
+      change: "+0%",
+      changeType: "increase",
+      icon: FileText,
+      color: "emerald",
+      description: "Applications received"
+    },
+    {
+      title: "New Candidates",
+      value: data.stats.new_candidates,
+      change: "+0%",
+      changeType: "increase",
+      icon: Users,
+      color: "violet",
+      description: "This week"
+    },
+    {
+      title: "Interview Scheduled",
+      value: data.stats.interviews_scheduled,
+      change: "+0%",
+      changeType: "increase",
+      icon: Calendar,
+      color: "amber",
+      description: "Upcoming interviews"
+    }
+  ]
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
+        </div>
+      </DashboardLayout>
+    )
+  }
+
 
   return (
     <DashboardLayout>
@@ -171,7 +201,8 @@ export default function DashboardPage() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => {
+          {statsCards.map((stat, index) => {
+
             const Icon = stat.icon
             return (
               <div key={index} className="group bg-white p-4 rounded-2xl border border-neutral-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-sky-500/5 transition-all duration-300">
@@ -258,7 +289,8 @@ export default function DashboardPage() {
                 </Link>
               </div>
               <div className="space-y-2.5">
-                {recentJobs.map((job) => (
+                {data.recent_jobs.map((job: any) => (
+
                   <Link key={job.id} href="/jobs" className="block">
                     <div className="flex items-center justify-between p-3 bg-neutral-50/50 hover:bg-neutral-50 rounded-xl transition-all border border-transparent hover:border-neutral-100">
                       <div className="flex items-center gap-3">
@@ -285,6 +317,7 @@ export default function DashboardPage() {
                     </div>
                   </Link>
                 ))}
+
               </div>
             </div>
           </div>
@@ -297,19 +330,28 @@ export default function DashboardPage() {
                 Activity Pulse <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
               </h2>
               <div className="space-y-4">
-                {recentActivities.map((activity) => (
-                  <div key={activity.id} className="flex gap-3 group">
-                    <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[10px] font-bold text-neutral-400 group-hover:text-emerald-400 transition-colors">
-                      {activity.user[0]}
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium leading-tight">
-                        <span className="font-bold">{activity.user}</span> {activity.action}
-                      </p>
-                      <p className="text-[9px] font-bold text-neutral-500 uppercase mt-0.5 tracking-wider">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
+                <div className="space-y-4">
+                  {data.recent_activities.length > 0 ? (
+                    data.recent_activities.map((activity: any) => {
+                      const Icon = activity.type === 'message' ? MessageCircle : activity.type === 'interview' ? Calendar : FileText
+                      return (
+                        <div key={activity.id} className="flex gap-3 group">
+                          <div className="w-7 h-7 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[10px] font-bold text-neutral-400 group-hover:text-emerald-400 transition-colors">
+                            {activity.user[0]}
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium leading-tight">
+                              <span className="font-bold">{activity.user}</span> {activity.action}
+                            </p>
+                            <p className="text-[9px] font-bold text-neutral-500 uppercase mt-0.5 tracking-wider">{activity.time}</p>
+                          </div>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <p className="text-xs text-neutral-400">No recent activity</p>
+                  )}
+                </div>
               </div>
               <Link href="/candidates">
                 <button className="w-full mt-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition-all border border-white/10 uppercase tracking-wider">
@@ -322,7 +364,7 @@ export default function DashboardPage() {
             <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm p-5">
               <h2 className="text-sm font-bold text-neutral-900 mb-4 tracking-tight">Application Pipeline</h2>
               <div className="space-y-3">
-                {applicationStats.map((stat, i) => (
+                {data.application_pipeline.map((stat: any, i: number) => (
                   <div key={i} className="space-y-1.5">
                     <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
                       <span className="text-neutral-500">{stat.name}</span>
@@ -392,3 +434,6 @@ export default function DashboardPage() {
     </DashboardLayout>
   )
 }
+
+export default DashboardPage
+
