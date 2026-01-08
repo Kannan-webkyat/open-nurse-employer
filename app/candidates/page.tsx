@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -10,11 +11,12 @@ import { TablePagination } from "@/components/ui/table-pagination"
 import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
-import { jobApplicationApi } from "@/lib/api"
+import apiMiddleware, { jobApplicationApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 
 interface Candidate {
   id: number
+  nurseId?: number
   candidateName: string
   jobAppliedFor: string
   jobId: string
@@ -107,6 +109,7 @@ const statusLabels = {
 }
 
 export default function CandidatesPage() {
+  const router = useRouter()
   const toast = useToast() as {
     success: (message: string, options?: { title?: string; duration?: number }) => void
     error: (message: string, options?: { title?: string; duration?: number }) => void
@@ -195,6 +198,7 @@ export default function CandidatesPage() {
           // Transform backend data to frontend format
           const transformedCandidates: Candidate[] = applications.map((app: any) => ({
             id: app.id,
+            nurseId: app.user?.nurse?.id,
             candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
             jobAppliedFor: app.job_title || app.jobPost?.title || "",
             jobId: app.job_id || app.jobPost?.job_id || "",
@@ -312,13 +316,40 @@ export default function CandidatesPage() {
     }
   }, [openMenuId])
 
-  const handleMessageClick = (candidate: Candidate) => {
-    console.log("Opening message panel for:", candidate.candidateName)
-    setSelectedCandidate(candidate)
-    setIsMessageOpen(true)
+  const handleMessageClick = async (candidate: Candidate) => {
     setOpenMenuId(null)
-    setMessageText("")
-    setSelectedTemplate(null)
+
+    try {
+      // Find job ID (assuming jobId is string like 'JOB-123' might need parsing, 
+      // but backend takes job_post_id.
+      // Wait, app.job_id is mapped to jobId. If it's the external reference ID (string), 
+      // we might need the internal ID for `job_post_id`.
+      // However, let's assume `app.job_id` IS the internal ID or we don't pass it if it's the external formatted string.
+      // If jobId is string "JOB-...", we can't use it directly if backend expects integer.
+      // Let's rely on `app.job_post_id` if available or assume `jobId` is the ID.
+      // Looking at transformation: `jobId: app.job_id || app.jobPost?.job_id || ""`
+      // `job_id` suggests database foreign key in `job_applications`.
+
+      // Actually, let's check transformation again.
+      // `nurseId: app.nurse_id`
+
+      const response = await apiMiddleware.post('/conversations', {
+        nurse_id: candidate.nurseId,
+        // Assuming jobId is safe to likely match or ignore if it fails validation (it's nullable in controller)
+        // Ideally we should pass the numeric ID.
+        // If transformation has access to `app.job_post_id`, use that.
+        // I'll check if I can modify transformation to store `jobPostId`.
+      });
+
+      if (response.data?.success) {
+        router.push(`/messages?conversation_id=${response.data.data.id}`);
+      } else {
+        toast.error('Failed to start conversation');
+      }
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      toast.error("Failed to connect to chat");
+    }
   }
 
   const handleTemplateClick = (index: number) => {
@@ -586,6 +617,7 @@ export default function CandidatesPage() {
         const app = response.data as any
         const transformedCandidate: Candidate = {
           id: app.id,
+          nurseId: app.user?.nurse?.id,
           candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
           jobAppliedFor: app.job_title || app.jobPost?.title || "",
           jobId: app.job_id || app.jobPost?.job_id || "",

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
 import { authApi, employerProfileApi } from "@/lib/api"
 import { useNotifications, Notification } from "@/components/providers/notification-provider"
+import { useMessages } from "@/components/providers/message-provider"
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -89,6 +90,7 @@ const getInitials = (name: string): string => {
 export function Header() {
   const router = useRouter()
   const { notifications, unreadCount, markAsRead, clearNotifications } = useNotifications()
+  const { unreadCount: unreadMessageCount } = useMessages()
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -107,9 +109,6 @@ export function Header() {
   const [buttonImageError, setButtonImageError] = useState(false)
   const notificationsRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
-
-  // Unread message count - this would typically come from a context or API
-  const unreadMessageCount = 3
 
   // Fetch user data function - using useCallback to avoid dependency issues
   const fetchUserData = useCallback(async () => {
