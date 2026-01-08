@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import apiMiddleware, { chatApi } from '@/lib/api'
 import Echo from '@/lib/echo'
+import { useUser } from '@/components/providers/user-provider'
 
 interface MessageContextType {
     unreadCount: number
@@ -50,27 +51,16 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
         updateUnreadCount()
     }, [updateUnreadCount])
 
+    const { user } = useUser()
+
     // Listen for real-time message events
     useEffect(() => {
         const token = localStorage.getItem('auth_token')
         if (!token) return
 
-        let userId: number | null = null;
-        try {
-            if (token.split('.').length === 3) {
-                userId = JSON.parse(atob(token.split('.')[1])).sub
-            }
-        } catch (e) { }
+        const userId = user?.id
 
         const setupEcho = async () => {
-            if (!userId) {
-                try {
-                    const userRes = await apiMiddleware.get('/user')
-                    if (userRes.data?.data?.id) userId = userRes.data.data.id
-                    else if (userRes.data?.id) userId = userRes.data.id
-                } catch (e) { return }
-            }
-
             console.log("MessageProvider: Setup Echo for UserID:", userId);
 
             if (!userId) return
@@ -114,7 +104,7 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
 
         setupEcho()
 
-    }, [incrementUnreadCount, activeConversationId]) // Re-run when activeConversationId changes
+    }, [incrementUnreadCount, activeConversationId, user]) // Re-run when activeConversationId or user changes
 
     return (
         <MessageContext.Provider value={{ unreadCount, updateUnreadCount, incrementUnreadCount, decrementUnreadCount, activeConversationId, setActiveConversationId }}>

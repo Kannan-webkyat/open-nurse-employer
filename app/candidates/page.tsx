@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
-import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck } from "lucide-react"
+import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
@@ -24,6 +24,8 @@ interface Candidate {
   status: "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "interviewed" | "rejected" | "hired"
   applyDate: string
   location: string
+  interviewAt?: string
+  meetingLink?: string
   // Additional application details
   email?: string
   contactNumber?: string
@@ -132,6 +134,7 @@ export default function CandidatesPage() {
     applyDateTo: "",
   })
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 })
   const [isMessageOpen, setIsMessageOpen] = useState(false)
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
   const [messageText, setMessageText] = useState("")
@@ -207,6 +210,8 @@ export default function CandidatesPage() {
             status: mapStatus(app.status),
             applyDate: formatDate(app.submitted_at || app.created_at),
             location: app.location || app.jobPost?.location || "",
+            interviewAt: app.interview_at,
+            meetingLink: app.meeting_link,
           }))
 
           setCandidates(transformedCandidates)
@@ -509,11 +514,45 @@ export default function CandidatesPage() {
     })
   }
 
+  const handleEditInterview = (candidate: Candidate) => {
+    setCandidateToAction(candidate)
+    setOpenMenuId(null) // just in case
+
+    // Pre-fill form data if exists
+    if (candidate.interviewAt) {
+      const dateObj = new Date(candidate.interviewAt);
+      // Format YYYY-MM-DD
+      const dateStr = dateObj.toISOString().split('T')[0];
+      // Format HH:MM
+      const timeStr = dateObj.toTimeString().slice(0, 5);
+
+      setInterviewFormData({
+        date: dateStr,
+        time: timeStr,
+        meetingUrl: candidate.meetingLink || "",
+      })
+    } else {
+      setInterviewFormData({
+        date: "",
+        time: "",
+        meetingUrl: "https://meet.google.com/new", // Default or empty
+      })
+    }
+
+    // Close view modal if open
+    setIsViewModalOpen(false)
+    setIsInterviewModalOpen(true)
+  }
+
   const handleInterviewSubmit = async () => {
     if (candidateToAction && interviewFormData.date && interviewFormData.time && interviewFormData.meetingUrl) {
       try {
-        const backendStatus = mapStatusToBackend('interviewing')
-        const response = await jobApplicationApi.updateStatus(candidateToAction.id, backendStatus as any)
+        const interviewDateTime = `${interviewFormData.date} ${interviewFormData.time}:00`
+        const payload = {
+          interview_at: interviewDateTime,
+          meeting_link: interviewFormData.meetingUrl
+        }
+        const response = await jobApplicationApi.scheduleInterview(candidateToAction.id, payload)
 
         if (response.success) {
           toast.success('Interview scheduled successfully!', {
@@ -818,7 +857,9 @@ export default function CandidatesPage() {
                 </TableRow>
               ) : (
                 paginatedCandidates.map((candidate, index) => (
-                  <TableRow key={candidate.id}>
+                  <TableRow
+                    key={candidate.id}
+                  >
                     <TableCell className="text-neutral-800">
                       {(currentPage - 1) * rowsPerPage + index + 1}
                     </TableCell>
@@ -832,9 +873,26 @@ export default function CandidatesPage() {
                       {candidate.jobId}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
-                        {statusLabels[candidate.status]}
-                      </Badge>
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
+                          {statusLabels[candidate.status]}
+                        </Badge>
+                        {candidate.status === 'interviewing' && candidate.interviewAt && (
+                          (() => {
+                            const interviewDate = new Date(candidate.interviewAt);
+                            const today = new Date();
+                            if (interviewDate.toDateString() === today.toDateString()) {
+                              return (
+                                <div className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                                  <AlertCircle className="w-3 h-3" />
+                                  <span>Today {interviewDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3 relative">
@@ -919,11 +977,26 @@ export default function CandidatesPage() {
                             View
                           </span>
                         </button>
-                        <div className="relative z-[9999]" ref={menuRef}>
+                        <div className="relative" ref={menuRef}>
                           <button
                             className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors group relative"
                             title="More options"
-                            onClick={() => setOpenMenuId(openMenuId === candidate.id ? null : candidate.id)}
+                            onClick={(e) => {
+                              if (openMenuId === candidate.id) {
+                                setOpenMenuId(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                // Calculate position: align right edge with button right edge, top below button
+                                const top = rect.bottom + window.scrollY + 4; // Add scrollY? No, for fixed we don't add scrollY.
+                                // Wait, if using fixed, use rect.bottom directly.
+                                // Warning: parent might be transformed? If parent has transform, fixed behaves like absolute.
+                                // Previous hack added transform to TR. We should REMOVE that.
+
+                                // Let's use Fixed and rect.bottom.
+                                setMenuPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                                setOpenMenuId(candidate.id);
+                              }
+                            }}
                           >
                             <MoreVertical className="w-4 h-4" />
                             <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
@@ -932,7 +1005,8 @@ export default function CandidatesPage() {
                           </button>
                           {openMenuId === candidate.id && (
                             <div
-                              className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-[9999] py-1"
+                              className="fixed w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-[9999] py-1"
+                              style={{ top: menuPosition.top, right: menuPosition.right }}
                               onClick={(e) => e.stopPropagation()}
                             >
                               {/* Message - always available */}
@@ -958,6 +1032,22 @@ export default function CandidatesPage() {
                                 >
                                   <Check className="w-4 h-4" />
                                   Shortlist
+                                </button>
+                              )}
+
+                              {/* View Interview - only for interviewing status */}
+                              {candidate.status === 'interviewing' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    setViewCandidate(candidate)
+                                    setIsViewModalOpen(true)
+                                    setOpenMenuId(null)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                  View Interview
                                 </button>
                               )}
 
@@ -1390,6 +1480,50 @@ export default function CandidatesPage() {
                 </div>
               </div>
 
+              {/* Interview Details Section */}
+              {viewCandidate.status === 'interviewing' && viewCandidate.interviewAt && (
+                <div className="border-t border-neutral-200 pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-neutral-900">Interview Details</h3>
+                    <button
+                      onClick={() => handleEditInterview(viewCandidate)}
+                      className="p-1.5 text-neutral-500 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors"
+                      title="Edit Interview"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-neutral-600">Scheduled At</label>
+                      <p className="text-sm text-neutral-900 mt-1">
+                        {new Date(viewCandidate.interviewAt).toLocaleString([], {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-neutral-600">Meeting Link</label>
+                      <p className="text-sm mt-1">
+                        <a
+                          href={viewCandidate.meetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sky-600 hover:text-sky-700 hover:underline break-all"
+                        >
+                          {viewCandidate.meetingLink}
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Personal Information Section */}
               {(viewCandidate.email || viewCandidate.contactNumber) && (
                 <div className="border-t border-neutral-200 pt-6">
@@ -1635,6 +1769,6 @@ export default function CandidatesPage() {
           </Modal>
         )}
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   )
 }

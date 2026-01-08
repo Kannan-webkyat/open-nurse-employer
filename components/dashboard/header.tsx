@@ -5,9 +5,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
-import { authApi, employerProfileApi } from "@/lib/api"
+import { authApi } from "@/lib/api"
 import { useNotifications, Notification } from "@/components/providers/notification-provider"
 import { useMessages } from "@/components/providers/message-provider"
+import { useUser } from "@/components/providers/user-provider"
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -91,6 +92,7 @@ export function Header() {
   const router = useRouter()
   const { notifications, unreadCount, markAsRead, clearNotifications } = useNotifications()
   const { unreadCount: unreadMessageCount } = useMessages()
+  const { user, isLoading: isLoadingUser, logout, refreshUser } = useUser()
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -104,71 +106,51 @@ export function Header() {
     userInitials: string
     companyLogo: string | null
   } | null>(null)
-  const [isLoadingUser, setIsLoadingUser] = useState(true)
+
   const [imageError, setImageError] = useState(false)
   const [buttonImageError, setButtonImageError] = useState(false)
   const notificationsRef = useRef<HTMLDivElement>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
-  // Fetch user data function - using useCallback to avoid dependency issues
-  const fetchUserData = useCallback(async () => {
-    try {
-      setImageError(false) // Reset image error state
-      setButtonImageError(false) // Reset button image error state
-      const response = await employerProfileApi.getProfile()
-      if (response.success && response.data) {
-        const user = response.data as any
-        const employer = user.employer || {}
-
-        // Get company name or fallback to user name
-        const companyName = employer.company_name || user.name || 'Company'
-        const hiringPersonName = employer.hiring_person_name || user.name || 'User'
-
-        // Use company name for display, fallback to hiring person name
-        const displayName = companyName || hiringPersonName
-
-        // Construct company logo URL if exists
-        let companyLogoUrl = null
-        if (employer.company_logo) {
-          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
-          companyLogoUrl = `${apiBaseUrl}/storage/${employer.company_logo}`
-          // Add timestamp to force refresh if image was just updated
-          companyLogoUrl += `?t=${Date.now()}`
-        }
-
-        setUserData({
-          companyName: companyName,
-          hiringPersonName: hiringPersonName,
-          userName: displayName,
-          userInitials: getInitials(displayName),
-          companyLogo: companyLogoUrl
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching user data:', error)
-      // Set fallback values
-      setUserData({
-        companyName: 'Company',
-        hiringPersonName: 'User',
-        userName: 'User',
-        userInitials: 'U',
-        companyLogo: null
-      })
-    } finally {
-      setIsLoadingUser(false)
-    }
-  }, [])
-
-  // Initial fetch
+  // Map user data from context
   useEffect(() => {
-    fetchUserData()
-  }, [fetchUserData])
+    if (user) {
+      setImageError(false)
+      setButtonImageError(false)
+
+      const employer = (user.employer || {}) as any
+
+      // Get company name or fallback to user name
+      const companyName = employer.company_name || user.name || 'Company'
+      const hiringPersonName = employer.hiring_person_name || user.name || 'User'
+
+      // Use company name for display, fallback to hiring person name
+      const displayName = companyName || hiringPersonName
+
+      // Construct company logo URL if exists
+      let companyLogoUrl = null
+      if (employer.company_logo) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
+        companyLogoUrl = `${apiBaseUrl}/storage/${employer.company_logo}`
+        // Add timestamp to force refresh if image was just updated
+        companyLogoUrl += `?t=${Date.now()}` // Ideally this should be based on something stable or just rely on new fetching if updated
+      }
+
+      setUserData({
+        companyName: companyName,
+        hiringPersonName: hiringPersonName,
+        userName: displayName,
+        userInitials: getInitials(displayName),
+        companyLogo: companyLogoUrl
+      })
+    }
+  }, [user])
 
   // Listen for profile update events to refresh header data
   useEffect(() => {
     const handleProfileUpdate = () => {
       console.log('Profile updated event received, refreshing header...')
-      fetchUserData()
+      refreshUser()
     }
 
     // Listen for custom event when profile is updated
@@ -180,18 +162,11 @@ export function Header() {
     }
     window.addEventListener('open-notification-panel', handleOpenPanel)
 
-    // Also refresh when window regains focus (user might have updated profile in another tab)
-    const handleFocus = () => {
-      fetchUserData()
-    }
-    window.addEventListener('focus', handleFocus)
-
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate)
       window.removeEventListener('open-notification-panel', handleOpenPanel)
-      window.removeEventListener('focus', handleFocus)
     }
-  }, [fetchUserData])
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -445,12 +420,7 @@ export function Header() {
                         // Even if API call fails, clear local storage and redirect
                         console.error('Logout error:', error)
                       } finally {
-                        // Clear token from localStorage
-                        localStorage.removeItem('auth_token')
-
-                        // Redirect to login page
-                        const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3001/signin'
-                        window.location.href = `${loginUrl}?role=employer`
+                        logout()
                       }
                     }}
                     disabled={isLoggingOut}
