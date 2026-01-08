@@ -3,19 +3,20 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Users, 
-  FileText, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
   HelpCircle,
   ChevronDown,
   ChevronRight,
   MessageCircle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useMessages } from "@/components/providers/message-provider"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -39,6 +40,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const isSettingsActive = pathname?.startsWith("/settings")
   const [isSettingsOpen, setIsSettingsOpen] = useState(isSettingsActive)
+  const { unreadCount } = useMessages()
 
   useEffect(() => {
     setIsSettingsOpen(isSettingsActive)
@@ -49,10 +51,10 @@ export function Sidebar() {
       <nav className="p-4">
         <ul className="space-y-2">
           {menuItems.map((item) => {
-            const isActive = pathname === item.href || 
+            const isActive = pathname === item.href ||
               (item.href !== "/dashboard" && pathname?.startsWith(item.href))
             const Icon = item.icon
-            
+
             return (
               <li key={item.href}>
                 <Link
@@ -64,8 +66,13 @@ export function Sidebar() {
                       : "text-neutral-700 hover:bg-neutral-50"
                   )}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-5 h-5 flex-shrink-0" />
                   <span className="flex-1">{item.label}</span>
+                  {item.label === "Messages" && unreadCount > 0 && (
+                    <span className="bg-sky-600 text-white text-[10px] font-bold px-1.5 py-0.5 min-w-[18px] text-center rounded-full mr-1">
+                      {unreadCount}
+                    </span>
+                  )}
                   {isActive && (
                     <div className="w-2 h-2 bg-sky-600 rounded-full" />
                   )}
@@ -73,7 +80,7 @@ export function Sidebar() {
               </li>
             )
           })}
-          
+
           {/* Settings with Sub-menu */}
           <li>
             <button
@@ -106,8 +113,8 @@ export function Sidebar() {
                           isSubActive
                             ? "bg-sky-50 text-sky-600 font-medium"
                             : subItem.isDestructive
-                            ? "text-red-600 hover:bg-red-50"
-                            : "text-neutral-700 hover:bg-neutral-50"
+                              ? "text-red-600 hover:bg-red-50"
+                              : "text-neutral-700 hover:bg-neutral-50"
                         )}
                       >
                         <span>{subItem.label}</span>

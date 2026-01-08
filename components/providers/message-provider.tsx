@@ -9,59 +9,28 @@ interface MessageContextType {
     updateUnreadCount: () => Promise<void>
     incrementUnreadCount: () => void
     decrementUnreadCount: (count?: number) => void
+    activeConversationId: number | null
+    setActiveConversationId: (id: number | null) => void
 }
 
 const MessageContext = createContext<MessageContextType | undefined>(undefined)
 
 export function MessageProvider({ children }: { children: React.ReactNode }) {
     const [unreadCount, setUnreadCount] = useState(0)
+    const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
 
     const updateUnreadCount = useCallback(async () => {
         try {
             const token = localStorage.getItem('auth_token')
             if (!token) return
 
-            // Get user ID from API if possible, or assume the conversations endpoint logic filters correctly
-            // We need the ID for client-side filtering of our own messages
-            // Since we can't reliably decode the token (might not be JWT), let's fetch user profile
-            // Optimally, we should store userId in localStorage on login, but for now:
+            // Simplified user ID check not strictly needed for just fetching the count authenticated
+            // but the provider logic used it for filtering.
+            // With the new endpoint, we just call it.
 
-            // For now, let's rely on the fact that conversation messages have sender_id.
-            // If we don't have the current user ID, we can't filter out our own messages accurately for unread count
-            // UNLESS the unread count logic in backend handles it?
-            // The frontend logic performs: msg.sender_id !== userId.
-
-            // Let's fetch the user first
-            // We can use a simple cached approach or just fetch it.
-            let userId: number | null = null;
-            try {
-                // Try to decode if it LOOKS like a JWT (3 parts)
-                if (token.split('.').length === 3) {
-                    userId = JSON.parse(atob(token.split('.')[1])).sub
-                }
-            } catch (e) {
-                // Ignore decode error
-            }
-
-            // If still null, try fetching (or maybe we can skip this and rely on backend response if we adjust api?)
-            // But we need it for real-time check too. 
-            // Let's try to get it from apiMiddleware.get('/user')
-            if (!userId) {
-                const userRes = await apiMiddleware.get('/user')
-                if (userRes.data?.data?.id) userId = userRes.data.data.id
-                else if (userRes.data?.id) userId = userRes.data.id
-            }
-
-            if (!userId) return // Can't calculate without user ID
-
-            const response = await chatApi.getConversations()
-            if (response.success && response.data) {
-                const conversations = response.data as any[]
-                const totalUnread = conversations.reduce((count, conv) => {
-                    // Use the count provided by the backend query
-                    return count + (conv.unread_messages_count || 0)
-                }, 0)
-                setUnreadCount(totalUnread)
+            const response = await apiMiddleware.get('/conversations/unread-count')
+            if (response.data?.success) {
+                setUnreadCount(response.data.count)
             }
         } catch (error) {
             console.error('Error fetching unread count:', error)
@@ -102,20 +71,42 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
                 } catch (e) { return }
             }
 
+            console.log("MessageProvider: Setup Echo for UserID:", userId);
+
             if (!userId) return
 
-            const echo = Echo()
+            const echo = Echo(token) // Pass token here
             if (echo) {
-                const channel = echo.private(`user.${userId}`)
+                const channelName = `user.${userId}`;
+                console.log("MessageProvider: Subscribing to", channelName);
+                const channel = echo.private(channelName)
 
                 channel.listen('MessageSent', (data: any) => {
+                    console.log("MessageProvider: MessageSent received", data);
                     // If message is from someone else, increment unread count
+                    // CHECK: If this conversation is currently active, DO NOT increment.
                     if (data.message.sender_id !== userId) {
-                        incrementUnreadCount()
+                        console.log("MessageProvider: Sender is not us. ActiveConv:", activeConversationId, "MsgConv:", data.message.conversation_id);
+                        // We will fix the closure issue by verifying against a value tracked in a ref (which we need to add)
+                        // OR just adding activeConversationId to dependency array. Re-subscribing is fine.
+                        // Actually re-subscribing to a PRIVATE channel "user.{id}" repeatedly is handled by Echo/Pusher efficiently?
+                        // Usually it's better to avoid it.
+                        // Let's use functional update or ref?
+                        // Functional update of setUnreadCount can't calculate "should increment" based on external state easily 
+                        // unless that state is inside the callback.
+
+                        // Let's assume we re-run effect when `activeConversationId` changes.
+                        if (data.message.conversation_id !== activeConversationId) {
+                            console.log("MessageProvider: Incrementing unread count");
+                            incrementUnreadCount()
+                        } else {
+                            console.log("MessageProvider: Skipped increment (Active Chat)");
+                        }
                     }
                 })
 
                 return () => {
+                    console.log("MessageProvider: Unsubscribing");
                     channel.stopListening('MessageSent')
                 }
             }
@@ -123,10 +114,10 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
 
         setupEcho()
 
-    }, [incrementUnreadCount])
+    }, [incrementUnreadCount, activeConversationId]) // Re-run when activeConversationId changes
 
     return (
-        <MessageContext.Provider value={{ unreadCount, updateUnreadCount, incrementUnreadCount, decrementUnreadCount }}>
+        <MessageContext.Provider value={{ unreadCount, updateUnreadCount, incrementUnreadCount, decrementUnreadCount, activeConversationId, setActiveConversationId }}>
             {children}
         </MessageContext.Provider>
     )

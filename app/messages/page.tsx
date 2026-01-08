@@ -67,7 +67,12 @@ export default function MessagesPage() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { decrementUnreadCount } = useMessages()
+  const { decrementUnreadCount, setActiveConversationId, updateUnreadCount } = useMessages()
+
+  // Sync active conversation ID with Provider
+  useEffect(() => {
+    setActiveConversationId(selectedConversation?.id || null)
+  }, [selectedConversation, setActiveConversationId])
 
   const handleConversationSelect = async (conv: Conversation) => {
     setSelectedConversation(conv)
