@@ -20,6 +20,7 @@ interface Candidate {
   candidateName: string
   jobAppliedFor: string
   jobId: string
+  jobPostId?: number
   status: "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "interviewed" | "rejected" | "hired"
   applyDate: string
   location: string
@@ -202,6 +203,7 @@ export default function CandidatesPage() {
             candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
             jobAppliedFor: app.job_title || app.jobPost?.title || "",
             jobId: app.job_id || app.jobPost?.job_id || "",
+            jobPostId: app.job_post_id || app.jobPost?.id,
             status: mapStatus(app.status),
             applyDate: formatDate(app.submitted_at || app.created_at),
             location: app.location || app.jobPost?.location || "",
@@ -335,10 +337,7 @@ export default function CandidatesPage() {
 
       const response = await apiMiddleware.post('/conversations', {
         nurse_id: candidate.nurseId,
-        // Assuming jobId is safe to likely match or ignore if it fails validation (it's nullable in controller)
-        // Ideally we should pass the numeric ID.
-        // If transformation has access to `app.job_post_id`, use that.
-        // I'll check if I can modify transformation to store `jobPostId`.
+        job_post_id: candidate.jobPostId
       });
 
       if (response.data?.success) {

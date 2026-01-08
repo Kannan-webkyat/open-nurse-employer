@@ -462,6 +462,13 @@ export default function MessagesPage() {
                             </div>
                           </div>
 
+
+                          {conv.job_post?.title && (
+                            <p className={`text-[11px] font-medium mb-0.5 truncate ${isSelected ? "text-sky-600" : "text-neutral-500"}`}>
+                              <span className="opacity-75">App:</span> {conv.job_post.title}
+                            </p>
+                          )}
+
                           <p className={`text-xs line-clamp-1 break-all ${isSelected ? "text-sky-700 font-medium" : "text-neutral-500"
                             }`}>
                             {lastMessage?.sender_id === userId && <span className="mr-1">You:</span>}
@@ -694,6 +701,6 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayout >
   )
 }
