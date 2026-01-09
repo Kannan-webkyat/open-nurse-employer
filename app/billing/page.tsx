@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -121,7 +122,12 @@ export default function BillingPage() {
           <div className="grid grid-cols-3 gap-6 p-6">
             <div>
               <p className="text-sm text-neutral-600 mb-1">Plan</p>
-              <p className="text-base font-medium text-neutral-900">Premium</p>
+              <div className="flex items-center gap-2">
+                <p className="text-base font-medium text-neutral-900">Premium</p>
+                <Link href="/plans" className="text-xs text-sky-600 hover:text-sky-700 font-medium">
+                  Change
+                </Link>
+              </div>
             </div>
             <div>
               <p className="text-sm text-neutral-600 mb-1">Active Nurse Slots</p>
