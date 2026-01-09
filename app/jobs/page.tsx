@@ -9,7 +9,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { TablePagination } from "@/components/ui/table-pagination"
 import { Modal } from "@/components/ui/modal"
 import { AlertDialog } from "@/components/ui/alert-dialog"
-import { Search, Filter, Eye, Pencil, Trash2, X } from "lucide-react"
+import { Search, Filter, Eye, Pencil, Trash2, X, Copy } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
@@ -18,6 +18,7 @@ interface Job {
   id: number
   title: string
   job_id: string
+  location: string
   employment_type: string
   posted_date: string
   closed_date: string
@@ -297,26 +298,26 @@ export default function JobsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
-                <TableHead>Job Title</TableHead>
                 <TableHead>Job ID</TableHead>
+                <TableHead>Job Title</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Employment Type</TableHead>
                 <TableHead>Posted Date</TableHead>
                 <TableHead>Closed Date</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Approval</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
+                  <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : paginatedJobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
+                  <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
                     No jobs found
                   </TableCell>
                 </TableRow>
@@ -327,10 +328,25 @@ export default function JobsPage() {
                       {(currentPage - 1) * rowsPerPage + index + 1}
                     </TableCell>
                     <TableCell className="text-neutral-800">
+                      <div className="flex items-center gap-2 group">
+                        <span className="font-mono text-sm">{job.job_id}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(job.job_id)
+                            toast.success('Job ID copied!')
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-neutral-100 rounded transition-all text-neutral-400 hover:text-neutral-600"
+                          title="Copy Job ID"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
                       {job.title}
                     </TableCell>
                     <TableCell className="text-neutral-800">
-                      {job.job_id}
+                      {job.location || "N/A"}
                     </TableCell>
                     <TableCell className="text-neutral-800">
                       {job.employment_type}
@@ -342,14 +358,15 @@ export default function JobsPage() {
                       {formatDate(job.closed_date)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusVariantMap[job.status]}>
-                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={adminStatusVariantMap[job.admin_status] || "default"}>
-                        {job.admin_status ? job.admin_status.charAt(0).toUpperCase() + job.admin_status.slice(1) : 'Pending'}
-                      </Badge>
+                      {job.admin_status === 'hidden' ? (
+                         <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                            Hidden by Admin
+                         </Badge>
+                      ) : (
+                         <Badge variant={statusVariantMap[job.status]}>
+                            {job.status === 'active' ? 'Website Listed' : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                         </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -445,19 +462,18 @@ export default function JobsPage() {
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Status</label>
                     <div className="mt-1">
-                      <Badge variant={statusVariantMap[selectedJob.status]}>
-                        {selectedJob.status.charAt(0).toUpperCase() + selectedJob.status.slice(1)}
-                      </Badge>
+                      {selectedJob.admin_status === 'hidden' ? (
+                         <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                            Hidden by Admin
+                         </Badge>
+                      ) : (
+                         <Badge variant={statusVariantMap[selectedJob.status]}>
+                            {selectedJob.status === 'active' ? 'Website Listed' : selectedJob.status.charAt(0).toUpperCase() + selectedJob.status.slice(1)}
+                         </Badge>
+                      )}
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-neutral-600">Approval</label>
-                    <div className="mt-1">
-                      <Badge variant={adminStatusVariantMap[selectedJob.admin_status] || "default"}>
-                        {selectedJob.admin_status ? selectedJob.admin_status.charAt(0).toUpperCase() + selectedJob.admin_status.slice(1) : 'Pending'}
-                      </Badge>
-                    </div>
-                  </div>
+
                 </div>
               </div>
 

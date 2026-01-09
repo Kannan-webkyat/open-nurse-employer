@@ -27,6 +27,7 @@ export default function EditJobPage() {
   const [formData, setFormData] = useState({
     jobTitle: "",
     jobId: "",
+    location: "",
     specialization: "",
     employmentType: "",
     yearsOfExperience: "",
@@ -64,6 +65,7 @@ export default function EditJobPage() {
           setFormData({
             jobTitle: job.title || "",
             jobId: job.job_id || "",
+            location: job.location || "",
             specialization: job.specialization || "",
             employmentType: job.employment_type || "",
             yearsOfExperience: job.years_of_experience?.toString() || "",
@@ -121,6 +123,7 @@ export default function EditJobPage() {
       const payload: any = {
         title: formData.jobTitle,
         specialization: formData.specialization,
+        location: formData.location,
         employment_type: formData.employmentType,
         posted_date: formData.postedDate,
         closed_date: formData.closedDate,
@@ -232,6 +235,19 @@ export default function EditJobPage() {
                   placeholder="Enter specialization"
                   value={formData.specialization}
                   onChange={(e) => handleInputChange("specialization", e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter job location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
                   className="w-full"
                 />
               </div>
