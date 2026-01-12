@@ -5,6 +5,7 @@ import Link from "next/link"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Search, Grid3x3, Briefcase, User, FileText, DollarSign, Shield, Wrench, ChevronDown, Mail, MessageCircle } from "lucide-react"
+import { SupportChatWidget } from "@/components/support-chat-widget"
 
 interface FAQItem {
   question: string
@@ -247,6 +248,7 @@ export default function SupportPage() {
           </div>
         </div>
       </div>
+      <SupportChatWidget />
     </DashboardLayout>
   )
 }
