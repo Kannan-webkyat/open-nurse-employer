@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^5.4.1",
-    "@stripe/stripe-js": "^8.6.0",
+    "@stripe/stripe-js": "^8.6.1",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "laravel-echo": "^2.2.7",
@@ -18,7 +18,8 @@
     "next": "^16.0.7",
     "pusher-js": "^8.4.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sonner": "^2.0.7"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
