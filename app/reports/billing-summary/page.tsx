@@ -69,74 +69,148 @@ const parseAmount = (amount: string): number => {
 }
 
 export default function BillingSummaryPage() {
+  const [invoices, setInvoices] = useState<{
+    id: string
+    date: string
+    amount: string | number
+    status: string
+    payment_method: string
+    description: string
+  }[]>([])
+  
+  const [summary, setSummary] = useState({
+    total_invoices: 0,
+    paid_invoices: 0,
+    pending_invoices: 0,
+    overdue_invoices: 0,
+    total_amount: 0,
+    paid_amount: 0,
+  })
+
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+  })
+
+  // Filter States
   const [searchQuery, setSearchQuery] = useState("")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
   const [statusFilter, setStatusFilter] = useState<"" | "paid" | "pending" | "overdue">("")
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [rowsPerPage, setRowsPerPage] = useState(10)
-  const dateFromRef = useRef<HTMLInputElement>(null)
-  const dateToRef = useRef<HTMLInputElement>(null)
-
-  // Count active filters
-  const activeFilterCount = [searchQuery, dateFrom, dateTo, statusFilter, paymentMethodFilter].filter(v => v !== "").length
-
-  // Filter invoices based on search, date range, status, and payment method
-  const filteredInvoices = mockBillingInvoices.filter((invoice) => {
-    // Search filter - matches Invoice ID or Description
-    const matchesSearch = 
-      !searchQuery ||
-      invoice.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.description.toLowerCase().includes(searchQuery.toLowerCase())
-    
-    // Date range filter - check if paid_at or created_at falls within range
-    const dateToCheck = invoice.paid_at || invoice.created_at
-    const matchesDateFrom = !dateFrom || dateToCheck >= dateFrom
-    const matchesDateTo = !dateTo || dateToCheck <= dateTo
-    
-    // Status filter
-    const matchesStatus = !statusFilter || invoice.status === statusFilter
-    
-    // Payment method filter
-    const matchesPaymentMethod = !paymentMethodFilter || invoice.payment_method === paymentMethodFilter
-    
-    return matchesSearch && matchesDateFrom && matchesDateTo && matchesStatus && matchesPaymentMethod
-  })
-
-  // Calculate summary statistics
-  const totalInvoices = filteredInvoices.length
-  const paidInvoices = filteredInvoices.filter(i => i.status === "paid").length
-  const pendingInvoices = filteredInvoices.filter(i => i.status === "pending").length
-  const overdueInvoices = filteredInvoices.filter(i => i.status === "overdue").length
-  const totalAmount = filteredInvoices.reduce((sum, i) => sum + parseAmount(i.amount), 0)
-  const paidAmount = filteredInvoices
-    .filter(i => i.status === "paid")
-    .reduce((sum, i) => sum + parseAmount(i.amount), 0)
-  const pendingAmount = filteredInvoices
-    .filter(i => i.status === "pending" || i.status === "overdue")
-    .reduce((sum, i) => sum + parseAmount(i.amount), 0)
-
-  // Pagination
-  const totalPages = Math.ceil(filteredInvoices.length / rowsPerPage)
-  const startIndex = (currentPage - 1) * rowsPerPage
-  const endIndex = startIndex + rowsPerPage
-  const paginatedInvoices = filteredInvoices.slice(startIndex, endIndex)
-
-  const handleRowsPerPageChange = (rows: number) => {
-    setRowsPerPage(rows)
-    setCurrentPage(1)
-  }
-
+  
+  const [isLoading, setIsLoading] = useState(true)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const exportMenuRef = useRef<HTMLDivElement>(null)
 
+  // Fetch Data
+  const fetchBillingSummary = async () => {
+    setIsLoading(true)
+    try {
+      const params = {
+        search: searchQuery,
+        date_from: dateFrom,
+        date_to: dateTo,
+        status: statusFilter,
+        payment_method: paymentMethodFilter,
+        page: pagination.current_page,
+        per_page: pagination.per_page,
+      }
+      
+      const response = await reportsApi.getBillingSummary(params)
+      
+      if (response.success && response.data) {
+        setInvoices(response.data.invoices || [])
+        setSummary(response.data.summary || {
+            total_invoices: 0,
+            paid_invoices: 0,
+            pending_invoices: 0,
+            overdue_invoices: 0,
+            total_amount: 0,
+            paid_amount: 0,
+        })
+        if (response.data.pagination) {
+            setPagination(prev => ({
+                ...prev,
+                ...response.data.pagination
+            }))
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch billing summary:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Initial Fetch & Filter Effects
+  useEffect(() => {
+    const timer = setTimeout(() => {
+        fetchBillingSummary()
+    }, 300) // Debounce search
+    return () => clearTimeout(timer)
+  }, [searchQuery, dateFrom, dateTo, statusFilter, paymentMethodFilter, pagination.current_page, pagination.per_page])
+
+  // Click Outside Export Menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false)
+      }
+    }
+    if (showExportMenu) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showExportMenu])
+
+  // Handlers
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, current_page: page }))
+  }
+
+  const handleRowsPerPageChange = (rows: number) => {
+    setPagination(prev => ({ ...prev, per_page: rows, current_page: 1 }))
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+    setPagination(prev => ({ ...prev, current_page: 1 }))
+  }
+
+  const handleDateFromChange = (value: string) => {
+    setDateFrom(value)
+    setPagination(prev => ({ ...prev, current_page: 1 }))
+  }
+
+  const handleDateToChange = (value: string) => {
+    setDateTo(value)
+    setPagination(prev => ({ ...prev, current_page: 1 }))
+  }
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value as any)
+    setPagination(prev => ({ ...prev, current_page: 1 }))
+  }
+
+  const handlePaymentMethodChange = (value: string) => {
+    setPaymentMethodFilter(value)
+    setPagination(prev => ({ ...prev, current_page: 1 }))
+  }
+
+  const clearFilters = () => {
+    setStatusFilter("")
+    setPaymentMethodFilter("")
+    setSearchQuery("")
+    setDateFrom("")
+    setDateTo("")
+    setPagination(prev => ({ ...prev, current_page: 1 }))
+  }
+
   // Export handlers
   const handleExportCSV = async () => {
-    if (filteredInvoices.length === 0) return
-    
     try {
-        const params: any = {
+        const params = {
             search: searchQuery,
             date_from: dateFrom,
             date_to: dateTo,
@@ -151,10 +225,8 @@ export default function BillingSummaryPage() {
   }
 
   const handleExportExcel = async () => {
-    if (filteredInvoices.length === 0) return
-
     try {
-        const params: any = {
+        const params = {
             search: searchQuery,
             date_from: dateFrom,
             date_to: dateTo,
@@ -169,10 +241,8 @@ export default function BillingSummaryPage() {
   }
 
   const handleExportPDF = async () => {
-    if (filteredInvoices.length === 0) return
-
     try {
-        const params: any = {
+        const params = {
             search: searchQuery,
             date_from: dateFrom,
             date_to: dateTo,
@@ -186,53 +256,11 @@ export default function BillingSummaryPage() {
     }
   }
 
-  // Close export menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
-        setShowExportMenu(false)
-      }
-    }
-    if (showExportMenu) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showExportMenu])
+  // Active filter count
+  const activeFilterCount = [searchQuery, dateFrom, dateTo, statusFilter, paymentMethodFilter].filter(v => v !== "").length
 
-  // Reset to first page when filters change
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value)
-    setCurrentPage(1)
-  }
-
-  const handleDateFromChange = (value: string) => {
-    setDateFrom(value)
-    setCurrentPage(1)
-  }
-
-  const handleDateToChange = (value: string) => {
-    setDateTo(value)
-    setCurrentPage(1)
-  }
-
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value as typeof statusFilter)
-    setCurrentPage(1)
-  }
-
-  const handlePaymentMethodChange = (value: string) => {
-    setPaymentMethodFilter(value)
-    setCurrentPage(1)
-  }
-
-  // Clear all filters
-  const clearFilters = () => {
-    setStatusFilter("")
-    setPaymentMethodFilter("")
-    setCurrentPage(1)
-    // Note: Search and Date are now in the header, we prefer not to clear them with the 'Reset Filters' pill button unless requested
-  }
-
-  // Get unique payment methods
-  const paymentMethods = Array.from(new Set(mockBillingInvoices.map(i => i.payment_method)))
+  // Helper for Payment Methods options (static for now or fetched could be better, but "Card" is main one)
+  const paymentMethods = ["Card", "Bank Transfer"]
 
   return (
     <DashboardLayout>
@@ -286,7 +314,7 @@ export default function BillingSummaryPage() {
                     <button
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 rounded-lg transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={filteredInvoices.length === 0}
+                        disabled={invoices.length === 0}
                     >
                         <Download className="w-4 h-4" />
                         Export
@@ -320,9 +348,9 @@ export default function BillingSummaryPage() {
                         className="appearance-none pl-3 pr-8 py-1.5 border border-neutral-200 rounded-full bg-white text-xs font-medium text-neutral-600 focus:ring-1 focus:ring-sky-500 focus:outline-none cursor-pointer hover:border-neutral-300 transition-colors shadow-sm"
                     >
                         <option value="">All Status</option>
-                        <option value="paid">Paid</option>
+                        <option value="succeeded">Paid</option>
                         <option value="pending">Pending</option>
-                        <option value="overdue">Overdue</option>
+                        <option value="failed">Overdue/Failed</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
                 </div>
@@ -364,7 +392,7 @@ export default function BillingSummaryPage() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-indigo-700 transition-colors">Total</p>
-                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{totalInvoices}</h3>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{summary.total_invoices}</h3>
                         </div>
                     </div>
                 </div>
@@ -380,7 +408,7 @@ export default function BillingSummaryPage() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-emerald-700 transition-colors">Paid</p>
-                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{paidInvoices}</h3>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{summary.paid_invoices}</h3>
                         </div>
                     </div>
                 </div>
@@ -396,7 +424,7 @@ export default function BillingSummaryPage() {
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-amber-700 transition-colors">Pending</p>
-                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{pendingInvoices}</h3>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{summary.pending_invoices}</h3>
                         </div>
                     </div>
                 </div>
@@ -411,8 +439,8 @@ export default function BillingSummaryPage() {
                             <AlertCircle className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-red-700 transition-colors">Overdue</p>
-                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{overdueInvoices}</h3>
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-red-700 transition-colors">Failed</p>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{summary.overdue_invoices}</h3>
                         </div>
                     </div>
                 </div>
@@ -424,7 +452,7 @@ export default function BillingSummaryPage() {
 
                     <div className="relative z-10">
                         <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Value</p>
-                        <h3 className="text-lg font-bold text-neutral-900 leading-none">£{totalAmount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
+                        <h3 className="text-lg font-bold text-neutral-900 leading-none">£{summary.total_amount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
                     </div>
                 </div>
 
@@ -435,7 +463,7 @@ export default function BillingSummaryPage() {
 
                      <div className="relative z-10">
                         <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Collected</p>
-                        <h3 className="text-lg font-bold text-emerald-700 leading-none">£{paidAmount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
+                        <h3 className="text-lg font-bold text-emerald-700 leading-none">£{summary.paid_amount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
                     </div>
                 </div>
             </div>
@@ -443,13 +471,12 @@ export default function BillingSummaryPage() {
 
         {/* Table Section */}
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto min-h-[400px]">
               <Table>
                 <TableHeader className="bg-neutral-50">
                   <TableRow>
-                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pl-6">Invoice</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pl-6">Invoice ID</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Date</TableHead>
-                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Paid / Due</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Amount</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Method</TableHead>
@@ -457,33 +484,41 @@ export default function BillingSummaryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedInvoices.length === 0 ? (
+                  {isLoading ? (
+                     Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell className="pl-6"><div className="h-4 w-24 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 w-32 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 w-16 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-6 w-20 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 w-24 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 w-48 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                        </TableRow>
+                     ))
+                  ) : invoices.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-neutral-400 text-sm">
+                      <TableCell colSpan={6} className="text-center py-12 text-neutral-400 text-sm">
                         No invoices found matching your filters
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedInvoices.map((invoice) => (
+                    invoices.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-neutral-50/50 transition-colors">
                         <TableCell className="pl-6 py-4">
-                            <span className="font-mono text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-1 rounded">{invoice.id}</span>
+                            <span className="font-mono text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-1 rounded">#{invoice.id}</span>
                         </TableCell>
                          <TableCell className="text-neutral-600 text-sm">
-                          {formatDate(invoice.created_at)}
-                        </TableCell>
-                        <TableCell>
-                           <div className="flex flex-col text-xs">
-                                <span className="text-neutral-600">Paid: {invoice.paid_at ? formatDate(invoice.paid_at) : '—'}</span>
-                                <span className="text-neutral-400">Due: {formatDate(invoice.due_date)}</span>
-                           </div>
+                          {invoice.date}
                         </TableCell>
                         <TableCell className="text-neutral-900 font-semibold text-sm">
-                          {invoice.amount}
+                          £{parseFloat(invoice.amount.toString()).toFixed(2)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={statusVariantMap[invoice.status]} className="capitalize shadow-none">
-                            {statusLabels[invoice.status]}
+                          <Badge variant={
+                                invoice.status === 'succeeded' ? 'paid' : 
+                                invoice.status === 'pending' ? 'pending' : 'rejected'
+                            } className="capitalize shadow-none">
+                            {invoice.status === 'succeeded' ? 'Paid' : invoice.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -502,13 +537,13 @@ export default function BillingSummaryPage() {
               </Table>
             </div>
 
-            {filteredInvoices.length > 0 && (
+            {invoices.length > 0 && (
               <div className="border-t border-neutral-100 bg-white p-4">
                 <TablePagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    rowsPerPage={rowsPerPage}
-                    onPageChange={setCurrentPage}
+                    currentPage={pagination.current_page}
+                    totalPages={pagination.last_page}
+                    rowsPerPage={pagination.per_page}
+                    onPageChange={handlePageChange}
                     onRowsPerPageChange={handleRowsPerPageChange}
                 />
                </div>
