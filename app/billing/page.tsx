@@ -11,10 +11,11 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { CreditCard, ChevronRight, Download, ChevronDown, Building2, ChevronUp } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
 import { Input } from "@/components/ui/input"
-import { paymentMethodApi, paymentApi } from "@/lib/api"
+import { paymentMethodApi, paymentApi, subscriptionApi } from "@/lib/api"
 import { toast } from "sonner"
 import { StripeCardForm } from "@/components/billing/StripeCardForm"
 import { StripeOnlinePayment } from "@/components/billing/StripeOnlinePayment"
+import Link from "next/link"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
@@ -70,6 +71,7 @@ const invoices: Invoice[] = [
 
 export default function BillingPage() {
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>([])
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null)
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false)
   const [isViewPaymentModalOpen, setIsViewPaymentModalOpen] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
@@ -109,6 +111,7 @@ export default function BillingPage() {
     if (isStripeConfigured) {
       console.log("Stripe Publishable Key:", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
       fetchPaymentMethods()
+      fetchSubscription()
       fetchTransactions()
     } else {
       console.warn("Stripe is not configured. Please add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to .env.local")
@@ -118,10 +121,18 @@ export default function BillingPage() {
     const params = new URLSearchParams(window.location.search)
     const status = params.get('payment_status')
     const sessionId = params.get('session_id')
+    const mode = params.get('mode')
 
-    console.log("Payment Verification Params:", { status, sessionId })
+    console.log("Payment Verification Params:", { status, sessionId, mode })
 
     if (status === 'success' && sessionId) {
+      if (mode === 'setup') {
+        toast.success("Payment method added successfully!")
+        fetchPaymentMethods()
+        window.history.replaceState({}, '', window.location.pathname)
+        return
+      }
+
       const toastId = toast.loading("Verifying payment...")
       paymentApi.verify(sessionId)
         .then((response) => {
@@ -144,6 +155,17 @@ export default function BillingPage() {
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [])
+
+  const fetchSubscription = async () => {
+    try {
+      const response = await subscriptionApi.getCurrentSubscription()
+      if (response.success && response.data) {
+        setCurrentSubscription(response.data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch subscription:", error)
+    }
+  }
 
   const fetchTransactions = async () => {
     try {
@@ -301,23 +323,20 @@ export default function BillingPage() {
     setIsCreditCardExpanded(false)
     setIsBankTransferExpanded(false)
 
-    // Create payment intent when expanding Stripe online payment
+    // Create setup intent for saving payment method (not charging)
     if (!isStripeOnlineExpanded && !paymentClientSecret) {
       try {
         setIsLoading(true)
-        const response = await paymentApi.createIntent({
-          amount: paymentAmount,
-          currency: 'gbp',
-          description: 'Subscription payment',
-        })
+        const response = await paymentMethodApi.createSetupIntent()
 
         if (response.success && response.data) {
           setPaymentUrl(response.data.url)
+          setPaymentClientSecret(response.data.client_secret)
         } else {
-          toast.error("Failed to initialize payment")
+          toast.error("Failed to initialize payment method setup")
         }
       } catch (error) {
-        toast.error("Failed to initialize payment")
+        toast.error("Failed to initialize payment method setup")
       } finally {
         setIsLoading(false)
       }
@@ -366,25 +385,31 @@ export default function BillingPage() {
         <div className="bg-white rounded-lg border border-neutral-200">
           <div className="flex items-center justify-between border-b border-neutral-200 p-6">
             <h2 className="text-lg font-semibold text-neutral-900">Current Subscription</h2>
-            <Badge variant="active">Active</Badge>
+            <Badge variant={currentSubscription?.status === 'active' ? 'active' : 'default'}>
+              {currentSubscription?.status ? currentSubscription.status.charAt(0).toUpperCase() + currentSubscription.status.slice(1) : 'Inactive'}
+            </Badge>
           </div>
           <div className="grid grid-cols-3 gap-6 p-6">
             <div>
               <p className="text-sm text-neutral-600 mb-1">Plan</p>
               <div className="flex items-center gap-2">
-                <p className="text-base font-medium text-neutral-900">Premium</p>
+                <p className="text-base font-medium text-neutral-900">{currentSubscription?.plan?.name || 'No Plan'}</p>
                 <Link href="/plans" className="text-xs text-sky-600 hover:text-sky-700 font-medium">
                   Change
                 </Link>
               </div>
             </div>
             <div>
-              <p className="text-sm text-neutral-600 mb-1">Active Nurse Slots</p>
-              <p className="text-base font-medium text-neutral-900">15 / 20</p>
+              <p className="text-sm text-neutral-600 mb-1">Nurse Slots Limit</p>
+              <p className="text-base font-medium text-neutral-900">
+                {currentSubscription?.plan?.nurse_slots || '0'}
+              </p>
             </div>
             <div>
               <p className="text-sm text-neutral-600 mb-1">Billing Cycle</p>
-              <p className="text-base font-medium text-neutral-900">Monthly</p>
+              <p className="text-base font-medium text-neutral-900">
+                {currentSubscription?.billing_cycle ? currentSubscription.billing_cycle.charAt(0).toUpperCase() + currentSubscription.billing_cycle.slice(1) : '-'}
+              </p>
             </div>
           </div>
         </div>
@@ -464,44 +489,68 @@ export default function BillingPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice ID</TableHead>
-                <TableHead>Paid at</TableHead>
+                <TableHead className="w-[180px]">Date</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Action</TableHead>
+                <TableHead>Invoice</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {transactions && transactions.length > 0 ? (
                 transactions.map((txn, index) => (
                   <TableRow key={`${txn.id}-${index}`}>
-                    <TableCell className="text-neutral-800">#{txn.id}</TableCell>
-                    <TableCell className="text-neutral-800">
-                      {new Date(txn.created_at).toLocaleDateString()}
+                    <TableCell className="text-neutral-800 font-medium">
+                      {new Date(txn.paid_at || txn.created_at).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
                     </TableCell>
-                    <TableCell className="text-neutral-800">£{txn.amount}</TableCell>
                     <TableCell>
-                      {txn.status === "paid" ? (
-                        <Badge variant="paid">
+                      <div className="flex flex-col">
+                        <span className="text-neutral-900 font-medium">
+                          {txn.description || (txn.type === 'subscription' ? 'Subscription' : 'Payment')}
+                        </span>
+                        <span className="text-xs text-neutral-500 font-mono mt-0.5">
+                          ID: {txn.invoice_id ? txn.invoice_id.substring(0, 14) + '...' : txn.id}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-neutral-800">
+                      {txn.currency?.toUpperCase() === 'GBP' ? '£' : (txn.currency === 'usd' ? '$' : txn.currency?.toUpperCase() + ' ')}
+                      {txn.amount}
+                    </TableCell>
+                    <TableCell>
+                      {txn.status === "paid" || txn.status === "active" ? (
+                        <Badge variant="default" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 shadow-none font-normal">
                           Paid
                         </Badge>
-                      ) : (
-                        <Badge variant="pending">
+                      ) : txn.status === "pending" || txn.status === "incomplete" ? (
+                        <Badge variant="default" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200 shadow-none font-normal">
                           Pending
+                        </Badge>
+                      ) : txn.status === "failed" || txn.status === "canceled" || txn.status === "rejected" ? (
+                        <Badge variant="default" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200 shadow-none font-normal">
+                          {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="font-normal text-neutral-500 bg-transparent border border-neutral-200 shadow-none hover:bg-neutral-50">
+                          {txn.status}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      <button className="text-sky-600 hover:text-sky-700 flex items-center gap-1 text-sm font-medium">
-                        <Download className="w-4 h-4" />
-                        Download PDF
+                      <button className="text-neutral-500 hover:text-neutral-800 transition-colors">
+                        <Download className="w-5 h-5" />
+                        <span className="sr-only">Download</span>
                       </button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4 text-neutral-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
                     No billing history found.
                   </TableCell>
                 </TableRow>
@@ -604,8 +653,7 @@ export default function BillingPage() {
                   {paymentUrl ? (
                     <StripeOnlinePayment
                       checkoutUrl={paymentUrl}
-                      amount={paymentAmount}
-                      currency="gbp"
+                      mode="setup"
                       onSuccess={() => handleStripeOnlineSuccess("")}
                       onCancel={() => {
                         setIsStripeOnlineExpanded(false)
@@ -875,6 +923,17 @@ export default function BillingPage() {
             </div>
           )}
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 mt-6">
+            <Button
+              variant="outline"
+              className="mr-auto bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+              onClick={() => {
+                if (selectedPaymentMethod) {
+                  handleDeletePaymentMethod(selectedPaymentMethod.id)
+                }
+              }}
+            >
+              Delete
+            </Button>
             <Button
               variant="outline"
               onClick={() => {

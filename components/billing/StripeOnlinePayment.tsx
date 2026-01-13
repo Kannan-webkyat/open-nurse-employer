@@ -4,18 +4,20 @@ import { Button } from "@/components/ui/button"
 
 interface StripeOnlinePaymentProps {
     checkoutUrl: string | null
-    amount: number
-    currency: string
+    amount?: number
+    currency?: string
     onSuccess: (paymentIntentId: string) => void
     onCancel: () => void
+    mode?: 'payment' | 'setup' // Add mode to distinguish between payment and setup
 }
 
 export function StripeOnlinePayment({
     checkoutUrl,
     amount,
-    currency,
+    currency = 'gbp',
     onSuccess,
-    onCancel
+    onCancel,
+    mode = 'setup' // Default to setup mode for saving payment methods
 }: StripeOnlinePaymentProps) {
 
     const handleProceed = () => {
@@ -26,14 +28,17 @@ export function StripeOnlinePayment({
 
     return (
         <div className="space-y-6">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">Amount to pay:</span>
-                    <span className="text-lg font-bold text-neutral-900">
-                        {currency.toUpperCase()} {amount.toFixed(2)}
-                    </span>
+            {/* Only show amount if in payment mode */}
+            {mode === 'payment' && amount && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-neutral-700">Amount to pay:</span>
+                        <span className="text-lg font-bold text-neutral-900">
+                            {currency.toUpperCase()} {amount.toFixed(2)}
+                        </span>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-6 text-center space-y-4">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto border border-neutral-200 shadow-sm">
@@ -42,9 +47,13 @@ export function StripeOnlinePayment({
                     </svg>
                 </div>
                 <div>
-                    <h3 className="text-base font-semibold text-neutral-900">Secure Online Payment</h3>
+                    <h3 className="text-base font-semibold text-neutral-900">
+                        {mode === 'payment' ? 'Secure Online Payment' : 'Add Payment Method'}
+                    </h3>
                     <p className="text-sm text-neutral-600 mt-1">
-                        You will be redirected to Stripe's secure checkout page to complete your payment.
+                        {mode === 'payment'
+                            ? "You will be redirected to Stripe's secure checkout page to complete your payment."
+                            : "You will be redirected to Stripe's secure page to save your payment method. No charge will be made."}
                     </p>
                 </div>
             </div>
@@ -62,7 +71,7 @@ export function StripeOnlinePayment({
                     disabled={!checkoutUrl}
                     className="!text-neutral-900 bg-yellow-500 hover:bg-yellow-400"
                 >
-                    Proceed to Payment
+                    {mode === 'payment' ? 'Proceed to Payment' : 'Add Payment Method'}
                 </Button>
             </div>
         </div>
