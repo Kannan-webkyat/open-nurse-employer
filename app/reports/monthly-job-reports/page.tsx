@@ -232,7 +232,7 @@ export default function MonthlyJobReportsPage() {
       <div className="space-y-6 max-w-[1600px] mx-auto">
         
         {/* Modern Unified Header with Gradient */}
-        <div className="relative flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-100 shadow-sm">
+        <div className="relative z-20 flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-100 shadow-sm">
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 via-white to-indigo-50/50 pointer-events-none rounded-xl"></div>
             
             <div className="relative z-10">
