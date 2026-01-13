@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard/layout"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
-import { Search, Download, Filter, X, CreditCard, Calendar } from "lucide-react"
+import { Search, Download, Filter, X, CreditCard, Calendar, Loader2, FileText, ChevronDown, Receipt, AlertCircle, CheckCircle2, Clock } from "lucide-react"
 
 interface BillingInvoice {
   id: string
@@ -195,12 +194,10 @@ export default function BillingSummaryPage() {
 
   // Clear all filters
   const clearFilters = () => {
-    setSearchQuery("")
-    setDateFrom("")
-    setDateTo("")
     setStatusFilter("")
     setPaymentMethodFilter("")
     setCurrentPage(1)
+    // Note: Search and Date are now in the header, we prefer not to clear them with the 'Reset Filters' pill button unless requested
   }
 
   // Get unique payment methods
@@ -208,216 +205,267 @@ export default function BillingSummaryPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-2">Billing Summary</h1>
-            <p className="text-neutral-600">View and export comprehensive billing summary report</p>
-          </div>
-          <Button
-            onClick={handleExport}
-            className="bg-neutral-950 text-white hover:bg-neutral-900 flex items-center gap-2"
-            disabled={filteredInvoices.length === 0}
-          >
-            <Download className="w-4 h-4" />
-            Export Report
-          </Button>
+      <div className="space-y-6 max-w-[1600px] mx-auto">
+        
+        {/* Modern Unified Header with Gradient */}
+        <div className="relative flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-100 shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 via-white to-indigo-50/50 pointer-events-none rounded-xl"></div>
+            
+            <div className="relative z-10">
+                <h1 className="text-xl font-bold text-neutral-900 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-sky-600" />
+                    Billing Summary
+                </h1>
+                <p className="text-xs text-neutral-500 mt-1">Comprehensive billing overview & history</p>
+            </div>
+
+            <div className="relative z-10 flex flex-wrap items-center gap-3">
+                 {/* Search Input */}
+                 <div className="relative group">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-indigo-500 transition-colors" />
+                    <input
+                        type="text"
+                        placeholder="Search invoices..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearchChange(e.target.value)}
+                        className="pl-9 pr-4 py-1.5 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 w-64 transition-all shadow-sm"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-neutral-200 shadow-sm">
+                    <div className="px-2 border-r border-neutral-200">
+                        <Calendar className="w-4 h-4 text-neutral-400" />
+                    </div>
+                    <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => handleDateFromChange(e.target.value)}
+                        className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-32 outline-none"
+                    />
+                    <span className="text-neutral-300 text-xs">to</span>
+                    <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => handleDateToChange(e.target.value)}
+                        className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-32 outline-none"
+                    />
+                </div>
+
+                <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 rounded-lg transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={filteredInvoices.length === 0}
+                >
+                    <Download className="w-4 h-4" />
+                    Export Report
+                </button>
+            </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <div className="text-sm text-neutral-600 mb-1">Total Invoices</div>
-            <div className="text-2xl font-bold text-neutral-900">{totalInvoices}</div>
-          </div>
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <div className="text-sm text-neutral-600 mb-1">Paid</div>
-            <div className="text-2xl font-bold text-green-600">{paidInvoices}</div>
-          </div>
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <div className="text-sm text-neutral-600 mb-1">Pending</div>
-            <div className="text-2xl font-bold text-yellow-600">{pendingInvoices}</div>
-          </div>
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <div className="text-sm text-neutral-600 mb-1">Overdue</div>
-            <div className="text-2xl font-bold text-red-600">{overdueInvoices}</div>
-          </div>
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <div className="text-sm text-neutral-600 mb-1">Total Amount</div>
-            <div className="text-2xl font-bold text-neutral-900">£{totalAmount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </div>
-          <div className="bg-white rounded-lg border border-neutral-200 p-4">
-            <div className="text-sm text-neutral-600 mb-1">Paid Amount</div>
-            <div className="text-2xl font-bold text-green-600">£{paidAmount.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          </div>
-        </div>
+        {/* Floating Gradient Metric Cards */}
+        <div className="space-y-4">
+             {/* Pill Filters */}
+             <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => handleStatusChange(e.target.value)}
+                        className="appearance-none pl-3 pr-8 py-1.5 border border-neutral-200 rounded-full bg-white text-xs font-medium text-neutral-600 focus:ring-1 focus:ring-sky-500 focus:outline-none cursor-pointer hover:border-neutral-300 transition-colors shadow-sm"
+                    >
+                        <option value="">All Status</option>
+                        <option value="paid">Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
+                </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg border border-neutral-200 p-4">
-          <div className="flex gap-4 flex-wrap">
-            {/* Search Field */}
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
-              <Input
-                type="text"
-                placeholder="Search by Invoice ID or Description..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+                 <div className="relative">
+                    <select
+                        value={paymentMethodFilter}
+                        onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                        className="appearance-none pl-3 pr-8 py-1.5 border border-neutral-200 rounded-full bg-white text-xs font-medium text-neutral-600 focus:ring-1 focus:ring-sky-500 focus:outline-none cursor-pointer hover:border-neutral-300 transition-colors shadow-sm"
+                    >
+                        <option value="">All Methods</option>
+                        {paymentMethods.map(method => (
+                           <option key={method} value={method}>{method}</option>
+                         ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
+                </div>
 
-            {/* Date Range */}
-            <div className="flex items-center gap-2">
-              <Input
-                ref={dateFromRef}
-                type="date"
-                placeholder="From Date"
-                value={dateFrom}
-                onChange={(e) => handleDateFromChange(e.target.value)}
-                onClick={(e) => {
-                  e.currentTarget.showPicker?.()
-                }}
-                className="cursor-pointer"
-              />
-              <span className="text-neutral-400">to</span>
-              <Input
-                ref={dateToRef}
-                type="date"
-                placeholder="To Date"
-                value={dateTo}
-                onChange={(e) => handleDateToChange(e.target.value)}
-                onClick={(e) => {
-                  e.currentTarget.showPicker?.()
-                }}
-                className="cursor-pointer"
-              />
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex items-center gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => handleStatusChange(e.target.value)}
-                className="px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-700 text-sm focus:ring-0 focus:outline-none focus:border-sky-700 cursor-pointer"
-              >
-                <option value="">All Status</option>
-                <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
-                <option value="overdue">Overdue</option>
-              </select>
-            </div>
-
-            {/* Payment Method Filter */}
-            <div className="flex items-center gap-2">
-              <select
-                value={paymentMethodFilter}
-                onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                className="px-4 py-2 border border-neutral-300 rounded-lg bg-white text-neutral-700 text-sm focus:ring-0 focus:outline-none focus:border-sky-700 cursor-pointer"
-              >
-                <option value="">All Methods</option>
-                {paymentMethods.map(method => (
-                  <option key={method} value={method}>{method}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Filter and Clear buttons */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline" 
-                className="bg-white border-neutral-300 text-neutral-700 relative">
-                <Filter className="w-4 h-4" />
-                Filter
                 {activeFilterCount > 0 && (
-                  <span className="ml-2 bg-sky-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {activeFilterCount}
-                  </span>
+                    <button
+                        onClick={clearFilters}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 text-neutral-600 rounded-full text-xs font-medium hover:bg-neutral-200 transition-colors"
+                    >
+                        <X className="w-3 h-3" />
+                        Reset Filters
+                    </button>
                 )}
-              </Button>
-              {activeFilterCount > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={clearFilters}
-                  className="bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50 flex items-center gap-2">
-                  <X className="w-4 h-4" />
-                  Clear
-                </Button>
-              )}
             </div>
-          </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                {/* Total Invoices */}
+                <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-indigo-100 transition-all duration-300 group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-indigo-50/60 opacity-100"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-indigo-50/20 to-indigo-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-indigo-100 flex items-center justify-center text-indigo-600 shadow-sm group-hover:scale-110 group-hover:border-indigo-200 transition-all duration-300">
+                            <Receipt className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-indigo-700 transition-colors">Total</p>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{totalInvoices}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Paid Invoices */}
+                <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-emerald-100 transition-all duration-300 group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-emerald-50/60 opacity-100"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm group-hover:scale-110 group-hover:border-emerald-200 transition-all duration-300">
+                            <CheckCircle2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-emerald-700 transition-colors">Paid</p>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{paidInvoices}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Pending Invoices */}
+                <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-amber-100 transition-all duration-300 group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-amber-50/60 opacity-100"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-amber-50/20 to-amber-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-amber-100 flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-110 group-hover:border-amber-200 transition-all duration-300">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-amber-700 transition-colors">Pending</p>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{pendingInvoices}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Overdue Invoices */}
+                <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-red-100 transition-all duration-300 group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-red-50/60 opacity-100"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-red-50/20 to-red-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    <div className="relative z-10 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-red-100 flex items-center justify-center text-red-600 shadow-sm group-hover:scale-110 group-hover:border-red-200 transition-all duration-300">
+                            <AlertCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-0.5 group-hover:text-red-700 transition-colors">Overdue</p>
+                            <h3 className="text-xl font-bold text-neutral-900 leading-none">{overdueInvoices}</h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Total Amount */}
+                <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-neutral-200 transition-all duration-300 group col-span-1">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-neutral-100/80 opacity-100"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-neutral-100/40 to-neutral-200/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    <div className="relative z-10">
+                        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">Total Value</p>
+                        <h3 className="text-lg font-bold text-neutral-900 leading-none">£{totalAmount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
+                    </div>
+                </div>
+
+                {/* Paid Amount */}
+                <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-emerald-200 transition-all duration-300 group col-span-1">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-emerald-50/30 opacity-100"></div>
+                    <div className="absolute inset-0 bg-gradient-to-br from-white via-emerald-50/20 to-emerald-100/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                     <div className="relative z-10">
+                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Collected</p>
+                        <h3 className="text-lg font-bold text-emerald-700 leading-none">£{paidAmount.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</h3>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice ID</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead>Paid At</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Payment Method</TableHead>
-                <TableHead>Description</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedInvoices.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-neutral-500">
-                    No invoices found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="text-neutral-800 font-medium">
-                      {invoice.id}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(invoice.created_at)}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(invoice.paid_at)}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(invoice.due_date)}
-                    </TableCell>
-                    <TableCell className="text-neutral-800 font-medium">
-                      {invoice.amount}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariantMap[invoice.status]}>
-                        {statusLabels[invoice.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-neutral-400" />
-                        {invoice.payment_method}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {invoice.description}
-                    </TableCell>
+        {/* Table Section */}
+        <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-neutral-50">
+                  <TableRow>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pl-6">Invoice</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Date</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Paid / Due</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Amount</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Method</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Description</TableHead>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedInvoices.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-neutral-400 text-sm">
+                        No invoices found matching your filters
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedInvoices.map((invoice) => (
+                      <TableRow key={invoice.id} className="hover:bg-neutral-50/50 transition-colors">
+                        <TableCell className="pl-6 py-4">
+                            <span className="font-mono text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-1 rounded">{invoice.id}</span>
+                        </TableCell>
+                         <TableCell className="text-neutral-600 text-sm">
+                          {formatDate(invoice.created_at)}
+                        </TableCell>
+                        <TableCell>
+                           <div className="flex flex-col text-xs">
+                                <span className="text-neutral-600">Paid: {invoice.paid_at ? formatDate(invoice.paid_at) : '—'}</span>
+                                <span className="text-neutral-400">Due: {formatDate(invoice.due_date)}</span>
+                           </div>
+                        </TableCell>
+                        <TableCell className="text-neutral-900 font-semibold text-sm">
+                          {invoice.amount}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariantMap[invoice.status]} className="capitalize shadow-none">
+                            {statusLabels[invoice.status]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                           <div className="flex items-center gap-2 text-neutral-600 text-sm">
+                                <CreditCard className="w-3.5 h-3.5 text-neutral-400" />
+                                {invoice.payment_method}
+                           </div>
+                        </TableCell>
+                        <TableCell className="text-neutral-600 text-sm max-w-[200px] truncate">
+                          {invoice.description}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
 
-          {filteredInvoices.length > 0 && (
-            <TablePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              rowsPerPage={rowsPerPage}
-              onPageChange={setCurrentPage}
-              onRowsPerPageChange={handleRowsPerPageChange}
-            />
-          )}
+            {filteredInvoices.length > 0 && (
+              <div className="border-t border-neutral-100 bg-white p-4">
+                <TablePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    rowsPerPage={rowsPerPage}
+                    onPageChange={setCurrentPage}
+                    onRowsPerPageChange={handleRowsPerPageChange}
+                />
+               </div>
+            )}
         </div>
       </div>
     </DashboardLayout>
