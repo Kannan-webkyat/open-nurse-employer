@@ -154,46 +154,71 @@ export default function CandidatesApplicationsPage() {
     setCurrentPage(1)
   }
 
-  // Export to CSV
-  const handleExport = () => {
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const exportMenuRef = useRef<HTMLDivElement>(null)
+
+  // Export handlers
+  const handleExportCSV = async () => {
     if (applications.length === 0) return
 
-    const exportData = applications.map(application => ({
-      "#": application.id,
-      "Name": application.name,
-      "Email": application.email,
-      "Phone": application.phone,
-      "Role": application.role,
-      "Job ID": application.job_id,
-      "Status": statusLabels[application.status] || application.status,
-      "Apply Date": formatDate(application.apply_date),
-    }))
-
-    // Convert to CSV
-    const headers = Object.keys(exportData[0])
-    const csvContent = [
-      headers.join(","),
-      ...exportData.map(row => 
-        headers.map(header => {
-          const value = row[header as keyof typeof row]
-          // Escape commas and quotes in CSV
-          return `"${String(value).replace(/"/g, '""')}"`
-        }).join(",")
-      )
-    ].join("\n")
-
-    // Download CSV
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    const today = new Date().toISOString().split("T")[0]
-    link.setAttribute("href", url)
-    link.setAttribute("download", `candidates_applications_${today}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    try {
+        const params: any = {
+            search: searchQuery,
+            date_from: dateFrom,
+            date_to: dateTo,
+            status: statusFilter
+        }
+        await reportsApi.exportCandidatesApplicationsCSV(params)
+        setShowExportMenu(false)
+    } catch (error) {
+         console.error("Export failed", error)
+    }
   }
+
+  const handleExportExcel = async () => {
+    if (applications.length === 0) return
+
+    try {
+        const params: any = {
+            search: searchQuery,
+            date_from: dateFrom,
+            date_to: dateTo,
+            status: statusFilter
+        }
+        await reportsApi.exportCandidatesApplicationsExcel(params)
+        setShowExportMenu(false)
+    } catch (error) {
+         console.error("Export failed", error)
+    }
+  }
+
+  const handleExportPDF = async () => {
+    if (applications.length === 0) return
+
+    try {
+         const params: any = {
+            search: searchQuery,
+            date_from: dateFrom,
+            date_to: dateTo,
+            status: statusFilter
+        }
+        await reportsApi.exportCandidatesApplicationsPDF(params)
+        setShowExportMenu(false)
+    } catch (error) {
+         console.error("Export failed", error)
+    }
+  }
+
+  // Close export menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false)
+      }
+    }
+    if (showExportMenu) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showExportMenu])
 
   // Reset to first page when filters change
   const handleSearchChange = (value: string) => {
@@ -230,7 +255,7 @@ export default function CandidatesApplicationsPage() {
       <div className="space-y-6 max-w-[1600px] mx-auto">
         
         {/* Modern Unified Header with Gradient */}
-        <div className="relative flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-100 shadow-sm">
+        <div className="relative z-20 flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-100 shadow-sm">
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 via-white to-indigo-50/50 pointer-events-none rounded-xl"></div>
             
             <div className="relative z-10">
@@ -276,14 +301,30 @@ export default function CandidatesApplicationsPage() {
                     />
                 </div>
 
-                <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 rounded-lg transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={loading || applications.length === 0}
-                >
-                    <Download className="w-4 h-4" />
-                    Export Report
-                </button>
+                <div className="relative" ref={exportMenuRef}>
+                    <button
+                        onClick={() => setShowExportMenu(!showExportMenu)}
+                        className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 rounded-lg transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading || applications.length === 0}
+                    >
+                        <Download className="w-4 h-4" />
+                        Export
+                        <ChevronDown className="w-4 h-4" />
+                    </button>
+                    {showExportMenu && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-neutral-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                            {['CSV', 'Excel', 'PDF'].map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={type === 'CSV' ? handleExportCSV : type === 'Excel' ? handleExportExcel : handleExportPDF}
+                                    className="w-full text-left px-4 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                                >
+                                    Export as {type}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
 
