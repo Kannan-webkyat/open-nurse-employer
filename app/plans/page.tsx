@@ -9,13 +9,36 @@ import { subscriptionApi, paymentMethodApi } from "@/lib/api"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
+interface Plan {
+    id: number
+    name: string
+    amount: number
+    type_name?: string
+    nurse_slots?: number
+}
+
+interface Subscription {
+    id: number
+    plan: Plan
+}
+
+interface PaymentMethod {
+    id: string
+    card_brand: string
+    card_last_four: string
+    is_default: boolean
+    is_active: boolean
+    expiry_month: number
+    expiry_year: number
+}
+
 export default function PlansPage() {
     const router = useRouter()
-    const [plans, setPlans] = useState([])
-    const [currentSubscription, setCurrentSubscription] = useState(null)
-    const [paymentMethods, setPaymentMethods] = useState([])
+    const [plans, setPlans] = useState<Plan[]>([])
+    const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null)
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
     const [loading, setLoading] = useState(true)
-    const [upgrading, setUpgrading] = useState(null)
+    const [upgrading, setUpgrading] = useState<number | null>(null)
 
     useEffect(() => {
         // Handle Stripe Checkout return
@@ -87,7 +110,7 @@ export default function PlansPage() {
         }
     }
 
-    const handleUpgrade = async (plan) => {
+    const handleUpgrade = async (plan: Plan) => {
         setUpgrading(plan.id)
         const toastId = toast.loading(`Preparing checkout for ${plan.name}...`)
 
@@ -102,14 +125,14 @@ export default function PlansPage() {
                 toast.error(response.message || "Failed to create checkout session", { id: toastId })
                 setUpgrading(null)
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Checkout error:", error)
             toast.error(error.message || "An error occurred", { id: toastId })
             setUpgrading(null)
         }
     }
 
-    const getPlanFeatures = (plan) => {
+    const getPlanFeatures = (plan: Plan) => {
         const features = []
 
         if (plan.nurse_slots) {
@@ -140,11 +163,11 @@ export default function PlansPage() {
         return features
     }
 
-    const isCurrentPlan = (plan) => {
+    const isCurrentPlan = (plan: Plan) => {
         return currentSubscription?.plan?.id === plan.id
     }
 
-    const getButtonText = (plan) => {
+    const getButtonText = (plan: Plan) => {
         if (isCurrentPlan(plan)) {
             return "Current plan"
         }
@@ -207,8 +230,8 @@ export default function PlansPage() {
                                     <h3 className="text-lg font-bold text-neutral-900 mb-2">{plan.name}</h3>
                                     <p className="text-sm text-neutral-500 leading-relaxed min-h-[40px]">
                                         {plan.nurse_slots === 1 && "Small clinics or practices hiring occasionally"}
-                                        {plan.nurse_slots > 1 && plan.nurse_slots <= 5 && "Medium-sized facilities and agencies filling multiple roles"}
-                                        {plan.nurse_slots > 5 && "Large hospitals or recruiters managing multiple hires"}
+                                        {plan.nurse_slots && plan.nurse_slots > 1 && plan.nurse_slots <= 5 && "Medium-sized facilities and agencies filling multiple roles"}
+                                        {plan.nurse_slots && plan.nurse_slots > 5 && "Large hospitals or recruiters managing multiple hires"}
                                     </p>
 
                                     <div className="mt-6 flex items-baseline">
