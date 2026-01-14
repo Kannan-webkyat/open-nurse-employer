@@ -7,76 +7,36 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { Search, Download, Filter, X, CreditCard, Calendar, Loader2, FileText, ChevronDown, Receipt, AlertCircle, CheckCircle2, Clock } from "lucide-react"
-import { reportsApi } from "@/lib/api"
+import { reportsApi, paymentApi } from "@/lib/api"
+import { toast } from "sonner"
 
 interface BillingInvoice {
   id: string
   created_at: string
   paid_at: string
-  due_date: string
-  amount: string
-  status: "paid" | "pending" | "overdue"
+  amount: string | number
+  status: "paid" | "pending" | "overdue" | "failed" | "succeeded" | "active" | "incomplete" | "canceled"
   payment_method: string
   description: string
+  currency?: string
 }
 
-// Mock data for demonstration
-const mockBillingInvoices: BillingInvoice[] = [
-  { id: "INV-001", created_at: "2025-01-10", paid_at: "2025-01-15", due_date: "2025-01-20", amount: "£200.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-002", created_at: "2025-01-15", paid_at: "2025-01-20", due_date: "2025-01-25", amount: "£350.00", status: "paid", payment_method: "Bank Transfer", description: "Premium Plan - Monthly" },
-  { id: "INV-003", created_at: "2025-02-01", paid_at: "2025-02-01", due_date: "2025-02-10", amount: "£200.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-004", created_at: "2025-02-05", paid_at: "", due_date: "2025-02-15", amount: "£450.00", status: "pending", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-005", created_at: "2025-02-10", paid_at: "2025-02-10", due_date: "2025-02-20", amount: "£200.00", status: "paid", payment_method: "PayPal", description: "Premium Plan - Monthly" },
-  { id: "INV-006", created_at: "2025-02-15", paid_at: "2025-02-15", due_date: "2025-02-25", amount: "£300.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-007", created_at: "2025-02-20", paid_at: "", due_date: "2025-03-01", amount: "£200.00", status: "overdue", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-008", created_at: "2025-03-01", paid_at: "2025-03-01", due_date: "2025-03-10", amount: "£500.00", status: "paid", payment_method: "Bank Transfer", description: "Premium Plan - Monthly" },
-  { id: "INV-009", created_at: "2025-03-05", paid_at: "2025-03-05", due_date: "2025-03-15", amount: "£200.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-010", created_at: "2025-03-10", paid_at: "2025-03-10", due_date: "2025-03-20", amount: "£250.00", status: "paid", payment_method: "PayPal", description: "Premium Plan - Monthly" },
-  { id: "INV-011", created_at: "2025-03-15", paid_at: "", due_date: "2025-03-25", amount: "£200.00", status: "pending", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-012", created_at: "2025-03-20", paid_at: "2025-03-20", due_date: "2025-03-30", amount: "£400.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-013", created_at: "2025-04-01", paid_at: "2025-04-01", due_date: "2025-04-10", amount: "£200.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-014", created_at: "2025-04-05", paid_at: "2025-04-05", due_date: "2025-04-15", amount: "£350.00", status: "paid", payment_method: "Bank Transfer", description: "Premium Plan - Monthly" },
-  { id: "INV-015", created_at: "2025-04-10", paid_at: "", due_date: "2025-04-20", amount: "£200.00", status: "pending", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-016", created_at: "2025-04-15", paid_at: "2025-04-15", due_date: "2025-04-25", amount: "£600.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-017", created_at: "2025-04-20", paid_at: "2025-04-20", due_date: "2025-04-30", amount: "£200.00", status: "paid", payment_method: "PayPal", description: "Premium Plan - Monthly" },
-  { id: "INV-018", created_at: "2025-05-01", paid_at: "", due_date: "2025-05-10", amount: "£300.00", status: "pending", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-019", created_at: "2025-05-05", paid_at: "2025-05-05", due_date: "2025-05-15", amount: "£200.00", status: "paid", payment_method: "Credit Card", description: "Premium Plan - Monthly" },
-  { id: "INV-020", created_at: "2025-05-10", paid_at: "2025-05-10", due_date: "2025-05-20", amount: "£450.00", status: "paid", payment_method: "Bank Transfer", description: "Premium Plan - Monthly" },
-]
-
-const statusVariantMap = {
-  paid: "paid",
-  pending: "pending",
-  overdue: "rejected",
-} as const
-
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   paid: "Paid",
+  succeeded: "Paid",
+  active: "Paid",
   pending: "Pending",
-  overdue: "Overdue",
-}
-
-// Format date helper
-const formatDate = (dateString: string) => {
-  if (!dateString) return "—"
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-// Parse amount to number for calculations
-const parseAmount = (amount: string): number => {
-  return parseFloat(amount.replace(/[£,]/g, '')) || 0
+  incomplete: "Pending",
+  overdue: "Failed",
+  failed: "Failed",
+  canceled: "Failed",
+  rejected: "Failed",
 }
 
 export default function BillingSummaryPage() {
-  const [invoices, setInvoices] = useState<{
-    id: string
-    date: string
-    amount: string | number
-    status: string
-    payment_method: string
-    description: string
-  }[]>([])
+  const [allInvoices, setAllInvoices] = useState<BillingInvoice[]>([])
+  const [filteredInvoices, setFilteredInvoices] = useState<BillingInvoice[]>([])
+  const [displayedInvoices, setDisplayedInvoices] = useState<BillingInvoice[]>([])
   
   const [summary, setSummary] = useState({
     total_invoices: 0,
@@ -98,7 +58,7 @@ export default function BillingSummaryPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
-  const [statusFilter, setStatusFilter] = useState<"" | "paid" | "pending" | "overdue">("")
+  const [statusFilter, setStatusFilter] = useState<string>("")
   const [paymentMethodFilter, setPaymentMethodFilter] = useState("")
   
   const [isLoading, setIsLoading] = useState(true)
@@ -109,49 +69,119 @@ export default function BillingSummaryPage() {
   const fetchBillingSummary = async () => {
     setIsLoading(true)
     try {
-      const params = {
-        search: searchQuery,
-        date_from: dateFrom,
-        date_to: dateTo,
-        status: statusFilter,
-        payment_method: paymentMethodFilter,
-        page: pagination.current_page,
-        per_page: pagination.per_page,
-      }
-      
-      const response = await reportsApi.getBillingSummary(params)
+      const response = await paymentApi.getAll()
       
       if (response.success && response.data) {
-        setInvoices(response.data.invoices || [])
-        setSummary(response.data.summary || {
-            total_invoices: 0,
-            paid_invoices: 0,
-            pending_invoices: 0,
-            overdue_invoices: 0,
-            total_amount: 0,
-            paid_amount: 0,
-        })
-        if (response.data.pagination) {
-            setPagination(prev => ({
-                ...prev,
-                ...response.data.pagination
-            }))
-        }
+        // Map the API response to our internal interface
+        const payments = response.data.map((item: any) => ({
+            id: item.id,
+            created_at: item.created_at,
+            paid_at: item.paid_at,
+            amount: item.amount,
+            status: item.status,
+            payment_method: item.type === 'subscription' ? 'Subscription' : 'Card', // Infer for now
+            description: item.description,
+            currency: item.currency
+        }))
+        setAllInvoices(payments)
+      } else {
+        setAllInvoices([])
       }
     } catch (error) {
       console.error("Failed to fetch billing summary:", error)
+      toast.error("Failed to load billing history")
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Initial Fetch & Filter Effects
+  // Filter & Pagination Logic
   useEffect(() => {
-    const timer = setTimeout(() => {
-        fetchBillingSummary()
-    }, 300) // Debounce search
-    return () => clearTimeout(timer)
-  }, [searchQuery, dateFrom, dateTo, statusFilter, paymentMethodFilter, pagination.current_page, pagination.per_page])
+    let result = [...allInvoices]
+
+    // 1. Search Filter
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        result = result.filter(inv => 
+            inv.id.toLowerCase().includes(query) || 
+            (inv.description && inv.description.toLowerCase().includes(query)) ||
+            (inv.amount && inv.amount.toString().includes(query))
+        )
+    }
+
+    // 2. Date Filter
+    if (dateFrom) {
+        const fromDate = new Date(dateFrom).setHours(0, 0, 0, 0)
+        result = result.filter(inv => {
+            const invDate = new Date(inv.paid_at || inv.created_at).setHours(0, 0, 0, 0)
+            return invDate >= fromDate
+        })
+    }
+    if (dateTo) {
+        const toDate = new Date(dateTo).setHours(23, 59, 59, 999)
+        result = result.filter(inv => {
+            const invDate = new Date(inv.paid_at || inv.created_at).setHours(0, 0, 0, 0)
+            return invDate <= toDate
+        })
+    }
+
+    // 3. Status Filter
+    if (statusFilter) {
+        result = result.filter(inv => {
+            const normalizedStatus = statusLabels[inv.status] || inv.status
+            // Map filter value to normalized status
+            if (statusFilter === 'succeeded') return normalizedStatus === 'Paid'
+            if (statusFilter === 'pending') return normalizedStatus === 'Pending'
+            if (statusFilter === 'failed') return normalizedStatus === 'Failed'
+            return true
+        })
+    }
+
+    // 4. Payment Method Filter
+    if (paymentMethodFilter) {
+         result = result.filter(inv => inv.payment_method === paymentMethodFilter)
+    }
+
+    setFilteredInvoices(result)
+
+    // Calculate Summary based on filtered results
+    const totalAmount = result.reduce((sum, inv) => sum + Number(inv.amount || 0), 0)
+    const paidInvoicesList = result.filter(inv => (statusLabels[inv.status] || inv.status) === 'Paid')
+    const paidAmount = paidInvoicesList.reduce((sum, inv) => sum + Number(inv.amount || 0), 0)
+
+    setSummary({
+        total_invoices: result.length,
+        paid_invoices: paidInvoicesList.length,
+        pending_invoices: result.filter(inv => (statusLabels[inv.status] || inv.status) === 'Pending').length,
+        overdue_invoices: result.filter(inv => (statusLabels[inv.status] || inv.status) === 'Failed').length,
+        total_amount: totalAmount,
+        paid_amount: paidAmount,
+    })
+
+    // Pagination
+    const total = result.length
+    const lastPage = Math.ceil(total / pagination.per_page) || 1
+    // Adjust current page if out of bounds
+    const currentPage = pagination.current_page > lastPage ? 1 : pagination.current_page
+    
+    setPagination(prev => ({
+        ...prev,
+        total,
+        last_page: lastPage,
+        current_page: currentPage
+    }))
+
+    const start = (currentPage - 1) * pagination.per_page
+    const end = start + pagination.per_page
+    setDisplayedInvoices(result.slice(start, end))
+
+  }, [allInvoices, searchQuery, dateFrom, dateTo, statusFilter, paymentMethodFilter, pagination.per_page, pagination.current_page])
+
+
+  // Initial Fetch
+  useEffect(() => {
+    fetchBillingSummary()
+  }, [])
 
   // Click Outside Export Menu
   useEffect(() => {
@@ -189,7 +219,7 @@ export default function BillingSummaryPage() {
   }
 
   const handleStatusChange = (value: string) => {
-    setStatusFilter(value as any)
+    setStatusFilter(value)
     setPagination(prev => ({ ...prev, current_page: 1 }))
   }
 
@@ -259,8 +289,8 @@ export default function BillingSummaryPage() {
   // Active filter count
   const activeFilterCount = [searchQuery, dateFrom, dateTo, statusFilter, paymentMethodFilter].filter(v => v !== "").length
 
-  // Helper for Payment Methods options (static for now or fetched could be better, but "Card" is main one)
-  const paymentMethods = ["Card", "Bank Transfer"]
+  // Helper for Payment Methods options
+  const paymentMethods = ["Card", "Subscription"]
 
   return (
     <DashboardLayout>
@@ -314,7 +344,7 @@ export default function BillingSummaryPage() {
                     <button
                         onClick={() => setShowExportMenu(!showExportMenu)}
                         className="flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 rounded-lg transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={invoices.length === 0}
+                        disabled={filteredInvoices.length === 0}
                     >
                         <Download className="w-4 h-4" />
                         Export
@@ -495,31 +525,50 @@ export default function BillingSummaryPage() {
                             <TableCell><div className="h-4 w-48 bg-neutral-100 rounded animate-pulse"></div></TableCell>
                         </TableRow>
                      ))
-                  ) : invoices.length === 0 ? (
+                  ) : displayedInvoices.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-12 text-neutral-400 text-sm">
-                        No invoices found matching your filters
+                        No billing history found matching your filters
                       </TableCell>
                     </TableRow>
                   ) : (
-                    invoices.map((invoice) => (
+                    displayedInvoices.map((invoice) => (
                       <TableRow key={invoice.id} className="hover:bg-neutral-50/50 transition-colors">
                         <TableCell className="pl-6 py-4">
-                            <span className="font-mono text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-1 rounded">#{invoice.id}</span>
+                            <span className="font-mono text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-1 rounded">
+                                {invoice.id.length > 18 ? invoice.id.substring(0, 15) + '...' : invoice.id}
+                            </span>
                         </TableCell>
                          <TableCell className="text-neutral-600 text-sm">
-                          {invoice.date}
+                          {new Date(invoice.paid_at || invoice.created_at).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
                         </TableCell>
                         <TableCell className="text-neutral-900 font-semibold text-sm">
-                          £{parseFloat(invoice.amount.toString()).toFixed(2)}
+                            {invoice.currency?.toUpperCase() === 'GBP' ? '£' : (invoice.currency === 'usd' ? '$' : '')}
+                            {parseFloat(invoice.amount.toString()).toFixed(2)}
+                            {(!invoice.currency || (invoice.currency !== 'GBP' && invoice.currency !== 'usd')) && <span className="text-xs text-neutral-400 ml-1">{invoice.currency?.toUpperCase()}</span>}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={
-                                invoice.status === 'succeeded' ? 'paid' : 
-                                invoice.status === 'pending' ? 'pending' : 'rejected'
-                            } className="capitalize shadow-none">
-                            {invoice.status === 'succeeded' ? 'Paid' : invoice.status}
-                          </Badge>
+                          {(statusLabels[invoice.status] || invoice.status) === 'Paid' ? (
+                            <Badge variant="default" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 shadow-none font-normal capitalize">
+                                Paid
+                            </Badge>
+                          ) : (statusLabels[invoice.status] || invoice.status) === 'Pending' ? (
+                             <Badge variant="default" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200 shadow-none font-normal capitalize">
+                                Pending
+                             </Badge>
+                          ) : (statusLabels[invoice.status] || invoice.status) === 'Failed' ? (
+                             <Badge variant="default" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200 shadow-none font-normal capitalize">
+                                Failed
+                             </Badge>
+                          ) : (
+                            <Badge variant="default" className="font-normal text-neutral-500 bg-transparent border border-neutral-200 shadow-none hover:bg-neutral-50 capitalize">
+                                {invoice.status}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>
                            <div className="flex items-center gap-2 text-neutral-600 text-sm">
@@ -537,7 +586,7 @@ export default function BillingSummaryPage() {
               </Table>
             </div>
 
-            {invoices.length > 0 && (
+            {filteredInvoices.length > 0 && (
               <div className="border-t border-neutral-100 bg-white p-4">
                 <TablePagination
                     currentPage={pagination.current_page}

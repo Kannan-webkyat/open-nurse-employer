@@ -253,6 +253,68 @@ export default function BillingPage() {
     }
   }
 
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const handleDownloadInvoice = async (invoiceId: string) => {
+    if (downloadingId === invoiceId) return;
+    
+    setDownloadingId(invoiceId)
+    try {
+      // Optimistic check, though backend also validates
+      const txn = transactions.find(t => t.id === invoiceId)
+      
+      const validStatuses = ['paid', 'succeeded', 'active']
+      if (txn && !validStatuses.includes(txn.status.toLowerCase())) {
+         toast.error("Invoice is available only for successful payments", { id: "download-invoice" })
+         setDownloadingId(null)
+         return
+      }
+
+      toast.loading("Downloading invoice...", { id: "download-invoice" })
+      const response = await paymentApi.downloadInvoice(invoiceId)
+      
+      if (response.success) {
+        toast.success("Invoice downloaded successfully", { id: "download-invoice" })
+        // Refresh transactions to show the new Invoice ID if it was just generated
+        fetchTransactions()
+      } else {
+        toast.error(response.error || "Failed to download invoice", { id: "download-invoice" })
+      }
+    } catch (error) {
+      console.error("Download error:", error)
+      toast.error("An error occurred while downloading", { id: "download-invoice" })
+    } finally {
+        setDownloadingId(null)
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "paid":
+      case "succeeded":
+      case "active":
+        return "bg-emerald-50 text-emerald-700 border-emerald-100"
+      case "pending":
+      case "incomplete":
+        return "bg-amber-50 text-amber-700 border-amber-100"
+      case "failed":
+      case "canceled":
+      case "past_due":
+        return "bg-rose-50 text-rose-700 border-rose-100"
+      default:
+        return "bg-slate-50 text-slate-700 border-slate-100"
+    }
+  }
+
+  // Helper to format currency
+  const formatCurrency = (amount: number, currency: string) => {
+    const formatter = new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    });
+    return formatter.format(amount);
+  }
+
   const handleStripeOnlineSuccess = async (paymentIntentId: string) => {
     toast.success("Payment completed successfully!")
     setIsAddPaymentModalOpen(false)
@@ -422,7 +484,7 @@ export default function BillingPage() {
                           {txn.description || (txn.type === 'subscription' ? 'Subscription' : 'Payment')}
                         </span>
                         <span className="text-xs text-neutral-500 font-mono mt-0.5">
-                          ID: {txn.invoice_id ? txn.invoice_id.substring(0, 14) + '...' : txn.id}
+                          ID: {txn.invoice_number || (txn.invoice_id ? txn.invoice_id.substring(0, 14) + '...' : txn.id)}
                         </span>
                       </div>
                     </TableCell>
@@ -450,10 +512,24 @@ export default function BillingPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <button className="text-neutral-500 hover:text-neutral-800 transition-colors">
-                        <Download className="w-5 h-5" />
-                        <span className="sr-only">Download</span>
-                      </button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`h-9 w-9 p-0 rounded-full transition-all duration-200 ${
+                          ['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase()) 
+                            ? "bg-gradient-to-b from-white to-slate-50 border border-slate-200 text-slate-600 shadow-sm hover:from-blue-50 hover:to-white hover:text-blue-600 hover:border-blue-300 hover:shadow-md" 
+                            : "text-gray-300 cursor-not-allowed bg-transparent"
+                        }`}
+                        onClick={() => handleDownloadInvoice(txn.id)}
+                        disabled={downloadingId === txn.id || !['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())}
+                        title={['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase()) ? "Download Invoice" : "Invoice unavailable"}
+                      >
+                        {downloadingId === txn.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        ) : (
+                            <Download className="w-4 h-4" />
+                        )}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
