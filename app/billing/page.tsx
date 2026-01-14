@@ -13,7 +13,7 @@ import { CreditCard, ChevronRight, Download, ChevronDown, Building2, ChevronUp, 
 import { Modal } from "@/components/ui/modal"
 import { Input } from "@/components/ui/input"
 import { paymentMethodApi, paymentApi, subscriptionApi } from "@/lib/api"
-import { toast } from "sonner"
+import { useToast } from "@/components/ui/toast"
 import { StripeCardForm } from "@/components/billing/StripeCardForm"
 import { StripeOnlinePayment } from "@/components/billing/StripeOnlinePayment"
 
@@ -71,6 +71,7 @@ const invoices: Invoice[] = [
 ]
 
 export default function BillingPage() {
+  const { success, error, warning, info } = useToast() as any
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>([])
   const [currentSubscription, setCurrentSubscription] = useState<any>(null)
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false)
@@ -96,12 +97,11 @@ export default function BillingPage() {
             setPaymentUrl(response.data.url)
             setPaymentClientSecret(response.data.client_secret)
           } else {
-            toast.error("Failed to initialize payment method setup")
+            error("Failed to initialize payment method setup")
           }
-        } catch (error) {
-          toast.error("Failed to initialize payment method setup")
-        } finally {
-          setIsLoading(false)
+        } catch (err) {
+          console.error(err)
+          error("Failed to connect to payment provider")
         }
       }
 
@@ -113,7 +113,7 @@ export default function BillingPage() {
         setPaymentUrl(null)
         setPaymentClientSecret(null)
     }
-  }, [isAddPaymentModalOpen])
+  }, [isAddPaymentModalOpen, paymentUrl])
 
   // Fetch payment methods on mount
   useEffect(() => {
@@ -136,25 +136,25 @@ export default function BillingPage() {
 
     if (status === 'success' && sessionId) {
       if (mode === 'setup') {
-        toast.success("Payment method added successfully!")
+        success("Payment method added successfully!")
         fetchPaymentMethods()
         window.history.replaceState({}, '', window.location.pathname)
         return
       }
 
-      const toastId = toast.loading("Verifying payment...")
+      const toastId = info("Verifying payment...")
       paymentApi.verify(sessionId)
         .then((response) => {
           if (response.success) {
-            toast.success("Payment verified and completed!", { id: toastId })
+            success("Payment verified and completed!", { id: toastId })
             fetchTransactions()
           } else {
-            toast.warning("Payment successful but verification returned unexpected status.", { id: toastId })
+            warning("Payment successful but verification returned unexpected status.", { id: toastId })
           }
         })
         .catch((err) => {
           console.error(err)
-          toast.error("Failed to verify payment status.", { id: toastId })
+          error("Failed to verify payment status.", { id: toastId })
         })
         .finally(() => {
           window.history.replaceState({}, '', window.location.pathname)
@@ -164,14 +164,89 @@ export default function BillingPage() {
     }
   }, [])
 
+  const handlePaymentSuccess = async () => {
+    try {
+      setIsLoading(true)
+      const response = await paymentMethodApi.getAll()
+
+      if (response.success && response.data) {
+        setPaymentMethodsList(response.data.map((pm: any) => ({
+          id: pm.id,
+          type: pm.card_brand ? pm.card_brand.toLowerCase() : "card",
+          lastFour: pm.card_last_four,
+          isDefault: pm.is_default,
+          isBank: false, // Assuming API doesn't return bank accounts mixed yet
+          cardholderName: pm.billing_details?.name || "",
+          expiryDate: `${pm.card_exp_month}/${pm.card_exp_year}`,
+          cvv: "" // Not stored
+        })))
+        
+        success("Payment method added successfully")
+        setIsAddPaymentModalOpen(false)
+        setPaymentUrl(null) // Reset for next time
+        setPaymentClientSecret(null)
+      }
+    } catch (err) {
+      console.error(err)
+      error("Failed to refresh payment methods")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle Stripe Redirect Result
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search)
+    if (query.get('setup_intent_client_secret')) {
+      const setupIntentClientSecret = query.get('setup_intent_client_secret')
+      const status = query.get('redirect_status')
+
+      if (status === 'succeeded') {
+        // Show success immediately to user
+        const toastId = "payment-success"
+        info("Verifying payment method...", { id: toastId })
+        
+        // Refresh the list
+        fetchPaymentMethods()
+          .then(() => {
+            success("Payment method verified and added successfully!", { id: toastId })
+            // Clear query params
+            window.history.replaceState({}, '', window.location.pathname)
+          })
+          .catch((err) => {
+            console.error(err)
+          })
+        
+        // We can also verify with backend if needed, but fetching list confirms it exists
+        paymentMethodApi.getAll()
+          .then(response => {
+            if (response.success) {
+              fetchTransactions()
+            } else {
+              warning("Payment successful but verification returned unexpected status.", { id: toastId })
+            }
+          })
+          .catch((err) => {
+            console.error(err)
+            error("Failed to verify payment status.", { id: toastId })
+          })
+          .finally(() => {
+            window.history.replaceState({}, '', window.location.pathname)
+          })
+      } else if (status === 'cancelled') {
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    }
+  }, [])
+
   const fetchSubscription = async () => {
     try {
       const response = await subscriptionApi.getCurrentSubscription()
       if (response.success && response.data) {
         setCurrentSubscription(response.data)
       }
-    } catch (error) {
-      console.error("Failed to fetch subscription:", error)
+    } catch (err) {
+      console.error("Failed to fetch subscription:", err)
     }
   }
 
@@ -181,8 +256,8 @@ export default function BillingPage() {
       if (response.success && response.data) {
         setTransactions(response.data)
       }
-    } catch (error) {
-      console.error("Failed to fetch transactions:", error)
+    } catch (err) {
+      console.error("Failed to fetch transactions:", err)
     }
   }
 
@@ -198,32 +273,37 @@ export default function BillingPage() {
           lastFour: pm.card_last_four,
           isDefault: pm.is_default,
           isBank: false,
-          cardholderName: pm.cardholderName, // Backend doesn't send this yet but safe to map
-          expiryDate: pm.expiry_month && pm.expiry_year ? `${pm.expiry_month}/${pm.expiry_year}` : undefined
+          cardholderName: pm.billing_details?.name || "",
+          expiryDate: `${pm.card_exp_month}/${pm.card_exp_year}`,
+          cvv: ""
         })))
       } else {
         setPaymentMethodsList([])
       }
-    } catch (error) {
-      console.error("Failed to fetch payment methods:", error)
+    } catch (err) {
+      console.error("Failed to fetch payment methods:", err)
+      error("Failed to load payment methods")
       setPaymentMethodsList([])
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleMarkAsDefault = async (id: any) => {
+  const handleMarkAsDefault = async (id: string | number) => {
+    setMarkingDefaultId(id)
     try {
       const response = await paymentMethodApi.setDefault(id);
 
       if (response.success) {
-        toast.success("Payment method set as default")
+        success("Payment method has been set as default successfully")
         fetchPaymentMethods()
       } else {
-        toast.error(response.message || "Failed to set default payment method")
+        error(response.message || "Failed to update default payment method")
       }
-    } catch (error) {
-      toast.error("Failed to set default payment method")
+    } catch (err) {
+      error("Failed to update default payment method")
+    } finally {
+      setMarkingDefaultId(null)
     }
   }
 
@@ -241,19 +321,20 @@ export default function BillingPage() {
       const response = await paymentMethodApi.delete(id);
 
       if (response.success) {
-        toast.success("Payment method deleted successfully")
+        success("Payment method deleted successfully")
         setIsViewPaymentModalOpen(false)
         setSelectedPaymentMethod(null)
         fetchPaymentMethods()
       } else {
-        toast.error(response.message || "Failed to delete payment method")
+        error(response.message || "Failed to delete payment method")
       }
-    } catch (error) {
-      toast.error("Failed to delete payment method")
+    } catch (err) {
+      error("Failed to delete payment method")
     }
   }
 
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const [markingDefaultId, setMarkingDefaultId] = useState<string | number | null>(null)
 
   const handleDownloadInvoice = async (invoiceId: string) => {
     if (downloadingId === invoiceId) return;
@@ -265,24 +346,24 @@ export default function BillingPage() {
       
       const validStatuses = ['paid', 'succeeded', 'active']
       if (txn && !validStatuses.includes(txn.status.toLowerCase())) {
-         toast.error("Invoice is available only for successful payments", { id: "download-invoice" })
+         error("Invoice is available only for successful payments", { id: "download-invoice" })
          setDownloadingId(null)
          return
       }
 
-      toast.loading("Downloading invoice...", { id: "download-invoice" })
+      info("Downloading invoice...", { id: "download-invoice" })
       const response = await paymentApi.downloadInvoice(invoiceId)
       
       if (response.success) {
-        toast.success("Invoice downloaded successfully", { id: "download-invoice" })
+        success("Invoice downloaded successfully", { id: "download-invoice" })
         // Refresh transactions to show the new Invoice ID if it was just generated
         fetchTransactions()
       } else {
-        toast.error(response.error || "Failed to download invoice", { id: "download-invoice" })
+        error(response.error || "Failed to download invoice", { id: "download-invoice" })
       }
-    } catch (error) {
-      console.error("Download error:", error)
-      toast.error("An error occurred while downloading", { id: "download-invoice" })
+    } catch (err) {
+      console.error("Download error:", err)
+      error("An error occurred while downloading", { id: "download-invoice" })
     } finally {
         setDownloadingId(null)
     }
@@ -316,7 +397,7 @@ export default function BillingPage() {
   }
 
   const handleStripeOnlineSuccess = async (paymentIntentId: string) => {
-    toast.success("Payment completed successfully!")
+    success("Payment completed successfully!")
     setIsAddPaymentModalOpen(false)
     setPaymentClientSecret(null)
     setPaymentUrl(null)
@@ -435,13 +516,14 @@ export default function BillingPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      disabled={markingDefaultId === method.id}
                       onClick={(e) => {
                         e.stopPropagation()
                         handleMarkAsDefault(method.id)
                       }}
                       className="border-none text-neutral-400 bg-neutral-100 !rounded-full text-sm"
                     >
-                      Mark As Default
+                       {markingDefaultId === method.id ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : "Mark As Default"}
                     </Button>
                   )}
                 </div>
@@ -460,6 +542,7 @@ export default function BillingPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[80px] whitespace-nowrap">Sl.No</TableHead>
                 <TableHead className="w-[180px]">Date</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Amount</TableHead>
@@ -471,6 +554,9 @@ export default function BillingPage() {
               {transactions && transactions.length > 0 ? (
                 transactions.map((txn, index) => (
                   <TableRow key={`${txn.id}-${index}`}>
+                    <TableCell className="text-neutral-500 font-mono text-xs">
+                      {index + 1}
+                    </TableCell>
                     <TableCell className="text-neutral-800 font-medium">
                       {new Date(txn.paid_at || txn.created_at).toLocaleDateString(undefined, {
                         year: 'numeric',

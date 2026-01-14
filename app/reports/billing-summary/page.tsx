@@ -12,6 +12,8 @@ import { toast } from "sonner"
 
 interface BillingInvoice {
   id: string
+  invoice_number?: string
+  invoice_id?: string
   created_at: string
   paid_at: string
   amount: string | number
@@ -75,6 +77,8 @@ export default function BillingSummaryPage() {
         // Map the API response to our internal interface
         const payments = response.data.map((item: any) => ({
             id: item.id,
+            invoice_number: item.invoice_number,
+            invoice_id: item.invoice_id,
             created_at: item.created_at,
             paid_at: item.paid_at,
             amount: item.amount,
@@ -501,11 +505,12 @@ export default function BillingSummaryPage() {
 
         {/* Table Section */}
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto min-h-[400px]">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader className="bg-neutral-50">
                   <TableRow>
-                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pl-6">Invoice ID</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pl-6 w-[80px] whitespace-nowrap">Sl.No</TableHead>
+                    <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Invoice ID</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Date</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Amount</TableHead>
                     <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</TableHead>
@@ -517,7 +522,8 @@ export default function BillingSummaryPage() {
                   {isLoading ? (
                      Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}>
-                            <TableCell className="pl-6"><div className="h-4 w-24 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell className="pl-6"><div className="h-4 w-8 bg-neutral-100 rounded animate-pulse"></div></TableCell>
+                            <TableCell><div className="h-4 w-24 bg-neutral-100 rounded animate-pulse"></div></TableCell>
                             <TableCell><div className="h-4 w-32 bg-neutral-100 rounded animate-pulse"></div></TableCell>
                             <TableCell><div className="h-4 w-16 bg-neutral-100 rounded animate-pulse"></div></TableCell>
                             <TableCell><div className="h-6 w-20 bg-neutral-100 rounded animate-pulse"></div></TableCell>
@@ -527,16 +533,19 @@ export default function BillingSummaryPage() {
                      ))
                   ) : displayedInvoices.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-neutral-400 text-sm">
+                      <TableCell colSpan={7} className="text-center py-12 text-neutral-400 text-sm">
                         No billing history found matching your filters
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayedInvoices.map((invoice) => (
+                    displayedInvoices.map((invoice, index) => (
                       <TableRow key={invoice.id} className="hover:bg-neutral-50/50 transition-colors">
-                        <TableCell className="pl-6 py-4">
+                        <TableCell className="pl-6 py-4 text-neutral-500 text-xs font-mono">
+                            {(pagination.current_page - 1) * pagination.per_page + index + 1}
+                        </TableCell>
+                        <TableCell className="py-4">
                             <span className="font-mono text-xs font-medium text-neutral-600 bg-neutral-100 px-2 py-1 rounded">
-                                {invoice.id.length > 18 ? invoice.id.substring(0, 15) + '...' : invoice.id}
+                                {invoice.invoice_number || (invoice.invoice_id ? invoice.invoice_id.substring(0, 14) + '...' : (invoice.id.length > 18 ? invoice.id.substring(0, 15) + '...' : invoice.id))}
                             </span>
                         </TableCell>
                          <TableCell className="text-neutral-600 text-sm">
