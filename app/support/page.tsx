@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
-import { Search, Grid3x3, Briefcase, User, FileText, DollarSign, Shield, Wrench, ChevronDown, Mail, MessageCircle } from "lucide-react"
+import { Search, Grid3x3, Briefcase, User, FileText, PoundSterling, Shield, Wrench, ChevronDown, Mail, MessageCircle } from "lucide-react"
 import { SupportChatWidget } from "@/components/support-chat-widget"
 
 interface FAQItem {
@@ -131,7 +131,7 @@ export default function SupportPage() {
               <div className="bg-white rounded-lg border border-neutral-200 p-6 hover:shadow-md transition-shadow h-full">
                 <div className="flex items-start gap-4">
                   <div className="bg-sky-100 rounded-lg p-3">
-                    <DollarSign className="w-6 h-6 text-sky-600" />
+                    <PoundSterling className="w-6 h-6 text-sky-600" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-base font-semibold text-neutral-900 mb-3">Billing & Subscriptions</h3>
