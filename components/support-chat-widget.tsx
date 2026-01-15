@@ -67,6 +67,11 @@ export function SupportChatWidget() {
       const token = localStorage.getItem('auth_token')
       if (!token) {
         setIsAuthenticated(false)
+        setUserId(null)
+        setEcho((prevEcho: any) => {
+          if (prevEcho) prevEcho.disconnect()
+          return null
+        })
         return
       }
       setIsAuthenticated(true)
@@ -83,16 +88,47 @@ export function SupportChatWidget() {
           if (userData.data?.id) {
             setUserId(userData.data.id)
           }
+        } else {
+          // Handle non-ok response (e.g., 401)
+          setIsAuthenticated(false)
+          setUserId(null)
+          setEcho((prevEcho: any) => {
+            if (prevEcho) prevEcho.disconnect()
+            return null
+          })
         }
       } catch (error: any) {
         console.error('Failed to fetch initial chat data', error)
-        if (error.response?.status === 401) {
-          setIsAuthenticated(false)
-        }
+        setIsAuthenticated(false)
+        setUserId(null)
+        setEcho((prevEcho: any) => {
+          if (prevEcho) prevEcho.disconnect()
+          return null
+        })
       }
     }
 
     fetchUserData()
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      fetchUserData()
+    }
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'auth_token') {
+        fetchUserData()
+      }
+    }
+
+    window.addEventListener('authChanged', handleAuthChange)
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('authChanged', handleAuthChange)
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, [])
 
   // Fetch unread count ONLY when chat is closed
@@ -330,7 +366,7 @@ export function SupportChatWidget() {
     setSelectedFile(null)
 
     try {
-      const res = await supportChatApi.sendMessage(conversation.id, text, file || undefined)
+      const res = await (supportChatApi as any).sendMessage(conversation.id, text, file || undefined)
       if (res.success && res.data) {
         const newMessage = res.data
         setMessages((prev) => {
