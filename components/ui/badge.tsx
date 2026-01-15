@@ -23,6 +23,7 @@ function Badge({ className = "", variant = "default", ...props }: BadgeProps) {
     pending: "bg-amber-100 text-amber-600",
     approved: "bg-emerald-100 text-emerald-600",
     hidden: "bg-gray-100 text-gray-500",
+    inactive: "bg-gray-100 text-gray-500",
   }
 
   const classes = `inline-flex items-center rounded-full  px-2.5 py-0.5 text-xs font-semibold ${variantClasses[variant]} ${className}`
