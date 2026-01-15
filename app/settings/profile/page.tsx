@@ -423,7 +423,7 @@ export default function CompanyProfilePage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-900 mb-2 block">
-                      Company Verification Documents (KYC) <span className="text-red-500">*</span>
+                      Company Verification Doc (KYC) <span className="text-red-500">*</span>
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -434,21 +434,16 @@ export default function CompanyProfilePage() {
                         className="hidden"
                         id="kyc-upload"
                       />
-                      <label htmlFor="kyc-upload" className="flex-1">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full flex items-center gap-2 border-neutral-300 justify-start"
-                          onClick={() => kycInputRef.current?.click()}
-                        >
-                          <Upload className="w-4 h-4" />
+                      <label
+                        htmlFor="kyc-upload"
+                        className="flex-1 flex items-center gap-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm cursor-pointer hover:bg-neutral-50 transition-colors"
+                      >
+                        <Upload className="w-4 h-4 text-neutral-500" />
+                        <span className={`truncate ${kycFileName ? 'text-neutral-900' : 'text-neutral-500'}`}>
                           {kycFileName || "Choose File"}
-                        </Button>
+                        </span>
                       </label>
                     </div>
-                    {!kycFileName && (
-                      <p className="text-xs text-neutral-500 mt-1">No file chosen</p>
-                    )}
                   </div>
                   <div className="col-span-2">
                     <label className="text-sm font-medium text-neutral-900 mb-2 block">
