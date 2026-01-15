@@ -359,13 +359,13 @@ export default function JobsPage() {
                     </TableCell>
                     <TableCell>
                       {job.admin_status === 'hidden' ? (
-                         <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
-                            Hidden by Admin
-                         </Badge>
+                        <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                          Hidden by Admin
+                        </Badge>
                       ) : (
-                         <Badge variant={statusVariantMap[job.status]}>
-                            {job.status === 'active' ? 'Website Listed' : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                         </Badge>
+                        <Badge variant={statusVariantMap[job.status]}>
+                          {job.status === 'active' ? 'Website Listed' : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="font-medium">
@@ -377,7 +377,7 @@ export default function JobsPage() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <Link href={`/jobs/edit/${job.id}`}>
-                          <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors">
+                          <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-violet-600 hover:bg-violet-100 transition-colors">
                             <Pencil className="w-4 h-4" />
                           </button>
                         </Link>
@@ -463,13 +463,13 @@ export default function JobsPage() {
                     <label className="text-sm font-medium text-neutral-600">Status</label>
                     <div className="mt-1">
                       {selectedJob.admin_status === 'hidden' ? (
-                         <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
-                            Hidden by Admin
-                         </Badge>
+                        <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                          Hidden by Admin
+                        </Badge>
                       ) : (
-                         <Badge variant={statusVariantMap[selectedJob.status]}>
-                            {selectedJob.status === 'active' ? 'Website Listed' : selectedJob.status.charAt(0).toUpperCase() + selectedJob.status.slice(1)}
-                         </Badge>
+                        <Badge variant={statusVariantMap[selectedJob.status]}>
+                          {selectedJob.status === 'active' ? 'Website Listed' : selectedJob.status.charAt(0).toUpperCase() + selectedJob.status.slice(1)}
+                        </Badge>
                       )}
                     </div>
                   </div>
