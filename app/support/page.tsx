@@ -46,23 +46,25 @@ export default function SupportPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-2">Support / Help Center</h1>
-          <p className="text-neutral-600">Find answers to common questions and get help</p>
-        </div>
+        <div className="flex items-center justify-between">
+          {/* Header */}
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">Support / Help Center</h1>
+            <p className="text-neutral-600">Find answers to common questions and get help</p>
+          </div>
 
-        {/* Search Bar */}
-        <div className="flex justify-end">
-          <div className="relative w-full max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Search..."
-              className="pl-10 w-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          {/* Search Bar */}
+          <div className="flex justify-end">
+            <div className="relative w-full max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search..."
+                className="pl-10 w-full"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
