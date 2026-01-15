@@ -17,6 +17,14 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Clear error after 5 seconds
+    React.useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => setError(''), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         setError('');
