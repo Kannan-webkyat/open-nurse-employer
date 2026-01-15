@@ -9,21 +9,22 @@ export interface ModalProps {
   children: React.ReactNode
   footer?: React.ReactNode
   description?: string
+  maxWidth?: string
 }
 
-export function Modal({ isOpen, onClose, title, children, footer, description }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, description, maxWidth = "max-w-4xl" }: ModalProps) {
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-50 mx-4">
+      <div className={`relative bg-white rounded-lg shadow-xl w-full ${maxWidth} max-h-[90vh] overflow-hidden flex flex-col z-50 mx-4`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-neutral-200 flex-shrink-0">
           <div>
@@ -39,7 +40,7 @@ export function Modal({ isOpen, onClose, title, children, footer, description }:
             <X className="w-5 h-5 text-neutral-600" />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="overflow-y-auto flex-1 p-6">
           {children}
