@@ -223,10 +223,8 @@ export default function CompanyProfilePage() {
         updateData.kyc_document = kycFile
       }
 
-      // Add preferred job categories (using IDs if available, otherwise empty array)
-      // Note: For now, we'll send empty array since we don't have category ID mapping
-      // In production, you'd want to fetch available categories and map names to IDs
-      updateData.preferred_job_categories = preferredCategoryIds.length > 0 ? preferredCategoryIds : undefined
+      // Add preferred job categories (send names, backend will find or create)
+      updateData.preferred_job_categories = preferredCategories.length > 0 ? preferredCategories : undefined
 
       const response = await employerProfileApi.updateProfile(updateData)
 
