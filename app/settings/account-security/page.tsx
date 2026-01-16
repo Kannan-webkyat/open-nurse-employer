@@ -56,6 +56,7 @@ export default function AccountSecurityPage() {
             usernameEmail: user.email || "",
             contactNumber: user.phone || "",
             recoveryEmail: user.email || "", // Using email as recovery email for now
+            twoFactorEnabled: user.two_factor_enabled || false,
           }))
         }
 
@@ -102,6 +103,12 @@ export default function AccountSecurityPage() {
         })
         updates.push(accountInfoUpdate)
       }
+
+      // Update 2FA setting
+      const twoFactorUpdate = accountSecurityApi.toggleTwoFactor({
+        enabled: formData.twoFactorEnabled
+      })
+      updates.push(twoFactorUpdate)
 
       // Change password if provided
       if (formData.currentPassword && formData.newPassword && formData.confirmPassword) {
@@ -160,6 +167,7 @@ export default function AccountSecurityPage() {
                 usernameEmail: user.email || "",
                 contactNumber: user.phone || "",
                 recoveryEmail: user.email || "",
+                twoFactorEnabled: user.two_factor_enabled || false,
               }))
             }
 
@@ -274,7 +282,7 @@ export default function AccountSecurityPage() {
           </div>
 
           {/* Password & Authentication Section */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
+            <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Password & Authentication</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Current Password */}
@@ -361,23 +369,6 @@ export default function AccountSecurityPage() {
                   />
                   <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none peer-focus:ring-0 peer-focus:ring-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00EB23]"></div>
                 </label>
-              </div>
-              {/* Security Questions */}
-              <div>
-                <label className="text-sm font-medium text-neutral-900 mb-2 block">
-                  Security Questions
-                </label>
-                <select
-                  value={formData.securityQuestions}
-                  onChange={(e) => handleInputChange("securityQuestions", e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8] text-neutral-400"
-                >
-                  <option value="">Choose security questions</option>
-                  <option value="mother-maiden-name">What is your mother's maiden name?</option>
-                  <option value="first-pet">What was the name of your first pet?</option>
-                  <option value="birth-city">What city were you born in?</option>
-                  <option value="school-name">What was the name of your elementary school?</option>
-                </select>
               </div>
             </div>
           </div>
