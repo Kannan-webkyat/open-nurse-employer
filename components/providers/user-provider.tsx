@@ -67,8 +67,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     const logout = useCallback(() => {
         localStorage.removeItem('auth_token')
-        setUser(null)
-        setIsAuthenticated(false)
         const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || '/login'
         window.location.href = `${loginUrl}`
     }, [])
