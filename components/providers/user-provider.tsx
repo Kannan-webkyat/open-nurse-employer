@@ -69,8 +69,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('auth_token')
         setUser(null)
         setIsAuthenticated(false)
-        const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3001/login'
-        window.location.href = `${loginUrl}?role=employer`
+        const loginUrl = process.env.NEXT_PUBLIC_LOGIN_URL || '/login'
+        window.location.href = `${loginUrl}`
     }, [])
 
     // Initial fetch

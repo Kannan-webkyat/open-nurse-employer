@@ -1,14 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { authApi } from '@/lib/api/auth';
+import { useUser } from '@/components/providers/user-provider';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const { refreshUser } = useUser();
+    const searchParams = useSearchParams();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -16,6 +19,14 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+
+    // Check for registration success
+    React.useEffect(() => {
+        if (searchParams.get('registered') === 'true') {
+            setSuccess('Registration successful! Your account is pending administrator approval. Please wait for confirmation.');
+        }
+    }, [searchParams]);
 
     // Clear error after 5 seconds
     React.useEffect(() => {
@@ -34,13 +45,31 @@ export default function LoginPage() {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        setSuccess('');
 
         try {
-            await authApi.loginEmployer(formData);
-            router.push('/dashboard');
+            const response = await authApi.loginEmployer(formData);
+            
+            if (response.success && response.data?.token) {
+                // Store token
+                localStorage.setItem('auth_token', response.data.token);
+                
+                // Refresh user context
+                await refreshUser();
+                
+                // Redirect to dashboard or return URL
+                const returnUrl = searchParams.get('redirect');
+                if (returnUrl) {
+                    router.push(decodeURIComponent(returnUrl));
+                } else {
+                    router.push('/dashboard');
+                }
+            } else {
+                throw new Error(response.message || 'Login failed');
+            }
         } catch (err: any) {
             console.error('Login error:', err);
-            setError(err.response?.data?.message || 'Invalid credentials. Please try again.');
+            setError(err.response?.data?.message || err.message || 'Invalid credentials. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -69,6 +98,12 @@ export default function LoginPage() {
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {success && (
+                            <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg">
+                                {success}
+                            </div>
+                        )}
+                        
                         {error && (
                             <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg">
                                 {error}
@@ -168,5 +203,17 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

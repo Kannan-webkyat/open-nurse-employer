@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { employerProfileApi } from '@/lib/api/profile'
 import { useUser } from '@/components/providers/user-provider'
 
-const LOGIN_URL = process.env.NEXT_PUBLIC_LOGIN_URL || 'http://localhost:3001/signin'
+const LOGIN_URL = process.env.NEXT_PUBLIC_LOGIN_URL || '/login'
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, refreshUser } = useUser()
@@ -37,6 +37,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Wait for loading to finish before checking authentication
     if (!isLoading && !isAuthenticated) {
+      // Don't redirect if already on login page or registration page
+      if (pathname === '/login' || pathname === '/register') {
+        return
+      }
+
       setIsRedirecting(true)
       if (typeof window !== 'undefined') {
         const returnUrl = encodeURIComponent(window.location.href)
