@@ -830,318 +830,320 @@ export default function CandidatesPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg border border-neutral-200">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Job ID</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+        <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
-                    Loading...
-                  </TableCell>
+                  <TableHead>#</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Job ID</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : paginatedCandidates.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
-                    No candidates found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedCandidates.map((candidate, index) => (
-                  <TableRow
-                    key={candidate.id}
-                  >
-                    <TableCell className="text-neutral-800">
-                      {(currentPage - 1) * rowsPerPage + index + 1}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {candidate.candidateName}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {candidate.jobAppliedFor}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {candidate.jobId}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col items-center gap-1">
-                        <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
-                          {statusLabels[candidate.status]}
-                        </Badge>
-                        {candidate.status === 'interviewing' && candidate.interviewAt && (
-                          (() => {
-                            const interviewDate = new Date(candidate.interviewAt);
-                            const today = new Date();
-                            if (interviewDate.toDateString() === today.toDateString()) {
-                              return (
-                                <div className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
-                                  <AlertCircle className="w-3 h-3" />
-                                  <span>Today {interviewDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                              );
-                            }
-                            return null;
-                          })()
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3 relative">
-                        {/* Quick Action Button - context aware based on status */}
-                        {candidate.status === "new" ? (
-                          /* No quick action for new candidates - must review first */
-                          null
-                        ) : candidate.status === "reviewed" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-green-700 hover:bg-green-100 transition-colors group relative"
-                            title="Shortlist"
-                            onClick={() => handleShortlistClick(candidate)}
-                          >
-                            <Check className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Shortlist
-                            </span>
-                          </button>
-                        ) : candidate.status === "shortlisted" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-purple-700 hover:bg-purple-100 transition-colors group relative"
-                            title="Setup Interview"
-                            onClick={() => handleSetUpInterview(candidate)}
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Setup Interview
-                            </span>
-                          </button>
-                        ) : candidate.status === "interviewing" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-emerald-700 hover:bg-emerald-100 transition-colors group relative"
-                            title="Mark as Interviewed"
-                            onClick={() => handleMarkAsInterviewed(candidate)}
-                          >
-                            <ClipboardCheck className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Mark Interviewed
-                            </span>
-                          </button>
-                        ) : candidate.status === "interviewed" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-teal-700 hover:bg-teal-100 transition-colors group relative"
-                            title="Mark as Hired"
-                            onClick={() => handleMarkAsHired(candidate)}
-                          >
-                            <UserCheck className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Mark as Hired
-                            </span>
-                          </button>
-                        ) : candidate.status === "rejected" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 cursor-not-allowed group relative"
-                            title="Rejected"
-                            disabled
-                          >
-                            <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Rejected
-                            </span>
-                          </button>
-                        ) : candidate.status === "hired" ? (
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 cursor-not-allowed group relative"
-                            title="Hired"
-                            disabled
-                          >
-                            <UserCheck className="w-4 h-4 text-teal-500" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              Hired
-                            </span>
-                          </button>
-                        ) : null}
-                        <button
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors group relative"
-                          title="View"
-                          onClick={() => handleViewClick(candidate)}
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            View
-                          </span>
-                        </button>
-                        <div className="relative" ref={menuRef}>
-                          <button
-                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors group relative"
-                            title="More options"
-                            onClick={(e) => {
-                              if (openMenuId === candidate.id) {
-                                setOpenMenuId(null);
-                              } else {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                // Calculate position: align right edge with button right edge, top below button
-                                const top = rect.bottom + window.scrollY + 4; // Add scrollY? No, for fixed we don't add scrollY.
-                                // Wait, if using fixed, use rect.bottom directly.
-                                // Warning: parent might be transformed? If parent has transform, fixed behaves like absolute.
-                                // Previous hack added transform to TR. We should REMOVE that.
-
-                                // Let's use Fixed and rect.bottom.
-                                setMenuPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
-                                setOpenMenuId(candidate.id);
-                              }
-                            }}
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                              More options
-                            </span>
-                          </button>
-                          {openMenuId === candidate.id && (
-                            <div
-                              className="fixed w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-[9999] py-1"
-                              style={{ top: menuPosition.top, right: menuPosition.right }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {/* Message - always available */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleMessageClick(candidate)
-                                }}
-                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                              >
-                                <MessageSquare className="w-4 h-4" />
-                                Message
-                              </button>
-
-                              {/* Shortlist - only for reviewed status */}
-                              {candidate.status === "reviewed" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleShortlistClick(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <Check className="w-4 h-4" />
-                                  Shortlist
-                                </button>
-                              )}
-
-                              {/* View Interview - only for interviewing status */}
-                              {candidate.status === 'interviewing' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setViewCandidate(candidate)
-                                    setIsViewModalOpen(true)
-                                    setOpenMenuId(null)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <Calendar className="w-4 h-4" />
-                                  View Interview
-                                </button>
-                              )}
-
-                              {/* Setup Interview - only for shortlisted status */}
-                              {candidate.status === "shortlisted" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleSetUpInterview(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <Calendar className="w-4 h-4" />
-                                  Setup Interview
-                                </button>
-                              )}
-
-                              {/* Mark as Interviewed - only for interviewing status */}
-                              {candidate.status === "interviewing" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMarkAsInterviewed(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <ClipboardCheck className="w-4 h-4" />
-                                  Mark as Interviewed
-                                </button>
-                              )}
-
-                              {/* Mark as Hired - only for interviewed status */}
-                              {candidate.status === "interviewed" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMarkAsHired(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
-                                >
-                                  <UserCheck className="w-4 h-4" />
-                                  Mark as Hired
-                                </button>
-                              )}
-
-                              {/* Reject - available for most statuses except final ones */}
-                              {!["rejected", "hired"].includes(candidate.status) && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleRejectClick(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                  Reject
-                                </button>
-                              )}
-
-                              {/* Call - optional, always available */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleCall(candidate)
-                                }}
-                                className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                              >
-                                <Phone className="w-4 h-4" />
-                                Call
-                              </button>
-
-                              <div className="border-t border-neutral-200 my-1"></div>
-
-                              {/* Delete - always available */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  handleDeleteClick(candidate)
-                                }}
-                                className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
+                      Loading...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : paginatedCandidates.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
+                      No candidates found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedCandidates.map((candidate, index) => (
+                    <TableRow
+                      key={candidate.id}
+                    >
+                      <TableCell className="text-neutral-800">
+                        {(currentPage - 1) * rowsPerPage + index + 1}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {candidate.candidateName}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {candidate.jobAppliedFor}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {candidate.jobId}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col items-center gap-1">
+                          <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
+                            {statusLabels[candidate.status]}
+                          </Badge>
+                          {candidate.status === 'interviewing' && candidate.interviewAt && (
+                            (() => {
+                              const interviewDate = new Date(candidate.interviewAt);
+                              const today = new Date();
+                              if (interviewDate.toDateString() === today.toDateString()) {
+                                return (
+                                  <div className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">
+                                    <AlertCircle className="w-3 h-3" />
+                                    <span>Today {interviewDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3 relative">
+                          {/* Quick Action Button - context aware based on status */}
+                          {candidate.status === "new" ? (
+                            /* No quick action for new candidates - must review first */
+                            null
+                          ) : candidate.status === "reviewed" ? (
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-green-700 hover:bg-green-100 transition-colors group relative"
+                              title="Shortlist"
+                              onClick={() => handleShortlistClick(candidate)}
+                            >
+                              <Check className="w-4 h-4" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Shortlist
+                              </span>
+                            </button>
+                          ) : candidate.status === "shortlisted" ? (
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-purple-700 hover:bg-purple-100 transition-colors group relative"
+                              title="Setup Interview"
+                              onClick={() => handleSetUpInterview(candidate)}
+                            >
+                              <Calendar className="w-4 h-4" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Setup Interview
+                              </span>
+                            </button>
+                          ) : candidate.status === "interviewing" ? (
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-emerald-700 hover:bg-emerald-100 transition-colors group relative"
+                              title="Mark as Interviewed"
+                              onClick={() => handleMarkAsInterviewed(candidate)}
+                            >
+                              <ClipboardCheck className="w-4 h-4" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Mark Interviewed
+                              </span>
+                            </button>
+                          ) : candidate.status === "interviewed" ? (
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-teal-700 hover:bg-teal-100 transition-colors group relative"
+                              title="Mark as Hired"
+                              onClick={() => handleMarkAsHired(candidate)}
+                            >
+                              <UserCheck className="w-4 h-4" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Mark as Hired
+                              </span>
+                            </button>
+                          ) : candidate.status === "rejected" ? (
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 cursor-not-allowed group relative"
+                              title="Rejected"
+                              disabled
+                            >
+                              <XCircle className="w-4 h-4 text-red-500" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Rejected
+                              </span>
+                            </button>
+                          ) : candidate.status === "hired" ? (
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 cursor-not-allowed group relative"
+                              title="Hired"
+                              disabled
+                            >
+                              <UserCheck className="w-4 h-4 text-teal-500" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                Hired
+                              </span>
+                            </button>
+                          ) : null}
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors group relative"
+                            title="View"
+                            onClick={() => handleViewClick(candidate)}
+                          >
+                            <Eye className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              View
+                            </span>
+                          </button>
+                          <div className="relative" ref={menuRef}>
+                            <button
+                              className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors group relative"
+                              title="More options"
+                              onClick={(e) => {
+                                if (openMenuId === candidate.id) {
+                                  setOpenMenuId(null);
+                                } else {
+                                  const rect = e.currentTarget.getBoundingClientRect();
+                                  // Calculate position: align right edge with button right edge, top below button
+                                  const top = rect.bottom + window.scrollY + 4; // Add scrollY? No, for fixed we don't add scrollY.
+                                  // Wait, if using fixed, use rect.bottom directly.
+                                  // Warning: parent might be transformed? If parent has transform, fixed behaves like absolute.
+                                  // Previous hack added transform to TR. We should REMOVE that.
+
+                                  // Let's use Fixed and rect.bottom.
+                                  setMenuPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                                  setOpenMenuId(candidate.id);
+                                }
+                              }}
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                                More options
+                              </span>
+                            </button>
+                            {openMenuId === candidate.id && (
+                              <div
+                                className="fixed w-48 bg-white rounded-lg shadow-lg border border-neutral-200 z-[9999] py-1"
+                                style={{ top: menuPosition.top, right: menuPosition.right }}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {/* Message - always available */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleMessageClick(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <MessageSquare className="w-4 h-4" />
+                                  Message
+                                </button>
+
+                                {/* Shortlist - only for reviewed status */}
+                                {candidate.status === "reviewed" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleShortlistClick(candidate)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                    Shortlist
+                                  </button>
+                                )}
+
+                                {/* View Interview - only for interviewing status */}
+                                {candidate.status === 'interviewing' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setViewCandidate(candidate)
+                                      setIsViewModalOpen(true)
+                                      setOpenMenuId(null)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                  >
+                                    <Calendar className="w-4 h-4" />
+                                    View Interview
+                                  </button>
+                                )}
+
+                                {/* Setup Interview - only for shortlisted status */}
+                                {candidate.status === "shortlisted" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleSetUpInterview(candidate)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                  >
+                                    <Calendar className="w-4 h-4" />
+                                    Setup Interview
+                                  </button>
+                                )}
+
+                                {/* Mark as Interviewed - only for interviewing status */}
+                                {candidate.status === "interviewing" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleMarkAsInterviewed(candidate)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                  >
+                                    <ClipboardCheck className="w-4 h-4" />
+                                    Mark as Interviewed
+                                  </button>
+                                )}
+
+                                {/* Mark as Hired - only for interviewed status */}
+                                {candidate.status === "interviewed" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleMarkAsHired(candidate)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                  >
+                                    <UserCheck className="w-4 h-4" />
+                                    Mark as Hired
+                                  </button>
+                                )}
+
+                                {/* Reject - available for most statuses except final ones */}
+                                {!["rejected", "hired"].includes(candidate.status) && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleRejectClick(candidate)
+                                    }}
+                                    className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                  >
+                                    <XCircle className="w-4 h-4" />
+                                    Reject
+                                  </button>
+                                )}
+
+                                {/* Call - optional, always available */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCall(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
+                                >
+                                  <Phone className="w-4 h-4" />
+                                  Call
+                                </button>
+
+                                <div className="border-t border-neutral-200 my-1"></div>
+
+                                {/* Delete - always available */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDeleteClick(candidate)
+                                  }}
+                                  className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
