@@ -121,6 +121,15 @@ export default function AccountSecurityPage() {
           return
         }
 
+        if (formData.currentPassword === formData.newPassword) {
+          toast.error('New password cannot be the same as current password', {
+            title: 'Validation Error',
+            duration: 5000,
+          })
+          setIsSubmitting(false)
+          return
+        }
+
         const passwordUpdate = accountSecurityApi.changePassword({
           current_password: formData.currentPassword,
           password: formData.newPassword,
