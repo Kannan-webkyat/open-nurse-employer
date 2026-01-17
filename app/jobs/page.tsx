@@ -294,106 +294,108 @@ export default function JobsPage() {
 
         {/* Table */}
         <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Job ID</TableHead>
-                <TableHead>Job Title</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Employment Type</TableHead>
-                <TableHead>Posted Date</TableHead>
-                <TableHead>Closed Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
-                    Loading...
-                  </TableCell>
+                  <TableHead>#</TableHead>
+                  <TableHead>Job ID</TableHead>
+                  <TableHead>Job Title</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Employment Type</TableHead>
+                  <TableHead>Posted Date</TableHead>
+                  <TableHead>Closed Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : paginatedJobs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
-                    No jobs found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedJobs.map((job, index) => (
-                  <TableRow key={job.id}>
-                    <TableCell className="text-neutral-800">
-                      {(currentPage - 1) * rowsPerPage + index + 1}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      <div className="flex items-center gap-2 group">
-                        <span className="font-mono text-sm">{job.job_id}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(job.job_id)
-                            toast.success('Job ID copied!')
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-neutral-100 rounded transition-all text-neutral-400 hover:text-neutral-600"
-                          title="Copy Job ID"
-                        >
-                          <Copy className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {job.title}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {job.location || "N/A"}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {job.employment_type}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(job.posted_date)}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(job.closed_date)}
-                    </TableCell>
-                    <TableCell>
-                      {job.admin_status === 'hidden' ? (
-                        <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
-                          Hidden by Admin
-                        </Badge>
-                      ) : (
-                        <Badge variant={statusVariantMap[job.status]}>
-                          {job.status === 'active' ? 'Website Listed' : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => handleViewJob(job)}
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <Link href={`/jobs/edit/${job.id}`}>
-                          <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-violet-600 hover:bg-violet-100 transition-colors">
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteClick(job)}
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
+                      Loading...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : paginatedJobs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
+                      No jobs found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedJobs.map((job, index) => (
+                    <TableRow key={job.id}>
+                      <TableCell className="text-neutral-800">
+                        {(currentPage - 1) * rowsPerPage + index + 1}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        <div className="flex items-center gap-2 group">
+                          <span className="font-mono text-sm">{job.job_id}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(job.job_id)
+                              toast.success('Job ID copied!')
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-neutral-100 rounded transition-all text-neutral-400 hover:text-neutral-600"
+                            title="Copy Job ID"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {job.title}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {job.location || "N/A"}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {job.employment_type}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {formatDate(job.posted_date)}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {formatDate(job.closed_date)}
+                      </TableCell>
+                      <TableCell>
+                        {job.admin_status === 'hidden' ? (
+                          <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                            Hidden by Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant={statusVariantMap[job.status]}>
+                            {job.status === 'active' ? 'Website Listed' : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleViewJob(job)}
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <Link href={`/jobs/edit/${job.id}`}>
+                            <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-violet-600 hover:bg-violet-100 transition-colors">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteClick(job)}
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
