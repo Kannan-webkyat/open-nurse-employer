@@ -473,7 +473,7 @@ export default function CandidatesApplicationsPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="min-w-[1000px]">
                   <TableHeader className="bg-neutral-50">
                     <TableRow>
                       <TableHead className="text-xs font-semibold text-neutral-500 uppercase tracking-wider pl-6">Candidate</TableHead>
