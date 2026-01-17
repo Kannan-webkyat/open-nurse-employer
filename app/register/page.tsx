@@ -37,7 +37,7 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (formData.password !== formData.password_confirmation) {
             setError('Passwords do not match');
             return;
@@ -76,17 +76,15 @@ export default function RegisterPage() {
     return (
         <div className="flex min-h-screen w-full bg-background">
             {/* Left Side - Form */}
-            <div className="flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-12 xl:px-24 py-12">
-                <div className="mx-auto w-full max-w-sm">
-                    {/* Logo */}
-                    <div className="mb-10">
-                        <div className="flex items-center gap-2">
-                            <Image src="/logo.svg" alt="Open Nurses Logo" width={40} height={40} className="h-10 w-auto" />
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
-                                Open Nurses
-                            </span>
-                        </div>
+            <div className="flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-12 xl:px-24 py-12 relative">
+                {/* Logo */}
+                <div className="absolute top-12 left-8 lg:left-12 xl:left-24">
+                    <div className="flex items-center gap-2">
+                        <Image src="/logo.svg" alt="Open Nurses Logo" width={30} height={30} className="h-5 w-auto" />
                     </div>
+                </div>
+                <div className="mx-auto w-full max-w-sm">
+
 
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">Create an account</h1>
@@ -114,11 +112,11 @@ export default function RegisterPage() {
                                 required
                                 value={formData.name}
                                 onChange={handleChange}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
 
-                         <div className="space-y-2">
+                        <div className="space-y-2">
                             <label htmlFor="company_name" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 Company Name
                             </label>
@@ -130,7 +128,7 @@ export default function RegisterPage() {
                                 required
                                 value={formData.company_name}
                                 onChange={handleChange}
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                             />
                         </div>
 
@@ -147,7 +145,7 @@ export default function RegisterPage() {
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                                 />
                             </div>
 
@@ -163,7 +161,7 @@ export default function RegisterPage() {
                                     required
                                     value={formData.phone}
                                     onChange={handleChange}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                                 />
                             </div>
                         </div>
@@ -181,7 +179,7 @@ export default function RegisterPage() {
                                         required
                                         value={formData.password}
                                         onChange={handleChange}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
                                     />
                                     <button
                                         type="button"
@@ -204,7 +202,7 @@ export default function RegisterPage() {
                                         required
                                         value={formData.password_confirmation}
                                         onChange={handleChange}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
                                     />
                                     <button
                                         type="button"
@@ -220,7 +218,7 @@ export default function RegisterPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="mt-4 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:pointer-events-none disabled:opacity-50 bg-sky-600 text-white hover:bg-sky-600/90 h-10 w-full"
                         >
                             {isLoading ? (
                                 <>
@@ -235,7 +233,7 @@ export default function RegisterPage() {
 
                     <p className="mt-6 text-center text-sm text-muted-foreground">
                         Already have an account?{' '}
-                        <Link href="/login" className="font-semibold text-primary hover:underline">
+                        <Link href="/login" className="font-semibold text-sky-600 hover:underline">
                             Sign in
                         </Link>
                     </p>
@@ -252,12 +250,12 @@ export default function RegisterPage() {
                     priority
                 />
                 <div className="absolute inset-0 bg-black/40 flex items-end p-12">
-                     <div className="text-white max-w-lg">
+                    <div className="text-white max-w-lg">
                         <blockquote className="space-y-2">
-                             <p className="text-lg font-medium leading-relaxed">
+                            <p className="text-lg font-medium leading-relaxed">
                                 &quot;Joining Open Nurses was the best decision for our recruitment. We found qualified professionals faster than ever.&quot;
                             </p>
-                             <footer className="text-sm opacity-80">
+                            <footer className="text-sm opacity-80">
                                 - Mark Johnson, HR Director
                             </footer>
                         </blockquote>
