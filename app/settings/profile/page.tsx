@@ -50,6 +50,7 @@ export default function CompanyProfilePage() {
   const [shouldDeleteLogo, setShouldDeleteLogo] = useState(false)
   const [kycFile, setKycFile] = useState<File | null>(null)
   const [kycFileName, setKycFileName] = useState<string>("")
+  const [kycFileUrl, setKycFileUrl] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const kycInputRef = useRef<HTMLInputElement>(null)
 
@@ -85,6 +86,7 @@ export default function CompanyProfilePage() {
     if (file) {
       setKycFile(file)
       setKycFileName(file.name)
+      setKycFileUrl(null) // Clear URL when new file is selected
     }
   }
 
@@ -156,9 +158,12 @@ export default function CompanyProfilePage() {
         if (employer.kyc_document) {
           const fileName = employer.kyc_document.split('/').pop() || "Document uploaded"
           setKycFileName(fileName)
+          const kycUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${employer.kyc_document}`
+          setKycFileUrl(kycUrl)
         } else {
           // Clear KYC file name if not present
           setKycFileName("")
+          setKycFileUrl(null)
         }
 
         // Set preferred categories
@@ -434,12 +439,39 @@ export default function CompanyProfilePage() {
                       />
                       <label
                         htmlFor="kyc-upload"
-                        className="flex-1 flex items-center gap-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm cursor-pointer hover:bg-neutral-50 transition-colors"
+                        className="flex-1 flex items-center justify-between gap-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm hover:bg-neutral-50 transition-colors"
                       >
-                        <Upload className="w-4 h-4 text-neutral-500" />
-                        <span className={`truncate ${kycFileName ? 'text-neutral-900' : 'text-neutral-500'}`}>
-                          {kycFileName || "Choose File"}
-                        </span>
+                       <div className="flex items-center gap-2 overflow-hidden cursor-pointer" onClick={() => kycInputRef.current?.click()}>
+                        <Upload className="w-4 h-4 text-neutral-500 shrink-0" />
+                          {kycFile ? (
+                              <span className="truncate text-neutral-900">{kycFileName}</span>
+                          ) : kycFileUrl ? (
+                              <a 
+                                href={kycFileUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="truncate text-[#0576B8] hover:underline font-medium"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                View Document
+                              </a>
+                          ) : (
+                              <span className="text-neutral-500">Choose File</span>
+                          )}
+                       </div>
+
+                       {kycFileUrl && !kycFile && (
+                          <button
+                            type="button" 
+                            className="text-xs text-neutral-400 hover:text-neutral-600 ml-2"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                kycInputRef.current?.click();
+                            }}
+                          >
+                            Change
+                          </button>
+                       )}
                       </label>
                     </div>
                   </div>
@@ -508,6 +540,7 @@ export default function CompanyProfilePage() {
                       className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
                       required
                     >
+                      <option value="" disabled>Select Number of Employees</option>
                       <option value="1-10">1-10</option>
                       <option value="11-50">11-50</option>
                       <option value="51-200">51-200</option>
@@ -526,6 +559,7 @@ export default function CompanyProfilePage() {
                       className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
                       required
                     >
+                      <option value="" disabled>Select Year</option>
                       {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
                         <option key={year} value={year.toString()}>{year}</option>
                       ))}
