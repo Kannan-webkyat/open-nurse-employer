@@ -65,7 +65,7 @@ export default function AccountSecurityPage() {
         if (sessionsResponse.success && 'data' in sessionsResponse && sessionsResponse.data) {
           const sessions = sessionsResponse.data as ActiveSession[]
           setActiveSessions(sessions)
-          
+
           // Find current session and set last login activity
           const currentSession = sessions.find(s => s.is_current)
           if (currentSession && currentSession.last_used_at) {
@@ -131,7 +131,7 @@ export default function AccountSecurityPage() {
 
       // Execute all updates
       const results = await Promise.all(updates)
-      
+
       // Check for errors
       const hasErrors = results.some(result => !result.success)
       if (hasErrors) {
@@ -176,7 +176,7 @@ export default function AccountSecurityPage() {
             if (sessionsResponse.success && 'data' in sessionsResponse && sessionsResponse.data) {
               const sessions = sessionsResponse.data as ActiveSession[]
               setActiveSessions(sessions)
-              
+
               // Update last login activity
               const currentSession = sessions.find(s => s.is_current)
               if (currentSession && currentSession.last_used_at) {
@@ -270,11 +270,11 @@ export default function AccountSecurityPage() {
                   className="w-full"
                 />
               </div>
-              <div className="col-span-2">
+              <div>
                 <label className="text-sm font-medium text-neutral-900 mb-2 block">
                   Last Login Activity
                 </label>
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-neutral-600 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2">
                   {isLoading ? "Loading..." : lastLoginActivity || "No activity recorded"}
                 </p>
               </div>
@@ -282,7 +282,7 @@ export default function AccountSecurityPage() {
           </div>
 
           {/* Password & Authentication Section */}
-            <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
+          <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Password & Authentication</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Current Password */}
@@ -351,11 +351,11 @@ export default function AccountSecurityPage() {
                   </button>
                 </div>
               </div>
-         
+
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                   {/* Two-Factor Authentication */}
-                   <div className="flex items-center justify-between pt-2">
+              {/* Two-Factor Authentication */}
+              <div className="flex items-center justify-between pt-2">
                 <div>
                   <p className="text-sm font-medium text-neutral-900">Two-Factor Authentication</p>
                   <p className="text-sm text-neutral-600 mt-1">Add an extra layer of security to your account</p>
@@ -425,6 +425,7 @@ export default function AccountSecurityPage() {
                           type="button"
                           variant="danger"
                           onClick={handleLogoutOtherDevices}
+                          className="!bg-red-100 !text-red-600 !border-red-400 !border !hover:bg-red-300"
                         >
                           Logout
                         </Button>
@@ -437,7 +438,7 @@ export default function AccountSecurityPage() {
                         type="button"
                         variant="danger"
                         onClick={handleLogoutOtherDevices}
-                        className="w-full"
+                        className="w-50"
                       >
                         Logout from All Other Devices
                       </Button>
