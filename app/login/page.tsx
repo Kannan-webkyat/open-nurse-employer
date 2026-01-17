@@ -56,7 +56,7 @@ function LoginForm() {
 
     const handleResendOtp = async () => {
         if (resendCooldown > 0) return;
-        
+
         setIsLoading(true);
         setError('');
         try {
@@ -79,20 +79,20 @@ function LoginForm() {
         e.preventDefault();
         setIsLoading(true);
         setError('');
-        
+
         try {
-            const response = await authApi.verifyTwoFactor({ 
-                email: tempEmail, 
-                code: otp 
+            const response = await authApi.verifyTwoFactor({
+                email: tempEmail,
+                code: otp
             });
-            
+
             if (response.success && response.data?.token) {
                 // Store token
                 localStorage.setItem('auth_token', response.data.token);
-                
+
                 // Refresh user context
                 await refreshUser();
-                
+
                 // Redirect to dashboard or return URL
                 const returnUrl = searchParams.get('redirect');
                 if (returnUrl) {
@@ -119,7 +119,7 @@ function LoginForm() {
 
         try {
             const response = await authApi.loginEmployer(formData);
-            
+
             if (response.data && response.data.requires_two_factor) {
                 setShowOtpInput(true);
                 setTempEmail(formData.email);
@@ -132,10 +132,10 @@ function LoginForm() {
             if (response.success && response.data?.token) {
                 // Store token
                 localStorage.setItem('auth_token', response.data.token);
-                
+
                 // Refresh user context
                 await refreshUser();
-                
+
                 // Redirect to dashboard or return URL
                 const returnUrl = searchParams.get('redirect');
                 if (returnUrl) {
@@ -162,9 +162,7 @@ function LoginForm() {
                     <div className="mb-10">
                         <div className="flex items-center gap-2">
                             <Image src="/logo.svg" alt="Open Nurses Logo" width={40} height={40} className="h-10 w-auto" />
-                            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
-                                Open Nurses
-                            </span>
+
                         </div>
                     </div>
 
@@ -173,8 +171,8 @@ function LoginForm() {
                             {showOtpInput ? 'Two-Factor Authentication' : 'Welcome back'}
                         </h1>
                         <p className="mt-2 text-muted-foreground">
-                            {showOtpInput 
-                                ? 'Please enter the 6-digit code sent to your email.' 
+                            {showOtpInput
+                                ? 'Please enter the 6-digit code sent to your email.'
                                 : 'Enter your credentials to access your employer dashboard.'}
                         </p>
                     </div>
@@ -185,7 +183,7 @@ function LoginForm() {
                                 {success}
                             </div>
                         )}
-                        
+
                         {error && (
                             <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg">
                                 {error}
@@ -206,7 +204,7 @@ function LoginForm() {
                                         required
                                         value={formData.email}
                                         onChange={handleChange}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none  focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50"
                                     />
                                 </div>
 
@@ -215,7 +213,7 @@ function LoginForm() {
                                         <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                             Password
                                         </label>
-                                        <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                                        <Link href="/forgot-password" className="text-sm font-medium text-sky-600 hover:underline">
                                             Forgot password?
                                         </Link>
                                     </div>
@@ -227,7 +225,7 @@ function LoginForm() {
                                             required
                                             value={formData.password}
                                             onChange={handleChange}
-                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-none focus-visible:border-sky-600 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
                                         />
                                         <button
                                             type="button"
@@ -258,8 +256,8 @@ function LoginForm() {
                                     />
                                 </div>
                                 <div className="text-center">
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={handleResendOtp}
                                         disabled={resendCooldown > 0 || isLoading}
                                         className="text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
@@ -268,8 +266,8 @@ function LoginForm() {
                                     </button>
                                 </div>
                                 <div className="text-center pt-2">
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => setShowOtpInput(false)}
                                         className="text-sm text-muted-foreground hover:text-foreground"
                                     >
@@ -282,7 +280,7 @@ function LoginForm() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full"
+                            className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-sky-600 text-white hover:bg-sky-600/90 h-10 w-full"
                         >
                             {isLoading ? (
                                 <>
@@ -297,7 +295,7 @@ function LoginForm() {
 
                     <p className="mt-6 text-center text-sm text-muted-foreground">
                         Don&apos;t have an account?{' '}
-                        <Link href="/register" className="font-semibold text-primary hover:underline">
+                        <Link href="/register" className="font-semibold text-sky-600 hover:underline">
                             Register now
                         </Link>
                     </p>
