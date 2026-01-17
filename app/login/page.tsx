@@ -156,15 +156,14 @@ function LoginForm() {
     return (
         <div className="flex min-h-screen w-full bg-background">
             {/* Left Side - Form */}
-            <div className="flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-12 xl:px-24">
-                <div className="mx-auto w-full max-w-sm">
-                    {/* Logo */}
-                    <div className="mb-10">
-                        <div className="flex items-center gap-2">
-                            <Image src="/logo.svg" alt="Open Nurses Logo" width={40} height={40} className="h-10 w-auto" />
-
-                        </div>
+            <div className="flex w-full flex-col justify-center px-8 lg:w-1/2 lg:px-12 xl:px-24 py-12 relative">
+                {/* Logo */}
+                <div className="absolute top-12 left-8 lg:left-12 xl:left-24">
+                    <div className="flex items-center gap-2">
+                        <Image src="/logo.svg" alt="Open Nurses Logo" width={30} height={30} className="h-5 w-auto" />
                     </div>
+                </div>
+                <div className="mx-auto w-full max-w-sm">
 
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">
