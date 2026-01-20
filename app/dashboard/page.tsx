@@ -303,13 +303,6 @@ const DashboardPage = () => {
                                 iconWrapper: 'bg-orange-50 text-orange-600 group-hover:bg-orange-500 group-hover:text-white',
                                 subBadge: 'bg-orange-50 text-orange-700',
                                 gradient: 'from-orange-50'
-                            },
-                            sky: {
-                                bgHover: 'group-hover:shadow-sky-200',
-                                textHover: 'group-hover:text-sky-600',
-                                iconWrapper: 'bg-sky-50 text-sky-600 group-hover:bg-sky-500 group-hover:text-white',
-                                subBadge: 'bg-sky-50 text-sky-700',
-                                gradient: 'from-sky-50'
                             }
                         };
 
@@ -705,11 +698,6 @@ const DashboardPage = () => {
                             <div className="grid grid-cols-2 gap-3 relative z-10">
                                 {(() => {
                                     const actionVariants: any = {
-                                        sky: {
-                                            wrapper: 'bg-sky-50/50 border-sky-100/50 hover:bg-sky-500 hover:shadow-sky-200',
-                                            icon: 'text-sky-500',
-                                            text: 'text-sky-700'
-                                        },
                                         sky: {
                                             wrapper: 'bg-sky-50/50 border-sky-100/50 hover:bg-sky-500 hover:shadow-sky-200',
                                             icon: 'text-sky-500',
