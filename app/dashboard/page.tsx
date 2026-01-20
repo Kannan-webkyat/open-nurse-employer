@@ -30,7 +30,40 @@ import {
     Settings,
     CreditCard
 } from "lucide-react"
+import { motion, AnimatePresence, Variants } from 'framer-motion'
 import { dashboardApi } from '@/lib/api'
+
+// Animation Variants
+const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1
+        }
+    }
+}
+
+const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: {
+            duration: 0.5,
+            ease: "easeOut" as any
+        }
+    }
+}
+
+const cardHover: any = {
+    y: -5,
+    transition: {
+        duration: 0.3,
+        ease: "easeOut"
+    }
+}
 
 
 // Interfaces (kept as is)
@@ -214,64 +247,149 @@ const DashboardPage = () => {
                 <TokenHandler />
             </Suspense>
 
-            {/* Compact Kleon Layout */}
-            <div className="space-y-5 animate-in fade-in duration-500 max-w-[1800px] mx-auto p-4 text-neutral-800">
+            {/* Premium Background Elements */}
+            <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+                <motion.div 
+                    animate={{ 
+                        scale: [1, 1.2, 1],
+                        opacity: [0.1, 0.2, 0.1] 
+                    }}
+                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-emerald-200 blur-[100px]" 
+                />
+                <motion.div 
+                    animate={{ 
+                        scale: [1, 1.3, 1],
+                        opacity: [0.1, 0.2, 0.1] 
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+                    className="absolute top-[20%] left-[-10%] w-[30%] h-[30%] rounded-full bg-sky-200 blur-[100px]" 
+                />
+                <motion.div 
+                    animate={{ 
+                        scale: [1, 1.1, 1],
+                        opacity: [0.1, 0.2, 0.1] 
+                    }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                    className="absolute bottom-[-10%] right-[10%] w-[30%] h-[30%] rounded-full bg-indigo-100 blur-[100px]" 
+                />
+            </div>
 
+            {/* Compact Kleon Layout */}
+            <motion.div 
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-6 animate-in fade-in duration-500 max-w-[1800px] mx-auto p-4 md:p-6 text-neutral-800 relative z-10"
+            >
+                {/* Hero Welcome Section */}
+                <motion.div 
+                    variants={itemVariants}
+                    className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 p-4 md:p-5 shadow-xl text-white mb-6 group"
+                >
+                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        >
+                            <Activity className="w-32 h-32" />
+                        </motion.div>
+                    </div>
+                    <div className="relative z-10">
+                        <motion.div 
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.5, delay: 0.5 }}
+                            className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-[10px] font-semibold mb-2 text-sky-100"
+                        >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Portal Active
+                        </motion.div>
+                        <motion.h1 
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ duration: 0.7, delay: 0.6 }}
+                            className="text-xl md:text-2xl font-black mb-0.5 tracking-tight"
+                        >
+                            Welcome back, {data.company_name || 'Employer'}
+                        </motion.h1>
+                        <motion.p 
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ duration: 0.7, delay: 0.7 }}
+                            className="text-sky-100 max-w-lg text-[10px] md:text-xs leading-relaxed"
+                        >
+                            Here's your hiring overview. You have <span className="font-bold text-white underline decoration-white/30 underline-offset-4">{data.stats?.new_candidates || 0} new candidates</span> to review this week.
+                        </motion.p>
+                    </div>
+                </motion.div>
                 {/* Header - Compact */}
                 <div className="flex items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-neutral-900">Dashboard Overview</h1>
-                        <p className="text-neutral-600 mt-0.5">Project analytics and hiring pipeline.</p>
-                    </div>
+                    <motion.div variants={itemVariants}>
+                        <h2 className="text-xl font-bold text-neutral-900">Analytics Overview</h2>
+                        <p className="text-neutral-500 text-sm mt-0.5">Key performance metrics for the last 30 days.</p>
+                    </motion.div>
 
                     <div className="flex items-center gap-3">
 
                         {/* Search Bar - Compact */}
-                        <div className="hidden md:block relative">
+                        <motion.div variants={itemVariants} className="hidden md:block relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4 z-10" />
                             <Input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-10 w-56 h-10 rounded-lg bg-white shadow-sm border-neutral-100 placeholder:text-neutral-400"
+                                className="pl-10 w-56 h-10 rounded-lg bg-white shadow-sm border-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-sky-500/20 transition-all"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
-                        </div>
+                        </motion.div>
 
                         <div className="relative z-20">
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => setIsDateMenuOpen(!isDateMenuOpen)}
                                 className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-neutral-50 text-neutral-600 border border-neutral-100 shadow-sm rounded-xl text-xs font-bold transition-all h-10"
                             >
                                 <Calendar className="w-3.5 h-3.5 text-sky-500" />
                                 {selectedRange}
-                            </button>
+                            </motion.button>
 
-                            {isDateMenuOpen && (
-                                <div className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-neutral-100 p-1 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                    {['Today', 'Last 7 Days', 'Last 30 Days', 'Last Year'].map((range) => (
-                                        <button
-                                            key={range}
-                                            onClick={() => {
-                                                setSelectedRange(range)
-                                                setIsDateMenuOpen(false)
-                                            }}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors ${selectedRange === range
-                                                ? 'bg-sky-50 text-sky-600'
-                                                : 'text-neutral-600 hover:bg-neutral-50'
-                                                }`}
-                                        >
-                                            {range}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <AnimatePresence>
+                                {isDateMenuOpen && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-neutral-100 p-1 z-50"
+                                    >
+                                        {['Today', 'Last 7 Days', 'Last 30 Days', 'Last Year'].map((range) => (
+                                            <button
+                                                key={range}
+                                                onClick={() => {
+                                                    setSelectedRange(range)
+                                                    setIsDateMenuOpen(false)
+                                                }}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-colors ${selectedRange === range
+                                                    ? 'bg-sky-50 text-sky-600'
+                                                    : 'text-neutral-600 hover:bg-neutral-50'
+                                                    }`}
+                                            >
+                                                {range}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
 
                         <Link href="/jobs">
-                            <Button className="h-10 px-4 bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/20 border-0 font-bold text-xs rounded-full">
-                                <Plus className="w-4 h-4 mr-1.5" /> Post Job
-                            </Button>
+                            <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                <Button className="h-10 px-4 bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/20 border-0 font-bold text-xs rounded-full">
+                                    <Plus className="w-4 h-4 mr-1.5" /> Post Job
+                                </Button>
+                            </motion.div>
                         </Link>
                     </div>
                 </div>
@@ -309,8 +427,12 @@ const DashboardPage = () => {
                         const variant = colorVariants[stat.color] || colorVariants.sky;
 
                         return (
-                            <div key={index} className="bg-white p-5 rounded-3xl shadow-sm border border-neutral-50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden">
-                                {/* Gradient Background on Hover */}
+                            <motion.div 
+                                key={index} 
+                                variants={itemVariants}
+                                whileHover={cardHover}
+                                className="bg-white p-5 rounded-3xl shadow-sm border border-neutral-50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden"
+                            >                                {/* Gradient Background on Hover */}
                                 <div className={`absolute inset-0 bg-gradient-to-br ${variant.gradient} to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-500`}></div>
 
                                 <div className="flex justify-between items-start relative z-10">
@@ -328,7 +450,7 @@ const DashboardPage = () => {
                                     </span>
                                     <span className="text-[10px] text-neutral-400 font-medium">{stat.description}</span>
                                 </div>
-                            </div>
+                            </motion.div>
                         );
                     })}
                 </div>
@@ -339,10 +461,12 @@ const DashboardPage = () => {
                     {/* Left Column (8/12) - Charts Area */}
                     <div className="lg:col-span-8 space-y-5">
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            {/* Top Jobs - Redesigned Rich Rows */}
-                            <div className="md:col-span-12 xl:col-span-6 bg-white rounded-3xl p-6 shadow-sm border border-neutral-50 hover:shadow-lg transition-shadow duration-300 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-backwards relative overflow-hidden group">
-                                {/* Decorative Vector Background */}
+                        {/* Top Jobs - Redesigned Rich Rows */}
+                        <motion.div 
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-50 hover:shadow-lg transition-shadow duration-300 flex flex-col relative overflow-hidden group"
+                        >                                {/* Decorative Vector Background */}
                                 {/* Decorative Vector Background - Refined */}
                                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                                     {/* Gradient - Radial Pattern - Amber/Gold Theme - Lighter */}
@@ -407,166 +531,312 @@ const DashboardPage = () => {
                                         <div className="text-center py-8 text-neutral-400 text-xs">No active jobs found.</div>
                                     )}
                                 </div>
-                            </div>
-                        </div>
-                        {/* Analytics Chart - Traffic (Now sharing space) */}
-                        <div className="md:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-neutral-50 hover:shadow-lg transition-shadow duration-300 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200 fill-mode-backwards">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h3 className="text-lg font-black text-neutral-900 tracking-tight">Application Traffic</h3>
-                                    <p className="text-xs text-neutral-400 font-medium mt-1">Candidate application trends over time</p>
-                                </div>
-                                <div className="relative">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setIsChartFilterOpen(!isChartFilterOpen)}
-                                        className={`!rounded-full border-neutral-200 text-xs font-bold hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 transition-all ${isChartFilterOpen ? 'bg-neutral-100 ring-2 ring-neutral-200' : ''}`}
-                                    >
-                                        <Filter className="w-3.5 h-3.5 mr-2" /> Filter
-                                    </Button>
+                            </motion.div>
 
-                                    {isChartFilterOpen && (
-                                        <div className="absolute right-0 top-10 w-64 bg-white rounded-2xl shadow-xl border border-neutral-100 p-4 z-50 animate-in fade-in zoom-in-95 duration-200">
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-2 block">Filter by Job Role</label>
-                                                    <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedJobId('all')
-                                                                setIsChartFilterOpen(false)
-                                                            }}
-                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between ${selectedJobId === 'all'
-                                                                ? 'bg-sky-50 text-sky-700'
-                                                                : 'bg-white text-neutral-600 hover:bg-neutral-50 border border-neutral-100'
-                                                                }`}
-                                                        >
-                                                            <span>All Jobs</span>
-                                                            {selectedJobId === 'all' && <CheckCircle className="w-3 h-3 text-sky-500" />}
-                                                        </button>
-                                                        {data.stats.active_jobs > 0 && data.recent_jobs.slice(0, 5).map((job: any) => (
-                                                            <button
-                                                                key={job.id}
-                                                                onClick={() => {
-                                                                    setSelectedJobId(job.id)
-                                                                    setIsChartFilterOpen(false)
-                                                                }}
-                                                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-between border ${selectedJobId === job.id
-                                                                    ? 'bg-sky-50 text-sky-700 border-sky-100'
-                                                                    : 'bg-white text-neutral-600 hover:bg-neutral-50 border-neutral-100'
-                                                                    }`}
-                                                            >
-                                                                <span className="truncate">{job.title}</span>
-                                                                {selectedJobId === job.id && <CheckCircle className="w-3 h-3 text-sky-500" />}
-                                                            </button>
-                                                        ))}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {/* Job Status Distribution - Warmer Dark Theme */}
+                                <motion.div 
+                                    variants={itemVariants}
+                                    whileHover={cardHover}
+                                    className="bg-neutral-900 rounded-3xl p-6 shadow-xl shadow-black/20 border border-white/10 relative overflow-hidden group backdrop-blur-3xl"
+                                >
+                                    {/* Warmer Base Glow */}
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(251,191,36,0.05),transparent)]" />
+                                    
+                                    {/* High-Tech Background Pattern - Status Unique */}
+                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover/status:opacity-[0.06] transition-opacity duration-700">
+                                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                            <defs>
+                                                <pattern id="grid-status-final" width="20" height="20" patternUnits="userSpaceOnUse">
+                                                    <circle cx="1" cy="1" r="0.5" fill="white" />
+                                                </pattern>
+                                            </defs>
+                                            <rect width="100" height="100" fill="url(#grid-status-final)" />
+                                        </svg>
+                                    </div>
+
+                                    {/* Topographic Lines Layer */}
+                                    <div className="absolute inset-0 opacity-[0.04] pointer-events-none group-hover/status:opacity-[0.08] transition-opacity duration-1000">
+                                        <svg className="w-full h-full" viewBox="0 0 100 100">
+                                            <path d="M-10,40 Q20,20 40,40 T90,40 T140,40" fill="none" stroke="white" strokeWidth="0.3" className="animate-pulse" />
+                                            <path d="M-10,60 Q25,50 45,70 T85,50 T125,70" fill="none" stroke="white" strokeWidth="0.3" style={{ animationDelay: '1.5s' }} className="animate-pulse" />
+                                        </svg>
+                                    </div>
+
+                                    {/* Decorative Glows */}
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] group-hover/status:bg-emerald-500/20 transition-all duration-700" />
+                                    <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] group-hover/status:bg-amber-500/10 transition-all duration-700" />
+                                    
+                                    <div className="flex justify-between items-start mb-6 relative z-10">
+                                        <div>
+                                            <h3 className="text-lg font-black text-white tracking-tight">Job Status</h3>
+                                            <p className="text-xs text-neutral-400 font-medium mt-1">Hiring funnel distribution</p>
+                                        </div>
+                                        <div className="bg-white/10 p-2 rounded-xl text-white backdrop-blur-md group-hover/status:bg-white/20 transition-all duration-300 group-hover/status:scale-110">
+                                            <Briefcase className="w-5 h-5" />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row items-center gap-8 relative z-10">
+                                        {/* Donut Chart */}
+                                        <div className="relative w-32 h-32 flex-shrink-0">
+                                            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                                                {(() => {
+                                                    const stats = {
+                                                        active: data.stats.active_jobs || 0,
+                                                        closed: data.stats.closed_jobs || 0,
+                                                        total: data.stats.total_jobs || 1
+                                                    };
+                                                    const total = stats.total;
+                                                    let currentOffset = 0;
+                                                    
+                                                    const segments = [
+                                                        { key: 'active', value: stats.active, color: '#10B981' }, 
+                                                        { key: 'closed', value: stats.closed, color: '#94A3B8' },   
+                                                    ];
+
+                                                    return segments.map((seg, i) => {
+                                                        if (seg.value === 0) return null;
+                                                        const circumference = 2 * Math.PI * 40; 
+                                                        const dashArray = (seg.value / total) * circumference;
+                                                        const offset = currentOffset;
+                                                        currentOffset -= dashArray;
+                                                        
+                                                        return (
+                                                            <motion.circle
+                                                                key={i}
+                                                                cx="50"
+                                                                cy="50"
+                                                                r="40"
+                                                                fill="transparent"
+                                                                stroke={seg.color}
+                                                                strokeWidth="12"
+                                                                strokeDasharray={`${dashArray} ${circumference}`}
+                                                                strokeDashoffset={offset}
+                                                                strokeLinecap="round"
+                                                                initial={{ pathLength: 0, opacity: 0 }}
+                                                                whileInView={{ pathLength: 1, opacity: 1 }}
+                                                                viewport={{ once: true }}
+                                                                transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 + i * 0.1 }}
+                                                                className="transition-all duration-300 hover:stroke-[14px] cursor-pointer"
+                                                            />
+                                                        );
+                                                    });
+                                                })()}
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                                                <span className="text-2xl font-black text-white">{data.stats.total_jobs || 0}</span>
+                                                <span className="text-[10px] uppercase font-bold text-neutral-500">Jobs</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 w-full space-y-3">
+                                            {[
+                                                { label: 'Active Positions', value: data.stats.active_jobs, color: 'bg-emerald-500' },
+                                                { label: 'Closed/Drafts', value: data.stats.total_jobs - data.stats.active_jobs, color: 'bg-slate-400' }
+                                            ].map((item, i) => (
+                                                <div key={i} className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2.5 h-2.5 rounded-full ${item.color}`}></div>
+                                                        <span className="text-xs font-bold text-neutral-300">{item.label}</span>
                                                     </div>
+                                                    <span className="text-xs font-black text-white">{item.value || 0}</span>
                                                 </div>
-                                                <div className="pt-2 border-t border-neutral-100">
-                                                    <div className="flex justify-between items-center text-[10px] text-neutral-400">
-                                                        <span>Showing data for:</span>
-                                                        <span className="font-bold text-neutral-900">
-                                                            {selectedJobId === 'all' ? 'All Roles' : 'Selected Role'}
-                                                        </span>
-                                                    </div>
+                                            ))}
+                                            <div className="pt-2 border-t border-white/10 mt-2">
+                                                <div className="flex justify-between items-center bg-white/5 p-2 rounded-xl">
+                                                    <span className="text-[10px] font-bold text-indigo-300">Conversion</span>
+                                                    <span className="text-xs font-black text-white">{Math.round((data.stats.hired_candidates / Math.max(data.stats.total_applications, 1)) * 100)}%</span>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Application Pipeline - Deep Indigo Theme */}
+                                <motion.div 
+                                    variants={itemVariants}
+                                    whileHover={cardHover}
+                                    className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 shadow-xl shadow-black/40 border border-white/5 relative overflow-hidden group/pipeline backdrop-blur-3xl"
+                                >
+                                    {/* Stripes Pattern */}
+                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover/pipeline:opacity-[0.05] transition-opacity duration-700">
+                                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                            <defs>
+                                                <pattern id="stripes-pipeline-final" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                                                    <line x1="0" y1="0" x2="0" y2="10" stroke="white" strokeWidth="2" />
+                                                </pattern>
+                                            </defs>
+                                            <rect width="100" height="100" fill="url(#stripes-pipeline-final)" />
+                                        </svg>
+                                    </div>
+
+                                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                        <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover/pipeline:scale-125 transition-transform duration-1000" />
+                                    </div>
+
+                                    <div className="flex justify-between items-start mb-6 relative z-10">
+                                        <div>
+                                            <h3 className="text-lg font-black text-white tracking-tight">Application Pipeline</h3>
+                                            <p className="text-xs text-emerald-200 font-medium mt-1">Conversion funnel stages</p>
+                                        </div>
+                                        <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl text-white transition-transform duration-700 group-hover/pipeline:rotate-[360deg] relative z-20 overflow-hidden">
+                                            <TrendingUp className="w-5 h-5 relative z-10" />
+                                            <div className="absolute inset-0 bg-gradient-to-tr from-sky-400/20 to-transparent opacity-0 group-hover/pipeline:opacity-100 transition-opacity" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4 relative z-10">
+                                        {(data.application_pipeline || [
+                                            { name: 'Candidates', value: data.stats.total_applications || 0 },
+                                            { name: 'Interviews', value: data.stats.interviews_scheduled || 0 },
+                                            { name: 'Hired', value: data.stats.hired_candidates || 0 }
+                                        ]).map((stage: any, i: number) => {
+                                            const max = Math.max(...(data.application_pipeline || []).map((s: any) => s.value), data.stats.total_applications || 1, 1);
+                                            const percent = (stage.value / max) * 100;
+                                            
+                                            return (
+                                                <div key={i} className="group/bar">
+                                                    <div className="flex justify-between text-[10px] font-bold mb-1.5 uppercase tracking-wider">
+                                                        <span className="text-emerald-200/70 group-hover/bar:text-sky-400 transition-colors uppercase">{stage.name}</span>
+                                                        <span className="text-white font-black">{stage.value}</span>
+                                                    </div>
+                                                    <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner p-[1px]">
+                                                        <motion.div 
+                                                            initial={{ width: 0 }}
+                                                            whileInView={{ width: `${percent}%` }}
+                                                            viewport={{ once: true }}
+                                                            transition={{ duration: 1.5, ease: [0.34, 1.56, 0.64, 1], delay: i * 0.1 }}
+                                                            className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
+                                                                i === 0 ? 'bg-gradient-to-r from-sky-400 to-sky-500' :
+                                                                i === 1 ? 'bg-gradient-to-r from-indigo-400 to-indigo-500' :
+                                                                i === 2 ? 'bg-gradient-to-r from-violet-400 to-violet-500' :
+                                                                'bg-gradient-to-r from-emerald-400 to-emerald-500'
+                                                            }`}
+                                                        >
+                                                            <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                                        </motion.div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </motion.div>
                             </div>
 
-                            <div className="h-40 w-full relative group">
-                                {/* Chart Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-50 z-10 pointer-events-none"></div>
+                            {/* Application Traffic - Bold Neutral Theme */}
+                            <motion.div 
+                                variants={itemVariants}
+                                whileHover={cardHover}
+                                className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-3xl p-6 shadow-xl shadow-black/20 border border-white/10 relative overflow-hidden group/traffic backdrop-blur-3xl"
+                            >
+                                {/* High-Tech Background Pattern - Traffic Unique */}
+                                <div className="absolute inset-0 opacity-[0.08] pointer-events-none group-hover/traffic:opacity-[0.12] transition-opacity duration-700">
+                                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        <defs>
+                                            <pattern id="traffic-grid-final" width="8" height="20" patternUnits="userSpaceOnUse">
+                                                <line x1="0" y1="0" x2="0" y2="20" stroke="white" strokeWidth="0.4" />
+                                                <line x1="0" y1="20" x2="8" y2="20" stroke="white" strokeWidth="0.1" />
+                                            </pattern>
+                                            <radialGradient id="traffic-glow-final" cx="50%" cy="100%" r="80%">
+                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.5" />
+                                                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                                            </radialGradient>
+                                        </defs>
+                                        <rect width="100" height="100" fill="url(#traffic-grid-final)" />
+                                        <rect width="100" height="100" fill="url(#traffic-glow-final)" />
+                                    </svg>
+                                </div>
 
-                                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
-                                    <defs>
-                                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#7C3AED" stopOpacity="0.2" />
-                                            <stop offset="100%" stopColor="#7C3AED" stopOpacity="0" />
-                                        </linearGradient>
-                                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                                            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                                            <feMerge>
-                                                <feMergeNode in="coloredBlur" />
-                                                <feMergeNode in="SourceGraphic" />
-                                            </feMerge>
-                                        </filter>
-                                    </defs>
-                                    <path
-                                        d={areaPath}
-                                        fill="url(#chartGradient)"
-                                        className="transition-opacity duration-500"
-                                    />
-                                    <path
-                                        d={linePath}
-                                        fill="none"
-                                        stroke="#7C3AED"
-                                        strokeWidth="4"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        filter="url(#glow)"
-                                        className="drop-shadow-lg"
-                                    />
-                                    {/* Interactive Points */}
-                                    {normalizedPoints.map((p: number[], i: number) => (
-                                        <g key={i} className="group/point hover:scale-150 transition-transform origin-center cursor-pointer">
-                                            <circle
-                                                cx={p[0]}
-                                                cy={p[1]}
-                                                r="4"
-                                                fill="#fff"
-                                                stroke="#7C3AED"
-                                                strokeWidth="3"
-                                                className="transition-all duration-300 group-hover/point:stroke-sky-500 group-hover/point:r-6"
-                                            />
-                                            <circle cx={p[0]} cy={p[1]} r="12" fill="transparent" /> {/* Hit area */}
+                                {/* Floating Data Nodes decorative element */}
+                                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 group-hover/traffic:opacity-40 transition-opacity duration-1000">
+                                   <div className="absolute top-[20%] left-[10%] w-1 h-1 bg-emerald-200 rounded-full animate-ping" />
+                                   <div className="absolute top-[60%] left-[40%] w-1 h-1 bg-emerald-200 rounded-full animate-ping delay-300" />
+                                   <div className="absolute top-[30%] left-[80%] w-1 h-1 bg-emerald-200 rounded-full animate-ping delay-700" />
+                                </div>
 
-                                            {/* X-Axis Label */}
-                                            <text
-                                                x={p[0]}
-                                                y={chartHeight + 20}
-                                                textAnchor="middle"
-                                                className="text-[10px] fill-neutral-400 font-bold opacity-0 group-hover/point:opacity-100 group-hover/point:fill-sky-600 transition-all duration-300 pointer-events-none"
-                                            >
-                                                {data.traffic[i]?.day}
-                                            </text>
-                                        </g>
-                                    ))}
+                                <div className="flex justify-between items-center mb-6 relative z-10">
+                                    <div>
+                                        <h3 className="text-lg font-black text-white tracking-tight">Application Traffic</h3>
+                                        <p className="text-xs text-emerald-200 font-medium mt-1">Candidate application trends over time</p>
+                                    </div>
+                                    <div className="relative">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setIsChartFilterOpen(!isChartFilterOpen)}
+                                            className={`!rounded-full border-white/20 text-xs font-bold bg-white/10 text-white hover:bg-white/20 hover:text-white border-transparent ${isChartFilterOpen ? 'bg-white/20 ring-2 ring-white/30' : ''}`}
+                                        >
+                                            <Filter className="w-3.5 h-3.5 mr-2" /> Filter
+                                        </Button>
+                                    </div>
+                                </div>
 
-                                    {/* Always visible labels at bottom */}
-                                    <g className="opacity-100 pointer-events-none">
-                                        {normalizedPoints.map((p: number[], i: number) => {
-                                            // Logic to prevent overcrowding:
-                                            // If > 12 points (e.g. month view), show only every 4th label (approx weekly)
-                                            // Always show the first and last label for context
-                                            const total = normalizedPoints.length;
-                                            const showLabel = total <= 12 || i === 0 || i === total - 1 || i % 4 === 0;
-
-                                            if (!showLabel) return null;
-
-                                            return (
+                                <div className="h-40 w-full relative z-10 group">
+                                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
+                                        <defs>
+                                            <linearGradient id="chartGradient-final" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.4" />
+                                                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                                            </linearGradient>
+                                            <filter id="glow-final" x="-20%" y="-20%" width="140%" height="140%">
+                                                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                                                <feMerge>
+                                                    <feMergeNode in="coloredBlur" />
+                                                    <feMergeNode in="SourceGraphic" />
+                                                </feMerge>
+                                            </filter>
+                                        </defs>
+                                        <motion.path
+                                            initial={{ pathLength: 0, opacity: 0 }}
+                                            animate={{ pathLength: 1, opacity: 1 }}
+                                            transition={{ duration: 1.5, ease: "easeOut" }}
+                                            d={areaPath}
+                                            fill="url(#chartGradient-final)"
+                                        />
+                                        <motion.path
+                                            initial={{ pathLength: 0, opacity: 0 }}
+                                            animate={{ pathLength: 1, opacity: 1 }}
+                                            transition={{ duration: 2, ease: "easeInOut", delay: 0.5 }}
+                                            d={linePath}
+                                            fill="none"
+                                            stroke="#10B981"
+                                            strokeWidth="4"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            filter="url(#glow-final)"
+                                        />
+                                        
+                                        {normalizedPoints.map((p: number[], i: number) => (
+                                            <g key={i} className="group/point">
+                                                <circle
+                                                    cx={p[0]}
+                                                    cy={p[1]}
+                                                    r="4"
+                                                    fill="#fff"
+                                                    stroke="#10B981"
+                                                    strokeWidth="3"
+                                                />
                                                 <text
-                                                    key={`label-${i}`}
                                                     x={p[0]}
                                                     y={chartHeight + 20}
                                                     textAnchor="middle"
-                                                    className="text-[10px] fill-neutral-300 font-medium"
+                                                    className="text-[10px] fill-emerald-200/50 font-medium"
                                                 >
                                                     {data.traffic[i]?.day}
                                                 </text>
-                                            );
-                                        })}
-                                    </g>
-                                </svg>
-                            </div>
-                        </div>
+                                            </g>
+                                        ))}
+                                    </svg>
+                                </div>
+                            </motion.div>
 
                         {/* Recent Jobs List - With Subtle Vector Background & Hover Effects */}
-                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group/card hover:shadow-lg transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500 fill-mode-backwards">
-                            {/* Subtle Vector Background */}
+                        <motion.div 
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group/card hover:shadow-lg transition-all duration-500"
+                        >                            {/* Subtle Vector Background */}
                             <div className="absolute inset-0 pointer-events-none opacity-30">
                                 <svg className="absolute -right-10 -top-10 text-sky-50 w-64 h-64 rotate-12 group-hover/card:rotate-6 transition-transform duration-1000 ease-in-out" viewBox="0 0 200 200" fill="currentColor">
                                     <path d="M41.2,-70.5C54.4,-63.1,66.6,-54.6,76.5,-43.3C86.4,-32,94,-17.9,92.5,-4.4C91.1,9.1,80.6,22,70.9,33.4C61.2,44.8,52.4,54.7,41.9,62.8C31.4,70.8,19.3,77.1,5.6,80.4C-8.1,83.6,-23.4,83.8,-36.8,78.2C-50.2,72.6,-61.7,61.2,-70.1,48.2C-78.5,35.2,-83.8,20.6,-83.9,6C-84,-8.6,-78.9,-23.2,-69.9,-35.1C-60.9,-47,-48,-56.3,-35.3,-64C-22.6,-71.7,-10.1,-77.9,3.7,-80C17.5,-82.2,35,-80.2,41.2,-70.5Z" transform="translate(100 100)" />
@@ -616,7 +886,7 @@ const DashboardPage = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
 
                     </div>
 
@@ -634,8 +904,11 @@ const DashboardPage = () => {
                             };
 
                             return (
-                                <div className="bg-gradient-to-br from-sky-600 to-indigo-700 rounded-3xl p-5 text-white relative overflow-hidden shadow-lg shadow-sky-600/30 group hover:shadow-sky-600/50 hover:scale-[1.02] transition-all duration-500">
-                                    {/* Vector Background Shapes */}
+                                <motion.div 
+                                    variants={itemVariants}
+                                    whileHover={cardHover}
+                                    className="bg-gradient-to-br from-sky-600 to-indigo-700 rounded-3xl p-5 text-white relative overflow-hidden shadow-lg shadow-sky-600/30 group hover:shadow-sky-600/50 transition-all duration-500 cursor-default"
+                                >                                    {/* Vector Background Shapes */}
                                     <div className="absolute inset-0 pointer-events-none overflow-hidden">
                                         <svg className="absolute -right-8 -top-8 text-white/10 w-48 h-48 rotate-12 group-hover:rotate-45 transition-transform duration-1000 ease-in-out" viewBox="0 0 200 200" fill="currentColor">
                                             <path d="M45.7,-78.3C58.9,-69.3,69.1,-56.4,76.5,-42.3C83.9,-28.1,88.5,-12.7,86.9,1.6C85.3,15.9,77.5,29.1,68.6,41.2C59.7,53.3,49.7,64.3,37.6,71.2C25.5,78.1,11.3,80.9,-1.8,84C-14.9,87.1,-28.1,90.5,-40.3,86.5C-52.5,82.5,-63.7,71.1,-71.8,57.9C-79.9,44.7,-84.9,29.7,-83.8,15.2C-82.7,0.7,-75.5,-13.3,-66.6,-25.6C-57.7,-37.9,-47.1,-48.5,-35.1,-58.1C-23.1,-67.7,-9.7,-76.3,4.9,-84.8L19.5,-93.3" transform="translate(100 100)" />
@@ -665,7 +938,7 @@ const DashboardPage = () => {
                                             </Button>
                                         </Link>
                                     </div>
-                                </div>
+                                </motion.div>
                             );
                         })()}
 
@@ -687,8 +960,11 @@ const DashboardPage = () => {
                         )}
 
                         {/* Quick Actions - Grid 2x2 Interactive */}
-                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
-                            <div className="absolute top-0 right-0 opacity-20 pointer-events-none group-hover:scale-110 transition-transform duration-700">
+                        <motion.div 
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
+                        >                            <div className="absolute top-0 right-0 opacity-20 pointer-events-none group-hover:scale-110 transition-transform duration-700">
                                 <svg className="w-32 h-32 text-sky-100" viewBox="0 0 200 200" fill="currentColor">
                                     <path d="M44.7,-76.4C58.9,-69.2,71.8,-59.1,79.6,-46.3C87.4,-33.5,90.1,-18,88.4,-3.2C86.7,11.6,80.7,25.7,71.5,37.5C62.3,49.3,49.9,58.8,36.9,65.3C23.9,71.8,10.3,75.3,-2.6,79.8C-15.5,84.3,-27.7,89.8,-39,85.2C-50.3,80.6,-60.7,65.9,-69.3,51.7C-77.9,37.5,-84.7,23.8,-83.8,10.5C-82.9,-2.8,-74.3,-15.7,-64.8,-27.1C-55.3,-38.5,-44.9,-48.4,-33,-56.6C-21.1,-64.8,-7.7,-71.3,6.3,-82.2C20.3,-93.1,40.6,-108.4,44.7,-76.4Z" transform="translate(100 100)" />
                                 </svg>
@@ -733,11 +1009,14 @@ const DashboardPage = () => {
                                     });
                                 })()}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Recent Activity - List Interactive */}
-                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500">
-                            <div className="absolute -bottom-10 -left-10 opacity-20 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
+                        <motion.div 
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
+                        >                            <div className="absolute -bottom-10 -left-10 opacity-20 pointer-events-none group-hover:rotate-12 transition-transform duration-700">
                                 <svg className="w-40 h-40 text-emerald-100" viewBox="0 0 200 200" fill="currentColor">
                                     <path d="M38.1,-63.9C49.9,-54.9,60.5,-45.5,69.5,-34C78.5,-22.5,85.9,-8.9,86.4,5.1C86.9,19.1,80.5,33.5,70.6,44.5C60.7,55.5,47.3,63.1,33.7,68.8C20.1,74.5,6.3,78.3,-6.9,89.5C-20.1,100.7,-32.7,119.3,-43.3,117.8C-53.9,116.3,-62.5,94.7,-69.7,76.5C-76.9,58.3,-82.7,43.5,-84.8,28.6C-86.9,13.7,-85.3,-1.3,-79.8,-14.8C-74.3,-28.3,-64.9,-40.3,-53.6,-49.5C-42.3,-58.7,-29.1,-65.1,-15.8,-66.1C-2.5,-67.1,10.8,-62.7,24.1,-58.3Z" transform="translate(100 100)" />
                                 </svg>
@@ -755,11 +1034,14 @@ const DashboardPage = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
 
                         {/* Upcoming Interviews - New Widget */}
-                        <div className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500 animate-in fade-in slide-in-from-right-8 duration-700 delay-700 fill-mode-backwards">
-                            <div className="flex justify-between items-center mb-4">
+                        <motion.div 
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
+                        >                            <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xs font-bold text-neutral-900">Upcoming Interviews</h3>
                                 <Button variant="ghost" size="sm" className="h-6 text-[10px] text-neutral-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg px-2">
                                     Calendar
@@ -798,12 +1080,12 @@ const DashboardPage = () => {
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </motion.div>
 
                     </div>
                 </div>
 
-            </div>
+            </motion.div>
         </DashboardLayout>
     )
 }
