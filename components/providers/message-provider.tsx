@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import apiMiddleware, { chatApi } from '@/lib/api'
-import Echo from '@/lib/echo'
+import { useEcho } from '@/components/providers/echo-provider'
 import { useUser } from '@/components/providers/user-provider'
 
 interface MessageContextType {
@@ -51,60 +51,42 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
         updateUnreadCount()
     }, [updateUnreadCount])
 
+    const { echo } = useEcho()
     const { user } = useUser()
 
     // Listen for real-time message events
     useEffect(() => {
-        const token = localStorage.getItem('auth_token')
-        if (!token) return
+        if (!echo || !user?.id) return
 
-        const userId = user?.id
+        const userId = user.id
+        console.log("MessageProvider: Subscribing to user.", userId);
 
-        const setupEcho = async () => {
-            console.log("MessageProvider: Setup Echo for UserID:", userId);
+        const channelName = `user.${userId}`;
+        const channel = echo.private(channelName)
 
-            if (!userId) return
-
-            const echo = Echo(token) // Pass token here
-            if (echo) {
-                const channelName = `user.${userId}`;
-                console.log("MessageProvider: Subscribing to", channelName);
-                const channel = echo.private(channelName)
-
-                channel.listen('MessageSent', (data: any) => {
-                    console.log("MessageProvider: MessageSent received", data);
-                    // If message is from someone else, increment unread count
-                    // CHECK: If this conversation is currently active, DO NOT increment.
-                    if (data.message.sender_id !== userId) {
-                        console.log("MessageProvider: Sender is not us. ActiveConv:", activeConversationId, "MsgConv:", data.message.conversation_id);
-                        // We will fix the closure issue by verifying against a value tracked in a ref (which we need to add)
-                        // OR just adding activeConversationId to dependency array. Re-subscribing is fine.
-                        // Actually re-subscribing to a PRIVATE channel "user.{id}" repeatedly is handled by Echo/Pusher efficiently?
-                        // Usually it's better to avoid it.
-                        // Let's use functional update or ref?
-                        // Functional update of setUnreadCount can't calculate "should increment" based on external state easily 
-                        // unless that state is inside the callback.
-
-                        // Let's assume we re-run effect when `activeConversationId` changes.
-                        if (data.message.conversation_id !== activeConversationId) {
-                            console.log("MessageProvider: Incrementing unread count");
-                            incrementUnreadCount()
-                        } else {
-                            console.log("MessageProvider: Skipped increment (Active Chat)");
-                        }
-                    }
-                })
-
-                return () => {
-                    console.log("MessageProvider: Unsubscribing");
-                    channel.stopListening('MessageSent')
+        channel.listen('MessageSent', (data: any) => {
+            console.log("MessageProvider: MessageSent received", data);
+            
+            // Broadcast to other components (like MessagesPage) via window event
+            window.dispatchEvent(new CustomEvent('messageSentEvent', { detail: data }));
+            
+            // If message is from someone else and not in active conversation, increment unread count
+            if (data.message.sender_id !== userId) {
+                console.log("MessageProvider: Sender is not us. ActiveConv:", activeConversationId, "MsgConv:", data.message.conversation_id);
+                if (data.message.conversation_id !== activeConversationId) {
+                    console.log("MessageProvider: Incrementing unread count");
+                    incrementUnreadCount()
+                } else {
+                    console.log("MessageProvider: Skipped increment (Active Chat)");
                 }
             }
+        })
+
+        return () => {
+            console.log("MessageProvider: Cleaning up listeners");
+            channel.stopListening('MessageSent')
         }
-
-        setupEcho()
-
-    }, [incrementUnreadCount, activeConversationId, user]) // Re-run when activeConversationId or user changes
+    }, [echo, user, incrementUnreadCount, activeConversationId])
 
     return (
         <MessageContext.Provider value={{ unreadCount, updateUnreadCount, incrementUnreadCount, decrementUnreadCount, activeConversationId, setActiveConversationId }}>

@@ -5,7 +5,7 @@ import { MessageSquare, X, Send, Paperclip, Minimize2, File, Download, XCircle, 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { supportChatApi } from '@/lib/api'
-import createEcho from '@/lib/echo'
+import { useEcho } from '@/components/providers/echo-provider'
 import { format } from 'date-fns'
 
 interface SupportMessage {
@@ -50,7 +50,6 @@ export function SupportChatWidget() {
   const [isLoading, setIsLoading] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [userId, setUserId] = useState<number | null>(null)
-  const [echo, setEcho] = useState<any>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [totalUnreadCount, setTotalUnreadCount] = useState(0)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -60,6 +59,8 @@ export function SupportChatWidget() {
   const widgetRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const markAsReadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  const { echo } = useEcho()
 
   // Fetch user on mount
   useEffect(() => {
@@ -68,10 +69,6 @@ export function SupportChatWidget() {
       if (!token) {
         setIsAuthenticated(false)
         setUserId(null)
-        setEcho((prevEcho: any) => {
-          if (prevEcho) prevEcho.disconnect()
-          return null
-        })
         return
       }
       setIsAuthenticated(true)
@@ -92,19 +89,11 @@ export function SupportChatWidget() {
           // Handle non-ok response (e.g., 401)
           setIsAuthenticated(false)
           setUserId(null)
-          setEcho((prevEcho: any) => {
-            if (prevEcho) prevEcho.disconnect()
-            return null
-          })
         }
       } catch (error: any) {
         console.error('Failed to fetch initial chat data', error)
         setIsAuthenticated(false)
         setUserId(null)
-        setEcho((prevEcho: any) => {
-          if (prevEcho) prevEcho.disconnect()
-          return null
-        })
       }
     }
 
@@ -156,15 +145,17 @@ export function SupportChatWidget() {
     if (echo && userId && !isOpen) {
       const userChannel = echo.private(`user.${userId}`)
       
-      userChannel.listen('SupportMessageSent', (e: { message: SupportMessage }) => {
+      const handleMessage = (e: { message: SupportMessage }) => {
         // Only increment if message is from support
         if (e.message.sender_id !== userId) {
           setTotalUnreadCount((prev) => prev + 1)
         }
-      })
+      }
+
+      userChannel.listen('SupportMessageSent', handleMessage)
 
       return () => {
-        userChannel.stopListening('SupportMessageSent')
+        userChannel.stopListening('SupportMessageSent', handleMessage)
       }
     }
   }, [echo, userId, isOpen])
@@ -215,18 +206,11 @@ export function SupportChatWidget() {
     }
   }, [isOpen, isAuthenticated])
 
-  // Echo Setup
-  useEffect(() => {
-    const token = localStorage.getItem('auth_token')
-    if (token && !echo) {
-      const echoInstance = createEcho(token)
-      setEcho(echoInstance)
-    }
-  }, [echo])
+
 
   // Listen for new messages
   useEffect(() => {
-    if (conversation && echo && userId) {
+    if (conversation && echo && userId && isOpen) {
       const channel = echo.private(`support-conversation.${conversation.id}`)
       
       // Listen for new messages
@@ -236,7 +220,7 @@ export function SupportChatWidget() {
           return [...prev, e.message]
         })
         // Mark as read if message is from support and chat is open
-        if (e.message.sender_id !== userId && isOpen) {
+        if (e.message.sender_id !== userId) {
           if (markAsReadTimeoutRef.current) clearTimeout(markAsReadTimeoutRef.current)
           markAsReadTimeoutRef.current = setTimeout(() => {
             supportChatApi.markAsRead(conversation.id).then(() => {
@@ -284,35 +268,15 @@ export function SupportChatWidget() {
         }
       })
 
-      // Also listen to user channel for unread updates
+      // Also listen to user channel for unread updates but filtering for this conversation
       const userChannel = echo.private(`user.${userId}`)
       userChannel.listen('SupportMessageSent', (e: { message: SupportMessage }) => {
         if (e.message.support_conversation_id === conversation.id) {
-          setMessages((prev) => {
+            // Logic handled by the specific conversation listener mostly, but duplicate check safe
+            setMessages((prev) => {
             if (prev.find((m) => m.id === e.message.id)) return prev
             return [...prev, e.message]
           })
-          // Mark as read if message is from support and chat is open
-          if (Number(e.message.sender_id) !== Number(userId) && isOpen) {
-            if (markAsReadTimeoutRef.current) clearTimeout(markAsReadTimeoutRef.current)
-            markAsReadTimeoutRef.current = setTimeout(() => {
-              supportChatApi.markAsRead(conversation.id).then(() => {
-                // Immediately update local state to show read status
-                const now = new Date().toISOString()
-                setMessages((prev) =>
-                  prev.map((msg) => {
-                    if (Number(msg.sender_id) !== Number(userId) && !msg.read_at) {
-                      return { ...msg, read_at: now }
-                    }
-                    return msg
-                  })
-                )
-                // Count is cleared when chat opens, no need to decrement
-              }).catch((err) => {
-                console.error('Failed to mark as read', err)
-              })
-            }, 500) // Debounce to avoid too many API calls
-          }
         }
       })
 
@@ -323,7 +287,7 @@ export function SupportChatWidget() {
         userChannel.stopListening('SupportMessageSent')
       }
     }
-  }, [conversation, echo, userId])
+  }, [conversation, echo, userId, isOpen])
 
   // Scroll to bottom
   useEffect(() => {

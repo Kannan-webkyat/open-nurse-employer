@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from "react"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Search, User, Paperclip, Send, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Image as ImageIcon, Link as LinkIcon, MessageSquare, File, Download, XCircle, Check, CheckCheck } from "lucide-react"
-import createEcho from "@/lib/echo"
+import { useEcho } from "@/components/providers/echo-provider"
 import apiMiddleware, { chatApi } from "@/lib/api"
 import { useMessages } from "@/components/providers/message-provider"
 import { format } from "date-fns"
@@ -61,13 +61,13 @@ export default function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [echo, setEcho] = useState<any>(null)
   const [userId, setUserId] = useState<number | null>(null)
   const [isTyping, setIsTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { decrementUnreadCount, setActiveConversationId, updateUnreadCount } = useMessages()
+  const { echo } = useEcho()
 
   // Sync active conversation ID with Provider
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function MessagesPage() {
 
     fetchInitialData()
 
-  }, [userId])
+  }, []) // Run only once on mount
 
   // Track selected conversation ID for listener
   const selectedConversationIdRef = useRef<number | null>(null)
@@ -131,47 +131,44 @@ export default function MessagesPage() {
     selectedConversationIdRef.current = selectedConversation?.id || null
   }, [selectedConversation])
 
-  // Initialize Echo
+  // Listen for message events from MessageProvider via window events
   useEffect(() => {
-    const token = localStorage.getItem('auth_token')
-    if (token) {
-      const echoInstance = createEcho(token)
-      setEcho(echoInstance)
+    if (!userId) return
 
-      // Listen for global message events to update conversation list for unread counts
-      if (userId) {
-        const channel = echoInstance.private(`user.${userId}`)
-        channel.listen('MessageSent', (e: { message: ChatMessage, conversation_id: number }) => {
-          setConversations(prev => {
-            const updated = prev.map(c => {
-              if (c.id === e.message.conversation_id) {
-                // Determine if we should increment unread count
-                const isFromUs = e.message.sender_id === userId
-                // Check if this is the currently open conversation
-                const isOpen = selectedConversationIdRef.current === c.id
+    console.log('MessagesPage: Setting up window event listener');
+    
+    const handleMessageSent = (event: any) => {
+      const e = event.detail as { message: ChatMessage, conversation_id: number };
+      console.log('MessagesPage: Received messageSentEvent', e);
+      
+      setConversations(prev => {
+        const updated = prev.map(c => {
+          if (c.id === e.message.conversation_id) {
+            const isFromUs = e.message.sender_id === userId
+            const isOpen = selectedConversationIdRef.current === c.id
+            const increment = (!isFromUs && !isOpen) ? 1 : 0
+            
+            console.log(`MessagesPage: Updating conv ${c.id}: isFromUs=${isFromUs}, isOpen=${isOpen}, increment=${increment}`);
 
-                const increment = (!isFromUs && !isOpen) ? 1 : 0
-
-                return {
-                  ...c,
-                  last_message: e.message,
-                  last_message_at: e.message.created_at,
-                  unread_messages_count: isOpen ? 0 : (c.unread_messages_count || 0) + increment
-                }
-              }
-              return c
-            })
-
-            // Sort by last_message_at
-            return updated.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
-          })
+            return {
+              ...c,
+              last_message: e.message,
+              last_message_at: e.message.created_at,
+              unread_messages_count: isOpen ? 0 : (c.unread_messages_count || 0) + increment
+            }
+          }
+          return c
         })
-      }
 
-      return () => {
-        if (userId) echoInstance.leave(`user.${userId} `)
-        echoInstance.disconnect()
-      }
+        return updated.sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime())
+      })
+    }
+
+    window.addEventListener('messageSentEvent', handleMessageSent)
+
+    return () => {
+      console.log('MessagesPage: Cleaning up window event listener');
+      window.removeEventListener('messageSentEvent', handleMessageSent)
     }
   }, [userId])
 
