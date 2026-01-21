@@ -319,7 +319,12 @@ const DashboardPage = () => {
                             transition={{ duration: 0.7, delay: 0.7 }}
                             className="text-sky-100 max-w-lg text-[10px] md:text-xs leading-relaxed"
                         >
-                            Here's your hiring overview. You have <span className="font-bold text-white underline decoration-white/30 underline-offset-4">{data.stats?.new_candidates || 0} new candidates</span> to review this week.
+                            Here's your hiring overview. You have <span className="font-bold text-white underline decoration-white/30 underline-offset-4">{data.stats?.new_candidates || 0} new candidates</span> to review {
+                                selectedRange === 'Today' ? 'today' : 
+                                selectedRange === 'Last 30 Days' ? 'this month' : 
+                                selectedRange === 'Last Year' ? 'this year' : 
+                                'this week'
+                            }.
                         </motion.p>
                     </div>
                 </motion.div>
@@ -694,10 +699,16 @@ const DashboardPage = () => {
                                     </div>
                                     
                                     <div className="space-y-4 relative z-10">
-                                        {(data.application_pipeline || [
-                                            { name: 'Candidates', value: data.stats.total_applications || 0 },
-                                            { name: 'Interviews', value: data.stats.interviews_scheduled || 0 },
-                                            { name: 'Hired', value: data.stats.hired_candidates || 0 }
+                                        {(data.application_pipeline?.map((stage: any) => {
+                                            if (stage.name === 'Hired') return { ...stage, value: data.stats.hired_candidates ?? stage.value };
+                                            if (stage.name === 'Interviewing') return { ...stage, value: data.stats.interviews_scheduled ?? stage.value };
+                                            if (stage.name === 'New Applications') return { ...stage, value: data.stats.new_candidates ?? stage.value };
+                                            if (stage.name === 'Rejected') return { ...stage, value: data.stats.rejected_candidates ?? stage.value };
+                                            return stage;
+                                        }) || [
+                                            { name: 'Candidates', value: data.stats.total_applications || 0, color: 'sky' },
+                                            { name: 'Interviews', value: data.stats.interviews_scheduled || 0, color: 'violet' },
+                                            { name: 'Hired', value: data.stats.hired_candidates || 0, color: 'emerald' }
                                         ]).map((stage: any, i: number) => {
                                             const max = Math.max(...(data.application_pipeline || []).map((s: any) => s.value), data.stats.total_applications || 1, 1);
                                             const percent = (stage.value / max) * 100;
@@ -715,10 +726,12 @@ const DashboardPage = () => {
                                                             viewport={{ once: true }}
                                                             transition={{ duration: 1.5, ease: [0.34, 1.56, 0.64, 1], delay: i * 0.1 }}
                                                             className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
-                                                                i === 0 ? 'bg-gradient-to-r from-sky-400 to-sky-500' :
-                                                                i === 1 ? 'bg-gradient-to-r from-indigo-400 to-indigo-500' :
-                                                                i === 2 ? 'bg-gradient-to-r from-violet-400 to-violet-500' :
-                                                                'bg-gradient-to-r from-emerald-400 to-emerald-500'
+                                                            stage.color === 'sky' ? 'bg-gradient-to-r from-sky-400 to-sky-500' :
+                                                            stage.color === 'amber' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                                                            stage.color === 'violet' ? 'bg-gradient-to-r from-violet-400 to-violet-500' :
+                                                            stage.color === 'emerald' ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
+                                                            stage.color === 'rose' ? 'bg-gradient-to-r from-rose-400 to-rose-500' :
+                                                            'bg-gradient-to-r from-sky-400 to-sky-500'
                                                             }`}
                                                         >
                                                             <div className="absolute inset-0 bg-white/20 animate-pulse" />
@@ -1035,7 +1048,9 @@ const DashboardPage = () => {
                                     <div key={i} className="flex gap-3 p-2 rounded-xl hover:bg-neutral-50 transition-colors cursor-default group/activity">
                                         <div className={`w-2 h-2 rounded-full mt-1.5 flex-none ${activity.type === 'job' ? 'bg-sky-500' : 'bg-emerald-500'} group-hover/activity:scale-125 transition-transform`}></div>
                                         <div>
-                                            <p className="text-xs font-bold text-neutral-800 leading-tight line-clamp-1 group-hover/activity:text-sky-700 transition-colors">{activity.user} {activity.action}</p>
+                                            <p className="text-xs font-bold text-neutral-800 leading-tight line-clamp-1 group-hover/activity:text-sky-700 transition-colors">
+                                                {activity.description || `${activity.user} ${activity.title}`}
+                                            </p>
                                             <p className="text-[10px] text-neutral-400 font-medium">{activity.time}</p>
                                         </div>
                                     </div>
