@@ -659,21 +659,28 @@ const DashboardPage = () => {
                                     whileHover={cardHover}
                                     className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 shadow-xl shadow-black/40 border border-white/5 relative overflow-hidden group/pipeline backdrop-blur-3xl"
                                 >
-                                    {/* Stripes Pattern */}
-                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover/pipeline:opacity-[0.05] transition-opacity duration-700">
+                                    {/* Nebula Mesh Background */}
+                                    <div className="absolute inset-0 bg-slate-950 overflow-hidden">
+                                        <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
+                                        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-violet-600/20 rounded-full blur-[120px]" style={{ animationDelay: '2s' }} />
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
+                                    </div>
+
+                                    {/* High-Detail Micro-Grid */}
+                                    <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay">
                                         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                                             <defs>
-                                                <pattern id="stripes-pipeline-final" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                                                    <line x1="0" y1="0" x2="0" y2="10" stroke="white" strokeWidth="2" />
+                                                <pattern id="micro-grid-pipeline" width="4" height="4" patternUnits="userSpaceOnUse">
+                                                    <circle cx="0.5" cy="0.5" r="0.2" fill="white" />
                                                 </pattern>
                                             </defs>
-                                            <rect width="100" height="100" fill="url(#stripes-pipeline-final)" />
+                                            <rect width="100" height="100" fill="url(#micro-grid-pipeline)" />
                                         </svg>
                                     </div>
 
-                                    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                                        <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl group-hover/pipeline:scale-125 transition-transform duration-1000" />
-                                    </div>
+                                    {/* Glass Surface Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none opacity-50" />
+                                    <div className="absolute inset-0 backdrop-blur-[2px]" />
 
                                     <div className="flex justify-between items-start mb-6 relative z-10">
                                         <div>
