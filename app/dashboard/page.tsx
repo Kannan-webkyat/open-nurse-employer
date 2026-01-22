@@ -466,78 +466,6 @@ const DashboardPage = () => {
                     {/* Left Column (8/12) - Charts Area */}
                     <div className="lg:col-span-8 space-y-5">
 
-                        {/* Top Jobs - Redesigned Rich Rows */}
-                        <motion.div 
-                            variants={itemVariants}
-                            whileHover={cardHover}
-                            className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-50 hover:shadow-lg transition-shadow duration-300 flex flex-col relative overflow-hidden group"
-                        >                                {/* Decorative Vector Background */}
-                                {/* Decorative Vector Background - Refined */}
-                                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                                    {/* Gradient - Radial Pattern - Amber/Gold Theme - Lighter */}
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-amber-100/30 via-orange-50/10 to-transparent"></div>
-                                </div>
-
-                                {/* Card Content - Z-Index to stay above background */}
-                                <div className="relative z-10 flex-1 flex flex-col">
-                                    <div className="mb-6 flex justify-between items-end">
-                                        <div>
-                                            <h3 className="text-lg font-black text-neutral-900 tracking-tight">Top Jobs</h3>
-                                            <p className="text-xs text-neutral-400 font-medium mt-1">Most popular positions</p>
-                                        </div>
-                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg px-2">
-                                            View All
-                                        </Button>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        {[...data.recent_jobs]
-                                            .sort((a: any, b: any) => b.applications - a.applications)
-                                            .slice(0, 4)
-                                            .map((job: any, i: number) => {
-                                                // Calculate relative intensity
-                                                const maxApps = Math.max(...data.recent_jobs.map((j: any) => j.applications), 1);
-                                                const intensity = (job.applications / maxApps);
-
-                                                return (
-                                                    <div key={i} className="group flex items-center justify-between p-3 rounded-2xl bg-white border border-neutral-100/80 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 cursor-pointer">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-300 shadow-sm ${i === 0 ? 'bg-amber-100 text-amber-600' :
-                                                                i === 1 ? 'bg-neutral-100 text-neutral-500' :
-                                                                    i === 2 ? 'bg-orange-50 text-orange-400' :
-                                                                        'bg-slate-50 text-slate-400'
-                                                                } group-hover:scale-110`}>
-                                                                {job.title.charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="font-bold text-neutral-900 text-sm group-hover:text-amber-700 transition-colors truncate max-w-[120px] sm:max-w-[150px]">{job.title}</h4>
-                                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                                    <span className="text-[10px] font-medium text-neutral-400">ID: {job.jobId}</span>
-                                                                    {job.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <div className="flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded-lg border border-neutral-100 group-hover:bg-white group-hover:border-amber-100 transition-colors">
-                                                                <Users className="w-3 h-3 text-amber-500" />
-                                                                <span className="text-xs font-black text-neutral-900">{job.applications}</span>
-                                                            </div>
-                                                            {/* Subtle progress bar at bottom of card */}
-                                                            <div className="w-12 h-1 bg-neutral-100 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${intensity * 100}%` }}></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
-                                    </div>
-                                    {data.recent_jobs.length === 0 && (
-                                        <div className="text-center py-8 text-neutral-400 text-xs">No active jobs found.</div>
-                                    )}
-                                </div>
-                            </motion.div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 {/* Job Status Distribution - Warmer Dark Theme */}
                                 <motion.div 
@@ -744,6 +672,78 @@ const DashboardPage = () => {
                                 </motion.div>
                             </div>
 
+                        {/* Top Jobs - Redesigned Rich Rows */}
+                        <motion.div 
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-50 hover:shadow-lg transition-shadow duration-300 flex flex-col relative overflow-hidden group"
+                        >                                {/* Decorative Vector Background */}
+                                {/* Decorative Vector Background - Refined */}
+                                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                    {/* Gradient - Radial Pattern - Amber/Gold Theme - Lighter */}
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-amber-100/30 via-orange-50/10 to-transparent"></div>
+                                </div>
+
+                                {/* Card Content - Z-Index to stay above background */}
+                                <div className="relative z-10 flex-1 flex flex-col">
+                                    <div className="mb-6 flex justify-between items-end">
+                                        <div>
+                                            <h3 className="text-lg font-black text-neutral-900 tracking-tight">Top Jobs</h3>
+                                            <p className="text-xs text-neutral-400 font-medium mt-1">Most popular positions</p>
+                                        </div>
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg px-2">
+                                            View All
+                                        </Button>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {[...data.recent_jobs]
+                                            .sort((a: any, b: any) => b.applications - a.applications)
+                                            .slice(0, 4)
+                                            .map((job: any, i: number) => {
+                                                // Calculate relative intensity
+                                                const maxApps = Math.max(...data.recent_jobs.map((j: any) => j.applications), 1);
+                                                const intensity = (job.applications / maxApps);
+
+                                                return (
+                                                    <div key={i} className="group flex items-center justify-between p-3 rounded-2xl bg-white border border-neutral-100/80 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 cursor-pointer">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-300 shadow-sm ${i === 0 ? 'bg-amber-100 text-amber-600' :
+                                                                i === 1 ? 'bg-neutral-100 text-neutral-500' :
+                                                                    i === 2 ? 'bg-orange-50 text-orange-400' :
+                                                                        'bg-slate-50 text-slate-400'
+                                                                } group-hover:scale-110`}>
+                                                                {job.title.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-neutral-900 text-sm group-hover:text-amber-700 transition-colors truncate max-w-[120px] sm:max-w-[150px]">{job.title}</h4>
+                                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                                    <span className="text-[10px] font-medium text-neutral-400">ID: {job.jobId}</span>
+                                                                    {job.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex flex-col items-end gap-1">
+                                                            <div className="flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded-lg border border-neutral-100 group-hover:bg-white group-hover:border-amber-100 transition-colors">
+                                                                <Users className="w-3 h-3 text-amber-500" />
+                                                                <span className="text-xs font-black text-neutral-900">{job.applications}</span>
+                                                            </div>
+                                                            {/* Subtle progress bar at bottom of card */}
+                                                            <div className="w-12 h-1 bg-neutral-100 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${intensity * 100}%` }}></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                    </div>
+                                    {data.recent_jobs.length === 0 && (
+                                        <div className="text-center py-8 text-neutral-400 text-xs">No active jobs found.</div>
+                                    )}
+                                </div>
+                            </motion.div>
+
                             {/* Application Traffic - Bold Neutral Theme */}
                             <motion.div 
                                 variants={itemVariants}
@@ -870,9 +870,11 @@ const DashboardPage = () => {
                                 <div>
                                     <h3 className="text-lg font-black text-neutral-900">Active Jobs</h3>
                                 </div>
-                                <Button variant="ghost" size="sm" className="text-sky-600 font-bold hover:bg-sky-50 rounded-xl transition-colors">
-                                    View All
-                                </Button>
+                                <Link href="/jobs">
+                                    <Button variant="ghost" size="sm" className="text-sky-600 font-bold hover:bg-sky-50 rounded-xl transition-colors">
+                                        View All
+                                    </Button>
+                                </Link>
                             </div>
 
                             <div className="space-y-3 relative z-10">
