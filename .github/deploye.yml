@@ -1,0 +1,36 @@
+name: Deploy Employer Panel (Static)
+
+on:
+  push:
+    branches:
+      - main  # or the branch you deploy from
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy Employer Panel
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /var/www/employer
+
+            git fetch origin
+            git reset --hard origin/main
+
+            npm ci
+            npm run build
+            npm run export
+
+            # Copy exported files to web root
+            rm -rf /var/www/employer/out_static
+            mv out /var/www/employer/out_static
