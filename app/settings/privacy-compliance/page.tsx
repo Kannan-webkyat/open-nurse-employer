@@ -11,11 +11,6 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 
 export default function PrivacyCompliancePage() {
   const { success, error } = useToast()
-  const [formData, setFormData] = useState({
-    candidateDataVisibility: false,
-    consentForMarketingEmails: false,
-    dataRetentionPolicy: "6 months",
-  })
 
   // Suggestion State
   const [suggestionInput, setSuggestionInput] = useState("")
@@ -40,10 +35,6 @@ export default function PrivacyCompliancePage() {
     } finally {
       setIsLoadingSuggestions(false)
     }
-  }
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleCreateSuggestion = async () => {
@@ -73,13 +64,6 @@ export default function PrivacyCompliancePage() {
     }
   }
 
-  const handleSave = () => {
-    console.log("Saving privacy and compliance settings:", formData)
-    success("Your privacy settings have been updated.", {
-      title: "Settings Saved",
-    })
-  }
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -88,76 +72,6 @@ export default function PrivacyCompliancePage() {
           <p className="text-neutral-600">Manage your privacy settings and share feedback.</p>
         </div>
 
-        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
-          {/* Data Privacy Preferences (GDPR / Compliance) */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 mb-6">Data Privacy Preferences (GDPR / Compliance)</h2>
-            <div className="space-y-6">
-              {/* Candidate Data Visibility */}
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-sm font-medium text-neutral-900">Candidate Data Visibility</p>
-                  <p className="text-sm text-neutral-600 mt-1">Control visibility of candidate data</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.candidateDataVisibility}
-                    onChange={(e) => handleInputChange("candidateDataVisibility", e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00EB23]"></div>
-                </label>
-              </div>
-
-              {/* Consent for Marketing Emails */}
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-sm font-medium text-neutral-900">Consent for Marketing Emails</p>
-                  <p className="text-sm text-neutral-600 mt-1">Allow marketing communications via email</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.consentForMarketingEmails}
-                    onChange={(e) => handleInputChange("consentForMarketingEmails", e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                </label>
-              </div>
-
-              {/* Data Retention Policy */}
-              <div className="pt-2 border-t border-neutral-200">
-                <label className="text-sm font-medium text-neutral-900 mb-3 block">
-                  Data Retention Policy
-                </label>
-                <select
-                  value={formData.dataRetentionPolicy}
-                  onChange={(e) => handleInputChange("dataRetentionPolicy", e.target.value)}
-                  className="flex h-10 w-full max-w-xs rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                >
-                  <option value="1 month">1 month</option>
-                  <option value="3 months">3 months</option>
-                  <option value="6 months">6 months</option>
-                  <option value="1 year">1 year</option>
-                  <option value="2 years">2 years</option>
-                  <option value="5 years">5 years</option>
-                </select>
-              </div>
-
-              {/* Save Button for Privacy Settings */}
-              <div className="pt-4 flex justify-end">
-                <Button
-                  type="submit"
-                  className="bg-sky-600 text-white hover:bg-sky-700"
-                >
-                  Save Privacy Settings
-                </Button>
-              </div>
-            </div>
-          </div>
-        </form>
 
         {/* System Suggestions Section */}
         <div className="bg-white rounded-lg border border-neutral-200 p-6">
