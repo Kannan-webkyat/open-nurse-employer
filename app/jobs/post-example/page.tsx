@@ -199,7 +199,7 @@ export default function JobPostingExample() {
     )
 }
 
-function FeatureItem({ label, enabled }) {
+function FeatureItem({ label, enabled }: { label: string; enabled: boolean }) {
     return (
         <div className="flex items-center gap-2">
             {enabled ? (
