@@ -785,7 +785,7 @@ const DashboardPage = () => {
                                             variant="outline"
                                             size="sm"
                                             onClick={() => setIsChartFilterOpen(!isChartFilterOpen)}
-                                            className={`!rounded-full border-white/20 text-xs font-bold bg-white/10 text-white hover:bg-white/20 hover:text-white border-transparent ${isChartFilterOpen ? 'bg-white/20 ring-2 ring-white/30' : ''}`}
+                                            className={`!rounded-full border-white/20 text-xs font-bold bg-white/10 text-white hover:bg-white/20 hover:text-white ${isChartFilterOpen ? 'bg-white/20 ring-2 ring-white/30' : ''}`}
                                         >
                                             <Filter className="w-3.5 h-3.5 mr-2" /> Filter
                                         </Button>
