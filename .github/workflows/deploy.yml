@@ -29,7 +29,6 @@ jobs:
 
             npm ci
             npm run build
-            npm run export
 
             # Copy exported files to web root
             rm -rf /var/www/employer/out_static
