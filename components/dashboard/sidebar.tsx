@@ -3,19 +3,20 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Users, 
-  FileText, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
   HelpCircle,
   ChevronDown,
   ChevronRight,
   MessageCircle
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useMessages } from "@/components/providers/message-provider"
 
 const menuItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -35,24 +36,40 @@ const settingsSubItems = [
   { href: "/settings/delete-account", label: "Delete Account", isDestructive: true },
 ]
 
+const reportsSubItems = [
+  { href: "/reports/monthly-job-reports", label: "Monthly Job Reports" },
+  { href: "/reports/candidates-applications", label: "Candidates Applications" },
+  { href: "/reports/billing-summary", label: "Billing Summary" },
+]
+
 export function Sidebar() {
   const pathname = usePathname()
   const isSettingsActive = pathname?.startsWith("/settings")
+  const isReportsActive = pathname?.startsWith("/reports")
   const [isSettingsOpen, setIsSettingsOpen] = useState(isSettingsActive)
+  const { unreadCount } = useMessages()
+  const [isReportsOpen, setIsReportsOpen] = useState(isReportsActive)
 
   useEffect(() => {
     setIsSettingsOpen(isSettingsActive)
   }, [isSettingsActive])
+
+  useEffect(() => {
+    setIsReportsOpen(isReportsActive)
+  }, [isReportsActive])
 
   return (
     <aside className="mx-5 w-64 bg-white h-[calc(100vh-93px)] border border-neutral-200 rounded-xl sticky top-[93px] overflow-y-auto">
       <nav className="p-4">
         <ul className="space-y-2">
           {menuItems.map((item) => {
+            // Skip Reports as it will be handled separately with submenu
+            if (item.href === "/reports") return null
+            
             const isActive = pathname === item.href || 
               (item.href !== "/dashboard" && pathname?.startsWith(item.href))
             const Icon = item.icon
-            
+
             return (
               <li key={item.href}>
                 <Link
@@ -64,8 +81,13 @@ export function Sidebar() {
                       : "text-neutral-700 hover:bg-neutral-50"
                   )}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="w-5 h-5 flex-shrink-0" />
                   <span className="flex-1">{item.label}</span>
+                  {item.label === "Messages" && unreadCount > 0 && (
+                    <span className="bg-sky-600 text-white text-[10px] font-bold px-1.5 py-0.5 min-w-[18px] text-center rounded-full mr-1">
+                      {unreadCount}
+                    </span>
+                  )}
                   {isActive && (
                     <div className="w-2 h-2 bg-sky-600 rounded-full" />
                   )}
@@ -73,6 +95,52 @@ export function Sidebar() {
               </li>
             )
           })}
+          
+          {/* Reports with Sub-menu */}
+          <li>
+            <button
+              onClick={() => setIsReportsOpen(!isReportsOpen)}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-sm font-medium",
+                isReportsActive
+                  ? "bg-sky-50 text-sky-600"
+                  : "text-neutral-700 hover:bg-neutral-50"
+              )}
+            >
+              <BarChart3 className="w-5 h-5" />
+              <span className="flex-1 text-left">Reports & Insights</span>
+              {isReportsOpen ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronRight className="w-4 h-4" />
+              )}
+            </button>
+            {isReportsOpen && (
+              <ul className="mt-2 ml-4 space-y-1">
+                {reportsSubItems.map((subItem) => {
+                  const isSubActive = pathname === subItem.href
+                  return (
+                    <li key={subItem.href}>
+                      <Link
+                        href={subItem.href}
+                        className={cn(
+                          "flex items-center justify-between px-4 py-2 rounded-lg transition-colors text-sm",
+                          isSubActive
+                            ? "bg-sky-50 text-sky-600 font-medium"
+                            : "text-neutral-700 hover:bg-neutral-50"
+                        )}
+                      >
+                        <span>{subItem.label}</span>
+                        {isSubActive && (
+                          <div className="w-2 h-2 bg-sky-600 rounded-full" />
+                        )}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </li>
           
           {/* Settings with Sub-menu */}
           <li>
@@ -106,8 +174,8 @@ export function Sidebar() {
                           isSubActive
                             ? "bg-sky-50 text-sky-600 font-medium"
                             : subItem.isDestructive
-                            ? "text-red-600 hover:bg-red-50"
-                            : "text-neutral-700 hover:bg-neutral-50"
+                              ? "text-red-600 hover:bg-red-50"
+                              : "text-neutral-700 hover:bg-neutral-50"
                         )}
                       >
                         <span>{subItem.label}</span>

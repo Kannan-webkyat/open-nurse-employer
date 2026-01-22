@@ -9,18 +9,21 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { TablePagination } from "@/components/ui/table-pagination"
 import { Modal } from "@/components/ui/modal"
 import { AlertDialog } from "@/components/ui/alert-dialog"
-import { Search, Filter, Eye, Pencil, Trash2, X } from "lucide-react"
+import { Search, Filter, Eye, Pencil, Trash2, X, Copy } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
 
 interface Job {
   id: number
   title: string
   job_id: string
+  location: string
   employment_type: string
   posted_date: string
   closed_date: string
   status: "active" | "paused" | "draft" | "closed"
+  admin_status: "pending" | "approved" | "rejected" | "hidden"
 }
 
 interface JobDetails extends Job {
@@ -44,6 +47,13 @@ const statusVariantMap = {
   closed: "closed",
 } as const
 
+const adminStatusVariantMap = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  hidden: "hidden",
+} as const
+
 // Format date helper
 const formatDate = (dateString: string) => {
   if (!dateString) return ""
@@ -52,6 +62,12 @@ const formatDate = (dateString: string) => {
 }
 
 export default function JobsPage() {
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [rowsPerPage, setRowsPerPage] = useState(10)
@@ -114,7 +130,7 @@ export default function JobsPage() {
           search: searchQuery || undefined,
         })
 
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           // Handle Laravel pagination response
           const paginatedData = response.data as any
           if (paginatedData.data) {
@@ -144,11 +160,11 @@ export default function JobsPage() {
   // Apply client-side filters for employment type and dates
   const filteredJobs = jobs.filter(job => {
     const matchesEmploymentType = !filters.employmentType || job.employment_type === filters.employmentType
-    
+
     // Date filtering
     const matchesDateFrom = !filters.postedDateFrom || job.posted_date >= filters.postedDateFrom
     const matchesDateTo = !filters.postedDateTo || job.posted_date <= filters.postedDateTo
-    
+
     return matchesEmploymentType && matchesDateFrom && matchesDateTo
   })
 
@@ -162,7 +178,7 @@ export default function JobsPage() {
   const handleViewJob = async (job: Job) => {
     try {
       const response = await jobPostApi.getById(job.id)
-      if (response.success && response.data) {
+      if (response.success && 'data' in response && response.data) {
         setSelectedJob(response.data as JobDetails)
         setIsViewModalOpen(true)
       } else {
@@ -195,8 +211,8 @@ export default function JobsPage() {
             status: filters.status || undefined,
             search: searchQuery || undefined,
           })
-          
-          if (refreshResponse.success && refreshResponse.data) {
+
+          if (refreshResponse.success && 'data' in refreshResponse && refreshResponse.data) {
             const paginatedData = refreshResponse.data as any
             if (paginatedData.data) {
               setJobs(paginatedData.data)
@@ -208,16 +224,27 @@ export default function JobsPage() {
               setTotalItems(paginatedData.length)
             }
           }
-          
+
           setJobToDelete(null)
           setIsDeleteDialogOpen(false)
+          toast.success('Job deleted successfully!', {
+            title: 'Success',
+            duration: 3000,
+          })
         } else {
           console.error('Failed to delete job:', response.message)
-          alert('Failed to delete job: ' + response.message)
+          const errorMessage = response.message || 'Failed to delete job'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
         }
       } catch (error) {
         console.error('Error deleting job:', error)
-        alert('An error occurred while deleting the job')
+        toast.error('An error occurred while deleting the job', {
+          title: 'Error',
+          duration: 5000,
+        })
       }
     }
   }
@@ -244,8 +271,8 @@ export default function JobsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="bg-white border-neutral-300 text-neutral-700 relative"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
@@ -267,84 +294,108 @@ export default function JobsPage() {
 
         {/* Table */}
         <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Job Title</TableHead>
-                <TableHead>Job ID</TableHead>
-                <TableHead>Employment Type</TableHead>
-                <TableHead>Posted Date</TableHead>
-                <TableHead>Closed Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-neutral-600">
-                    Loading...
-                  </TableCell>
+                  <TableHead>#</TableHead>
+                  <TableHead>Job ID</TableHead>
+                  <TableHead>Job Title</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Employment Type</TableHead>
+                  <TableHead>Posted Date</TableHead>
+                  <TableHead>Closed Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ) : paginatedJobs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-neutral-600">
-                    No jobs found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedJobs.map((job, index) => (
-                  <TableRow key={job.id}>
-                    <TableCell className="text-neutral-800">
-                      {(currentPage - 1) * rowsPerPage + index + 1}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {job.title}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {job.job_id}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {job.employment_type}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(job.posted_date)}
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {formatDate(job.closed_date)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariantMap[job.status]}>
-                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => handleViewJob(job)}
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <Link href={`/jobs/edit/${job.id}`}>
-                          <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors">
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                        </Link>
-                        <button 
-                          onClick={() => handleDeleteClick(job)}
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
+                      Loading...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : paginatedJobs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8 text-neutral-600">
+                      No jobs found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedJobs.map((job, index) => (
+                    <TableRow key={job.id}>
+                      <TableCell className="text-neutral-800">
+                        {(currentPage - 1) * rowsPerPage + index + 1}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        <div className="flex items-center gap-2 group">
+                          <span className="font-mono text-sm">{job.job_id}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(job.job_id)
+                              toast.success('Job ID copied!')
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-neutral-100 rounded transition-all text-neutral-400 hover:text-neutral-600"
+                            title="Copy Job ID"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {job.title}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {job.location || "N/A"}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {job.employment_type}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {formatDate(job.posted_date)}
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {formatDate(job.closed_date)}
+                      </TableCell>
+                      <TableCell>
+                        {job.admin_status === 'hidden' ? (
+                          <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                            Hidden by Admin
+                          </Badge>
+                        ) : (
+                          <Badge variant={statusVariantMap[job.status]}>
+                            {job.status === 'active' ? 'Website Listed' : job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleViewJob(job)}
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <Link href={`/jobs/edit/${job.id}`}>
+                            <button className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-violet-600 hover:bg-violet-100 transition-colors">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteClick(job)}
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-red-600 hover:bg-red-100 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
           <TablePagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -413,11 +464,18 @@ export default function JobsPage() {
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Status</label>
                     <div className="mt-1">
-                      <Badge variant={statusVariantMap[selectedJob.status]}>
-                        {selectedJob.status.charAt(0).toUpperCase() + selectedJob.status.slice(1)}
-                      </Badge>
+                      {selectedJob.admin_status === 'hidden' ? (
+                        <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border border-red-200">
+                          Hidden by Admin
+                        </Badge>
+                      ) : (
+                        <Badge variant={statusVariantMap[selectedJob.status]}>
+                          {selectedJob.status === 'active' ? 'Website Listed' : selectedJob.status.charAt(0).toUpperCase() + selectedJob.status.slice(1)}
+                        </Badge>
+                      )}
                     </div>
                   </div>
+
                 </div>
               </div>
 
@@ -498,13 +556,13 @@ export default function JobsPage() {
         {isFilterOpen && (
           <>
             {/* Backdrop */}
-            <div 
+            <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[55] transition-opacity"
               onClick={() => setIsFilterOpen(false)}
             />
-            
+
             {/* Slide-in Panel */}
-            <div 
+            <div
               ref={filterRef}
               className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-[60] transform transition-transform duration-300 ease-in-out overflow-y-auto"
             >
@@ -536,11 +594,10 @@ export default function JobsPage() {
                       <button
                         key={status}
                         onClick={() => handleFilterChange("status", filters.status === status ? "" : status)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${
-                          filters.status === status
-                            ? "border-sky-500 bg-sky-50 text-sky-700"
-                            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
-                        }`}
+                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium ${filters.status === status
+                          ? "border-sky-500 bg-sky-50 text-sky-700"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
+                          }`}
                       >
                         {status.charAt(0).toUpperCase() + status.slice(1)}
                       </button>
@@ -556,11 +613,10 @@ export default function JobsPage() {
                       <button
                         key={type}
                         onClick={() => handleFilterChange("employmentType", filters.employmentType === type ? "" : type)}
-                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium text-left ${
-                          filters.employmentType === type
-                            ? "border-sky-500 bg-sky-50 text-sky-700"
-                            : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
-                        }`}
+                        className={`px-4 py-3 rounded-lg border transition-all text-sm font-medium text-left ${filters.employmentType === type
+                          ? "border-sky-500 bg-sky-50 text-sky-700"
+                          : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-300"
+                          }`}
                       >
                         {type}
                       </button>

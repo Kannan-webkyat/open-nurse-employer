@@ -1,62 +1,14 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw } from "lucide-react"
-
-interface Notification {
-  id: number
-  type: "application" | "message" | "interview" | "expiry" | "system"
-  title: string
-  description: string
-  timestamp: string
-  isUnread: boolean
-}
-
-
-const notifications: Notification[] = [
-  {
-    id: 1,
-    type: "application",
-    title: "New Application Received",
-    description: "Emma Johnson applied for ICU Nurse — Night Shift.",
-    timestamp: "2 hours ago",
-    isUnread: true,
-  },
-  {
-    id: 2,
-    type: "message",
-    title: "Candidate Message",
-    description: "Michael sent you a message about General Ward Nurse.",
-    timestamp: "1 day ago",
-    isUnread: false,
-  },
-  {
-    id: 3,
-    type: "interview",
-    title: "Interview scheduled",
-    description: "Interview with Ria for Pediatric Nurse - Sep 12, 11:00 AM.",
-    timestamp: "1 day ago",
-    isUnread: false,
-  },
-  {
-    id: 4,
-    type: "expiry",
-    title: "Job Posting About to Expire",
-    description: 'Your posting "ER Nurse" will expire in 3 days.',
-    timestamp: "3 day ago",
-    isUnread: true,
-  },
-  {
-    id: 5,
-    type: "system",
-    title: "System Update",
-    description: "Dashboard updated for easier navigation.",
-    timestamp: "3 day ago",
-    isUnread: true,
-  },
-]
+import { useRouter } from "next/navigation"
+import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
+import { authApi } from "@/lib/api"
+import { useNotifications, Notification } from "@/components/providers/notification-provider"
+import { useMessages } from "@/components/providers/message-provider"
+import { useUser } from "@/components/providers/user-provider"
 
 const getNotificationIcon = (type: Notification["type"]) => {
   switch (type) {
@@ -70,6 +22,8 @@ const getNotificationIcon = (type: Notification["type"]) => {
       return Briefcase
     case "system":
       return RefreshCw
+    case "job":
+      return Briefcase
     default:
       return Bell
   }
@@ -78,7 +32,7 @@ const getNotificationIcon = (type: Notification["type"]) => {
 const getNotificationIconBg = (type: Notification["type"]) => {
   switch (type) {
     case "application":
-      return "bg-orange-200" 
+      return "bg-orange-200"
     case "message":
       return "bg-blue-200"
     case "interview":
@@ -87,6 +41,8 @@ const getNotificationIconBg = (type: Notification["type"]) => {
       return "bg-pink-200"
     case "system":
       return "bg-green-200"
+    case "job":
+      return "bg-indigo-200"
     default:
       return "bg-neutral-200"
   }
@@ -104,41 +60,140 @@ const getNotificationIconColor = (type: Notification["type"]) => {
       return "text-pink-600"
     case "system":
       return "text-green-600"
+    case "job":
+      return "text-indigo-600"
     default:
       return "text-neutral-600"
   }
 }
 
+// Function to generate initials from user name
+const getInitials = (name: string): string => {
+  if (!name) return "U"
+
+  // Remove common prefixes and split into words
+  const words = name
+    .replace(/^(St\.|Mr\.|Mrs\.|Ms\.|Dr\.)\s+/i, "") // Remove titles
+    .split(/\s+/)
+    .filter(word => word.length > 0 && !word.match(/^(and|of|the|a|an)$/i)) // Filter out common words
+
+  if (words.length === 0) return "U"
+
+  // Get first letter of first two significant words
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase()
+  }
+
+  // If only one word, use first two letters
+  return words[0].substring(0, 2).toUpperCase()
+}
 
 export function Header() {
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [filter, setFilter] = useState<"all" | "unread">("all")
-  const notificationsRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+  const { notifications, unreadCount, markAsRead, clearNotifications } = useNotifications()
+  const { unreadCount: unreadMessageCount } = useMessages()
+  const { user, isLoading: isLoadingUser, logout, refreshUser } = useUser()
 
-  // Unread message count - this would typically come from a context or API
-  const unreadMessageCount = 3
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [filter, setFilter] = useState<"all" | "unread">("all")
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const [userData, setUserData] = useState<{
+    companyName: string
+    hiringPersonName: string
+    userName: string
+    userInitials: string
+    companyLogo: string | null
+  } | null>(null)
+
+  const [imageError, setImageError] = useState(false)
+  const [buttonImageError, setButtonImageError] = useState(false)
+  const notificationsRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  // Map user data from context
+  useEffect(() => {
+    if (user) {
+      setImageError(false)
+      setButtonImageError(false)
+
+      const employer = (user.employer || {}) as any
+
+      // Get company name or fallback to user name
+      const companyName = employer.company_name || user.name || 'Company'
+      const hiringPersonName = employer.hiring_person_name || user.name || 'User'
+
+      // Use company name for display, fallback to hiring person name
+      const displayName = companyName || hiringPersonName
+
+      // Construct company logo URL if exists
+      let companyLogoUrl = null
+      if (employer.company_logo) {
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
+        // Handle both relative paths (starting with /) and paths without leading slash
+        const logoPath = employer.company_logo.startsWith('/') 
+          ? employer.company_logo.substring(1) 
+          : employer.company_logo
+        companyLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
+        // Add timestamp to force refresh if image was just updated
+        companyLogoUrl += `?t=${Date.now()}`
+      }
+
+      setUserData({
+        companyName: companyName,
+        hiringPersonName: hiringPersonName,
+        userName: displayName,
+        userInitials: getInitials(displayName),
+        companyLogo: companyLogoUrl
+      })
+    }
+  }, [user])
+
+  // Listen for profile update events to refresh header data
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      console.log('Profile updated event received, refreshing header...')
+      refreshUser()
+    }
+
+    // Listen for custom event when profile is updated
+    window.addEventListener('profileUpdated', handleProfileUpdate)
+
+    // Listen for custom event to open notification panel
+    const handleOpenPanel = () => {
+      setIsNotificationsOpen(true)
+    }
+    window.addEventListener('open-notification-panel', handleOpenPanel)
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate)
+      window.removeEventListener('open-notification-panel', handleOpenPanel)
+    }
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
         setIsNotificationsOpen(false)
       }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false)
+      }
     }
 
-    if (isNotificationsOpen) {
+    if (isNotificationsOpen || isUserMenuOpen) {
       document.addEventListener("mousedown", handleClickOutside)
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [isNotificationsOpen])
+  }, [isNotificationsOpen, isUserMenuOpen])
 
-  const filteredNotifications = filter === "unread" 
+  const filteredNotifications = filter === "unread"
     ? notifications.filter(n => n.isUnread)
     : notifications
-
-  const unreadCount = notifications.filter(n => n.isUnread).length
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-neutral-50">
@@ -148,7 +203,7 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4 relative">
           <div className="relative" ref={notificationsRef}>
-            <button 
+            <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
               className="p-2 hover:bg-neutral-100 rounded-full text-neutral-800 transition-colors relative"
             >
@@ -169,23 +224,32 @@ export function Header() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setFilter("all")}
-                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                        filter === "all"
-                          ? "bg-neutral-200 text-neutral-900 font-medium"
-                          : "text-neutral-600 hover:text-neutral-900"
-                      }`}
+                      className={`px-3 py-1 text-sm rounded-full transition-colors ${filter === "all"
+                        ? "bg-neutral-200 text-neutral-900 font-medium"
+                        : "text-neutral-600 hover:text-neutral-900"
+                        }`}
                     >
                       All
                     </button>
                     <button
                       onClick={() => setFilter("unread")}
-                      className={`px-3 py-1 text-sm rounded transition-colors ${
-                        filter === "unread"
-                          ? "bg-neutral-200 text-neutral-900 font-medium"
-                          : "text-neutral-600 hover:text-neutral-900"
-                      }`}
+                      className={`px-3 py-1 text-sm rounded transition-colors ${filter === "unread"
+                        ? "bg-neutral-200 text-neutral-900 font-medium"
+                        : "text-neutral-600 hover:text-neutral-900"
+                        }`}
                     >
                       Unread
+                    </button>
+                    <button
+                      onClick={() => {
+                        clearNotifications();
+                        // Optional: Call API to clear all if needed
+                        // notificationApi.deleteRead().catch(console.error); 
+                      }}
+                      className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition-colors ml-2"
+                      title="Clear Notifications"
+                    >
+                      Clear
                     </button>
                   </div>
                 </div>
@@ -199,14 +263,28 @@ export function Header() {
                   ) : (
                     <div className="p-2">
                       {filteredNotifications.map((notification) => {
-                        const Icon = getNotificationIcon(notification.type)
-                        const iconBg = getNotificationIconBg(notification.type)
-                        const iconColor = getNotificationIconColor(notification.type)
-                        
+                        const Icon = getNotificationIcon(notification.type as any)
+                        const iconBg = getNotificationIconBg(notification.type as any)
+                        const iconColor = getNotificationIconColor(notification.type as any)
+
                         return (
                           <div
                             key={notification.id}
-                            className="p-3 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer mb-2 flex items-start gap-3 relative"
+                            className={`p-3 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer mb-2 flex items-start gap-3 relative ${notification.isUnread ? 'bg-blue-50/50' : ''}`}
+                            onClick={() => {
+                              if (notification.isUnread) {
+                                markAsRead(notification.id)
+                              }
+                              // Handle redirects based on type
+                              if (notification.type === 'application') {
+                                setIsNotificationsOpen(false)
+                                router.push('/candidates')
+                              }
+                              if (notification.type === 'job') {
+                                setIsNotificationsOpen(false)
+                                router.push('/jobs')
+                              }
+                            }}
                           >
                             {/* Icon */}
                             <div className={`${iconBg} w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}>
@@ -228,7 +306,14 @@ export function Header() {
 
                             {/* Unread Indicator */}
                             {notification.isUnread && (
-                              <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
+                                className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2 hover:scale-150 transition-transform"
+                                title="Mark as read"
+                              ></button>
                             )}
                           </div>
                         )
@@ -250,9 +335,109 @@ export function Header() {
               )}
             </button>
           </Link>
-          <button className="p-2 hover:bg-[#D0ECFF] rounded-full text-neutral-800 border border-[#0576B8] bg-[#E9F7FF] transition-colors">
-            <User className="w-5 h-5 text-[#0576B8]" />
-          </button>
+
+          {/* User Menu */}
+          <div className="relative" ref={userMenuRef}>
+            <button
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="p-0 hover:opacity-80 rounded-full text-neutral-800 border-2 border-[#0576B8] bg-[#E9F7FF] transition-all overflow-hidden w-10 h-10 flex items-center justify-center"
+            >
+              {isLoadingUser ? (
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+              ) : userData?.companyLogo && !buttonImageError ? (
+                <img
+                  src={userData.companyLogo}
+                  alt={userData.companyName || 'Company Logo'}
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    // Silently handle error - fallback to user icon
+                    setButtonImageError(true)
+                  }}
+                  onLoad={() => {
+                    // Reset error state if image loads successfully
+                    setButtonImageError(false)
+                  }}
+                />
+              ) : (
+                <User className="w-5 h-5 text-[#0576B8]" />
+              )}
+            </button>
+
+            {/* User Dropdown Menu */}
+            {isUserMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg border border-neutral-200 shadow-xl z-50">
+                <div className="p-4 border-b border-neutral-200 flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-sky-200">
+                    {isLoadingUser ? (
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+                    ) : userData?.companyLogo && !imageError ? (
+                      <Image
+                        src={userData.companyLogo}
+                        alt={userData.companyName || 'Company Logo'}
+                        width={48}
+                        height={48}
+                        className="w-full h-full object-cover rounded-full"
+                        unoptimized
+                        onError={(e) => {
+                          console.error('Failed to load company logo:', userData.companyLogo)
+                          setImageError(true)
+                        }}
+                        onLoad={() => {
+                          console.log('Company logo loaded successfully:', userData.companyLogo)
+                        }}
+                      />
+                    ) : (
+                      <span className="text-sky-600 font-semibold text-lg">
+                        {userData?.userInitials || 'U'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {isLoadingUser ? (
+                      <div className="space-y-2">
+                        <div className="h-4 w-32 bg-neutral-200 rounded animate-pulse"></div>
+                        <div className="h-3 w-24 bg-neutral-200 rounded animate-pulse"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm font-semibold text-neutral-900 truncate">
+                          {userData?.companyName || userData?.userName || 'Company'}
+                        </p>
+                        <p className="text-xs text-neutral-600 mt-1">
+                          {userData?.hiringPersonName || 'User'}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="p-2">
+                  <button
+                    onClick={async () => {
+                      if (isLoggingOut) return
+
+                      setIsLoggingOut(true)
+                      setIsUserMenuOpen(false)
+
+                      try {
+                        // Call logout API
+                        await authApi.logout()
+                      } catch (error) {
+                        // Even if API call fails, clear local storage and redirect
+                        console.error('Logout error:', error)
+                      } finally {
+                        logout()
+                      }
+                    }}
+                    disabled={isLoggingOut}
+                    className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {isLoggingOut ? 'Logging out...' : 'Logout'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -8,10 +8,24 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
+import { useToast } from "@/components/ui/toast"
+import dynamic from "next/dynamic"
+import "react-quill-new/dist/quill.snow.css"
+
+const ReactQuill = dynamic(() => import("react-quill-new"), {
+  ssr: false,
+  loading: () => <p>Loading editor...</p>,
+}) as any
 
 export default function EditJobPage() {
   const params = useParams()
   const router = useRouter()
+  const toast = useToast() as {
+    success: (message: string, options?: { title?: string; duration?: number }) => void
+    error: (message: string, options?: { title?: string; duration?: number }) => void
+    info: (message: string, options?: { title?: string; duration?: number }) => void
+    warning: (message: string, options?: { title?: string; duration?: number }) => void
+  }
   const jobId = params.id as string
   
   const [activeTab, setActiveTab] = useState("overview")
@@ -20,6 +34,7 @@ export default function EditJobPage() {
   const [formData, setFormData] = useState({
     jobTitle: "",
     jobId: "",
+    location: "",
     specialization: "",
     employmentType: "",
     yearsOfExperience: "",
@@ -44,7 +59,7 @@ export default function EditJobPage() {
       setIsLoading(true)
       try {
         const response = await jobPostApi.getById(jobId)
-        if (response.success && response.data) {
+        if (response.success && 'data' in response && response.data) {
           const job = response.data as any
           
           // Format dates for input fields (YYYY-MM-DD)
@@ -57,6 +72,7 @@ export default function EditJobPage() {
           setFormData({
             jobTitle: job.title || "",
             jobId: job.job_id || "",
+            location: job.location || "",
             specialization: job.specialization || "",
             employmentType: job.employment_type || "",
             yearsOfExperience: job.years_of_experience?.toString() || "",
@@ -75,13 +91,24 @@ export default function EditJobPage() {
           })
         } else {
           console.error('Failed to fetch job:', response.message)
-          alert('Failed to load job: ' + response.message)
-          router.push("/jobs")
+          const errorMessage = response.message || 'Failed to load job'
+          toast.error(errorMessage, {
+            title: 'Error',
+            duration: 5000,
+          })
+          setTimeout(() => {
+            router.push("/jobs")
+          }, 1000)
         }
       } catch (error) {
         console.error('Error fetching job:', error)
-        alert('An error occurred while loading the job')
-        router.push("/jobs")
+        toast.error('An error occurred while loading the job', {
+          title: 'Error',
+          duration: 5000,
+        })
+        setTimeout(() => {
+          router.push("/jobs")
+        }, 1000)
       } finally {
         setIsLoading(false)
       }
@@ -103,6 +130,7 @@ export default function EditJobPage() {
       const payload: any = {
         title: formData.jobTitle,
         specialization: formData.specialization,
+        location: formData.location,
         employment_type: formData.employmentType,
         posted_date: formData.postedDate,
         closed_date: formData.closedDate,
@@ -131,14 +159,29 @@ export default function EditJobPage() {
       const response = await jobPostApi.update(jobId, payload)
 
       if (response.success) {
-        router.push("/jobs")
+        toast.success('Job updated successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
+        setTimeout(() => {
+          router.push("/jobs")
+        }, 500)
       } else {
-        alert('Failed to update job: ' + response.message)
-        console.error('Validation errors:', response.errors)
+        const errorMessage = response.message || 'Failed to update job'
+        toast.error(errorMessage, {
+          title: 'Error',
+          duration: 5000,
+        })
+        if (response.errors) {
+          console.error('Validation errors:', response.errors)
+        }
       }
     } catch (error) {
       console.error('Error updating job:', error)
-      alert('An error occurred while updating the job')
+      toast.error('An error occurred while updating the job', {
+        title: 'Error',
+        duration: 5000,
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -182,11 +225,12 @@ export default function EditJobPage() {
                 </label>
                 <Input
                   type="text"
-                  placeholder="Enter job ID"
                   value={formData.jobId}
-                  onChange={(e) => handleInputChange("jobId", e.target.value)}
-                  className="w-full"
+                  readOnly
+                  disabled
+                  className="w-full bg-neutral-50 cursor-not-allowed"
                 />
+                <p className="text-xs text-neutral-500 mt-1">Job ID is auto-generated by the system</p>
               </div>
 
               <div>
@@ -198,6 +242,19 @@ export default function EditJobPage() {
                   placeholder="Enter specialization"
                   value={formData.specialization}
                   onChange={(e) => handleInputChange("specialization", e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter job location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
                   className="w-full"
                 />
               </div>
@@ -451,12 +508,23 @@ export default function EditJobPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     About the role <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    value={formData.overview}
-                    onChange={(e) => handleInputChange("overview", e.target.value)}
-                    placeholder="Enter job description..."
-                    className="flex min-h-[200px] w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                  />
+                  <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.overview}
+                      onChange={(content: string) => handleInputChange("overview", content)}
+                      placeholder="Enter job description..."
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'clean']
+                        ]
+                      }}
+                      className="h-[200px] mb-12"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -465,12 +533,23 @@ export default function EditJobPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Qualifications <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    value={formData.qualifications}
-                    onChange={(e) => handleInputChange("qualifications", e.target.value)}
-                    placeholder="Enter required qualifications..."
-                    className="flex min-h-[200px] w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                  />
+                  <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.qualifications}
+                      onChange={(content: string) => handleInputChange("qualifications", content)}
+                      placeholder="Enter required qualifications..."
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'clean']
+                        ]
+                      }}
+                      className="h-[200px] mb-12"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -479,12 +558,23 @@ export default function EditJobPage() {
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Application Process <span className="text-red-500">*</span>
                   </label>
-                  <textarea
-                    value={formData.applicationProcess}
-                    onChange={(e) => handleInputChange("applicationProcess", e.target.value)}
-                    placeholder="Enter application process details..."
-                    className="flex min-h-[200px] w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                  />
+                  <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
+                    <ReactQuill
+                      theme="snow"
+                      value={formData.applicationProcess}
+                      onChange={(content: string) => handleInputChange("applicationProcess", content)}
+                      placeholder="Enter application process details..."
+                      modules={{
+                        toolbar: [
+                          [{ 'header': [1, 2, 3, false] }],
+                          ['bold', 'italic', 'underline', 'strike'],
+                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          ['link', 'clean']
+                        ]
+                      }}
+                      className="h-[200px] mb-12"
+                    />
+                  </div>
                 </div>
               )}
             </div>
