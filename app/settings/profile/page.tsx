@@ -49,6 +49,7 @@ export default function CompanyProfilePage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [shouldDeleteLogo, setShouldDeleteLogo] = useState(false)
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false)
   const [kycFile, setKycFile] = useState<File | null>(null)
   const [kycFileName, setKycFileName] = useState<string>("")
   const [kycFileUrl, setKycFileUrl] = useState<string | null>(null)
@@ -59,26 +60,201 @@ export default function CompanyProfilePage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setLogoFile(file)
-      setShouldDeleteLogo(false) // Reset delete flag when new file is uploaded
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string)
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file', {
+        title: 'Invalid File',
+        duration: 3000,
+      })
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ""
       }
-      reader.readAsDataURL(file)
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB', {
+        title: 'File Too Large',
+        duration: 3000,
+      })
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ""
+      }
+      return
+    }
+
+    // Show preview immediately
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setLogoPreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+
+    // Upload immediately
+    setIsUploadingLogo(true)
+    setLogoFile(file)
+    setShouldDeleteLogo(false)
+
+    try {
+      const updateData: any = {
+        company_logo: file,
+        delete_company_logo: false,
+      }
+
+      const response = await employerProfileApi.updateProfile(updateData)
+
+      if (response.success) {
+        toast.success('Logo updated successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
+
+        // Clear the file state since it's now saved
+        setLogoFile(null)
+
+        // Refresh profile to get updated logo URL
+        const profileResponse = await employerProfileApi.getProfile()
+        if (profileResponse.success && 'data' in profileResponse && profileResponse.data) {
+          const user = profileResponse.data as any
+          const employer = user.employer || {}
+          if (employer.company_logo) {
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
+            // Handle both relative paths (starting with /) and paths without leading slash
+            const logoPath = employer.company_logo.startsWith('/') 
+              ? employer.company_logo.substring(1) 
+              : employer.company_logo
+            const newLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
+            setLogoUrl(newLogoUrl)
+            setLogoPreview(newLogoUrl)
+          }
+        }
+
+        // Dispatch event to update header logo
+        setTimeout(() => {
+          window.dispatchEvent(new Event('profileUpdated'))
+        }, 500)
+      } else {
+        // Extract error message from response
+        let errorMessage = 'Failed to update logo'
+        
+        // Check for field-specific errors first
+        if (response.errors && response.errors.company_logo && Array.isArray(response.errors.company_logo)) {
+          errorMessage = response.errors.company_logo[0]
+        } else if (response.errors && response.errors.company_logo) {
+          errorMessage = response.errors.company_logo
+        } else if (response.message) {
+          errorMessage = response.message
+        } else if (typeof response === 'string') {
+          errorMessage = response
+        }
+        
+        toast.error(errorMessage, {
+          title: 'Upload Failed',
+          duration: 6000,
+        })
+        
+        // Revert preview on error
+        setLogoPreview(logoUrl || null)
+        setLogoFile(null)
+        if (logoInputRef.current) {
+          logoInputRef.current.value = ""
+        }
+      }
+    } catch (error: any) {
+      console.error('Error uploading logo:', error)
+      
+      // Extract error message from various possible formats
+      let errorMessage = 'An error occurred while uploading the logo'
+      
+      if (error?.response?.data) {
+        const errorData = error.response.data
+        
+        // Check for field-specific errors
+        if (errorData.errors?.company_logo) {
+          const logoErrors = errorData.errors.company_logo
+          errorMessage = Array.isArray(logoErrors) ? logoErrors[0] : logoErrors
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        }
+      } else if (error?.message) {
+        errorMessage = error.message
+      } else if (error?.errors?.company_logo) {
+        const logoErrors = error.errors.company_logo
+        errorMessage = Array.isArray(logoErrors) ? logoErrors[0] : logoErrors
+      }
+      
+      toast.error(errorMessage, {
+        title: 'Upload Failed',
+        duration: 6000,
+      })
+      
+      // Revert preview on error
+      setLogoPreview(logoUrl || null)
+      setLogoFile(null)
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ""
+      }
+    } finally {
+      setIsUploadingLogo(false)
     }
   }
 
-  const handleLogoDelete = () => {
-    setLogoFile(null)
-    setLogoPreview(null)
-    setLogoUrl(null)
-    setShouldDeleteLogo(true) // Mark logo for deletion
-    if (logoInputRef.current) {
-      logoInputRef.current.value = ""
+  const handleLogoDelete = async () => {
+    if (!confirm('Are you sure you want to remove the company logo?')) {
+      return
+    }
+
+    setIsUploadingLogo(true)
+    setShouldDeleteLogo(true)
+
+    try {
+      const updateData: any = {
+        delete_company_logo: true,
+      }
+
+      const response = await employerProfileApi.updateProfile(updateData)
+
+      if (response.success) {
+        toast.success('Logo removed successfully!', {
+          title: 'Success',
+          duration: 3000,
+        })
+
+        // Clear logo state
+        setLogoFile(null)
+        setLogoPreview(null)
+        setLogoUrl(null)
+        setShouldDeleteLogo(false)
+
+        // Dispatch event to update header
+        setTimeout(() => {
+          window.dispatchEvent(new Event('profileUpdated'))
+        }, 500)
+      } else {
+        const errorMessage = response.message || 'Failed to remove logo'
+        toast.error(errorMessage, {
+          title: 'Error',
+          duration: 5000,
+        })
+        setShouldDeleteLogo(false)
+      }
+    } catch (error) {
+      console.error('Error deleting logo:', error)
+      toast.error('An error occurred while removing the logo', {
+        title: 'Error',
+        duration: 5000,
+      })
+      setShouldDeleteLogo(false)
+    } finally {
+      setIsUploadingLogo(false)
+      if (logoInputRef.current) {
+        logoInputRef.current.value = ""
+      }
     }
   }
 
@@ -144,7 +320,12 @@ export default function CompanyProfilePage() {
 
         // Set logo URL if exists
         if (employer.company_logo) {
-          const logoUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${employer.company_logo}`
+          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
+          // Handle both relative paths (starting with /) and paths without leading slash
+          const logoPath = employer.company_logo.startsWith('/') 
+            ? employer.company_logo.substring(1) 
+            : employer.company_logo
+          const logoUrl = `${apiBaseUrl}/storage/${logoPath}`
           setLogoUrl(logoUrl)
           setLogoPreview(logoUrl)
           setShouldDeleteLogo(false) // Reset delete flag when fetching profile
@@ -215,11 +396,8 @@ export default function CompanyProfilePage() {
         instagram_url: formData.instagram || undefined,
       }
 
-      // Add logo file if uploaded, or mark for deletion
-      if (logoFile) {
-        updateData.company_logo = logoFile
-        updateData.delete_company_logo = false // Don't delete if new file is uploaded
-      } else if (shouldDeleteLogo) {
+      // Only handle logo deletion if needed (logo uploads are handled on change)
+      if (shouldDeleteLogo && !logoFile) {
         // Mark logo for deletion by sending empty string or null
         updateData.delete_company_logo = true
       }
@@ -369,29 +547,23 @@ export default function CompanyProfilePage() {
                         
                         <div className="flex flex-col sm:flex-row items-center gap-8">
                             <div className="relative group">
-                                <div className="w-32 h-32 rounded-full border-4 border-neutral-50 bg-neutral-100 overflow-hidden shadow-sm flex items-center justify-center">
+                                <div className={`w-32 h-32 rounded-full border-4 border-neutral-50 bg-neutral-100 overflow-hidden shadow-sm flex items-center justify-center relative ${isUploadingLogo ? 'opacity-50' : ''}`}>
+                                    {isUploadingLogo ? (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/80 z-10">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0576B8]"></div>
+                                        </div>
+                                    ) : null}
                                     {logoPreview ? (
-                                        logoFile ? (
-                                            <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Image 
-                                                src={logoPreview} 
-                                                alt="Current Logo" 
-                                                width={128} 
-                                                height={128} 
-                                                className="w-full h-full object-cover"
-                                                unoptimized={!!logoUrl}
-                                            />
-                                        )
+                                        <img src={logoPreview} alt="Company Logo" className="w-full h-full object-cover" />
                                     ) : (
                                         <Building className="w-12 h-12 text-neutral-300" />
                                     )}
                                 </div>
-                                {(logoFile || logoPreview) && (
+                                {logoPreview && !isUploadingLogo && (
                                     <button
                                         type="button"
                                         onClick={handleLogoDelete}
-                                        className="absolute bottom-0 right-0 p-2 bg-white rounded-full border border-neutral-200 shadow-md text-red-500 hover:bg-red-50 transition-colors"
+                                        className="absolute bottom-0 right-0 p-2 bg-white rounded-full border border-neutral-200 shadow-md text-red-500 hover:bg-red-50 transition-colors z-20"
                                         title="Remove Logo"
                                     >
                                         <Trash2 className="w-4 h-4" />
@@ -399,19 +571,26 @@ export default function CompanyProfilePage() {
                                 )}
                             </div>
                             
-                            <div className="flex-1 w-full border-2 border-dashed border-neutral-200 rounded-xl p-8 flex flex-col items-center justify-center text-center hover:border-neutral-300 hover:bg-neutral-50/50 transition-colors cursor-pointer" onClick={() => logoInputRef.current?.click()}>
+                            <div className={`flex-1 w-full border-2 border-dashed border-neutral-200 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors ${isUploadingLogo ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-300 hover:bg-neutral-50/50 cursor-pointer'}`} onClick={() => !isUploadingLogo && logoInputRef.current?.click()}>
                                 <input
                                     ref={logoInputRef}
                                     type="file"
                                     accept="image/*"
                                     onChange={handleLogoUpload}
                                     className="hidden"
+                                    disabled={isUploadingLogo}
                                 />
                                 <div className="w-10 h-10 rounded-full bg-[#0576B8]/10 text-[#0576B8] flex items-center justify-center mb-3">
-                                    <Upload className="w-5 h-5" />
+                                    {isUploadingLogo ? (
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0576B8]"></div>
+                                    ) : (
+                                        <Upload className="w-5 h-5" />
+                                    )}
                                 </div>
-                                <p className="text-sm font-medium text-neutral-900">Click to upload or drag and drop</p>
-                                <p className="text-xs text-neutral-500 mt-1">SVG, PNG, JPG or GIF (max. 800x400px)</p>
+                                <p className="text-sm font-medium text-neutral-900">
+                                    {isUploadingLogo ? 'Uploading...' : 'Click to upload or drag and drop'}
+                                </p>
+                                <p className="text-xs text-neutral-500 mt-1">SVG, PNG, JPG or GIF (max. 5MB)</p>
                             </div>
                         </div>
                     </div>
