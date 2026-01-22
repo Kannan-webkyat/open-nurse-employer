@@ -76,11 +76,13 @@ export default function CompanyProfilePage() {
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB', {
+    // Validate file size (max 10MB to match backend)
+    const maxSizeMB = 10
+    const fileSizeMB = file.size / (1024 * 1024)
+    if (fileSizeMB > maxSizeMB) {
+      toast.error(`Image size must be less than ${maxSizeMB}MB. Your file is ${fileSizeMB.toFixed(2)}MB.`, {
         title: 'File Too Large',
-        duration: 3000,
+        duration: 5000,
       })
       if (logoInputRef.current) {
         logoInputRef.current.value = ""

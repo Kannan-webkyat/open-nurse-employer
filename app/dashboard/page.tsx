@@ -105,7 +105,7 @@ interface RecentActivity {
 const DashboardPage = () => {
     const [isDateMenuOpen, setIsDateMenuOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
-    const [selectedRange, setSelectedRange] = useState('Last 7 Days')
+    const [selectedRange, setSelectedRange] = useState('Last 30 Days')
     const [isChartFilterOpen, setIsChartFilterOpen] = useState(false)
     const [selectedJobId, setSelectedJobId] = useState<string | 'all'>('all')
     const [loading, setLoading] = useState(true)
