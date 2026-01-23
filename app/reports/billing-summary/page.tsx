@@ -600,6 +600,7 @@ export default function BillingSummaryPage() {
                 currentPage={pagination.current_page}
                 totalPages={pagination.last_page}
                 rowsPerPage={pagination.per_page}
+                totalItems={pagination.total}
                 onPageChange={handlePageChange}
                 onRowsPerPageChange={handleRowsPerPageChange}
               />
