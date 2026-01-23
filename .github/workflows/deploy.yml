@@ -3,7 +3,7 @@ name: Deploy Employer Panel (SSR)
 on:
   push:
     branches:
-      - main  # or the branch you deploy from
+      - main
 
 jobs:
   deploy:
@@ -22,19 +22,20 @@ jobs:
           script_stop: true
           script: |
             set -e
+
             cd /var/www/employer
 
-            # Reset to latest code
+            # Pull latest code
             git fetch origin
             git reset --hard origin/main
 
-            # Install dependencies and build SSR app
+            # Install dependencies
             npm ci
+
+            # Build Next.js SSR
             npm run build
 
-            # Start SSR app with PM2
-            pm2 delete employer || true
-            pm2 start npm --name "employer" -- start
-            pm2 save
+            # Restart existing PM2 process (from ecosystem.config.js)
+            pm2 restart next-employer
 
-            echo "✅ Employer Panel deployed at $(date)"
+            echo "✅ Employer Panel deployed successfully at $(date)"
