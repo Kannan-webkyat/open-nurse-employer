@@ -95,10 +95,9 @@ export default function AccountSecurityPage() {
     try {
       const updates: Promise<any>[] = []
 
-      // Update account info if email or phone changed
-      if (formData.usernameEmail || formData.contactNumber) {
+      // Update account info if phone changed (email cannot be changed)
+      if (formData.contactNumber) {
         const accountInfoUpdate = accountSecurityApi.updateAccountInfo({
-          email: formData.usernameEmail || undefined,
           phone: formData.contactNumber || undefined,
         })
         updates.push(accountInfoUpdate)
@@ -265,8 +264,12 @@ export default function AccountSecurityPage() {
                   type="text"
                   value={formData.usernameEmail}
                   onChange={(e) => handleInputChange("usernameEmail", e.target.value)}
-                  className="w-full"
+                  className="w-full bg-neutral-50 cursor-not-allowed"
+                  disabled
+                  readOnly
+                  title="Email cannot be changed"
                 />
+                <p className="text-xs text-neutral-500 mt-1">Email cannot be updated</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-neutral-900 mb-2 block">

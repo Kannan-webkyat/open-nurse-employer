@@ -131,9 +131,13 @@ export function Header() {
       let companyLogoUrl = null
       if (employer.company_logo) {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
-        companyLogoUrl = `${apiBaseUrl}/storage/${employer.company_logo}`
+        // Handle both relative paths (starting with /) and paths without leading slash
+        const logoPath = employer.company_logo.startsWith('/') 
+          ? employer.company_logo.substring(1) 
+          : employer.company_logo
+        companyLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
         // Add timestamp to force refresh if image was just updated
-        companyLogoUrl += `?t=${Date.now()}` // Ideally this should be based on something stable or just rely on new fetching if updated
+        companyLogoUrl += `?t=${Date.now()}`
       }
 
       setUserData({
@@ -341,16 +345,17 @@ export function Header() {
               {isLoadingUser ? (
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
               ) : userData?.companyLogo && !buttonImageError ? (
-                <Image
+                <img
                   src={userData.companyLogo}
                   alt={userData.companyName || 'Company Logo'}
-                  width={40}
-                  height={40}
                   className="w-full h-full object-cover rounded-full"
-                  unoptimized
                   onError={(e) => {
-                    console.error('Failed to load company logo in button:', userData.companyLogo)
+                    // Silently handle error - fallback to user icon
                     setButtonImageError(true)
+                  }}
+                  onLoad={() => {
+                    // Reset error state if image loads successfully
+                    setButtonImageError(false)
                   }}
                 />
               ) : (

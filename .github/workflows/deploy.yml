@@ -1,0 +1,41 @@
+name: Deploy Employer Panel (SSR)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Deploy Employer Panel (SSR)
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: deploy
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+
+            cd /var/www/employer
+
+            # Pull latest code
+            git fetch origin
+            git reset --hard origin/main
+
+            # Install dependencies
+            npm ci
+
+            # Build Next.js SSR
+            npm run build
+
+            # Restart existing PM2 process (from ecosystem.config.js)
+            pm2 restart next-employer
+
+            echo "✅ Employer Panel deployed successfully at $(date)"

@@ -4,6 +4,7 @@ import { ToastProvider } from '@/components/ui/toast'
 import { NotificationProvider } from '@/components/providers/notification-provider'
 import { MessageProvider } from '@/components/providers/message-provider'
 import { UserProvider } from '@/components/providers/user-provider'
+import { EchoProvider } from '@/components/providers/echo-provider'
 
 export const metadata: Metadata = {
   title: 'Open Nurses - Dashboard',
@@ -24,11 +25,13 @@ export default function RootLayout({
       <body className="font-satoshi">
         <ToastProvider>
           <UserProvider>
-            <NotificationProvider>
-              <MessageProvider>
-                {children}
-              </MessageProvider>
-            </NotificationProvider>
+            <EchoProvider>
+              <NotificationProvider>
+                <MessageProvider>
+                  {children}
+                </MessageProvider>
+              </NotificationProvider>
+            </EchoProvider>
           </UserProvider>
         </ToastProvider>
       </body>

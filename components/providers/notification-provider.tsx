@@ -1,9 +1,8 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import createEcho from '@/lib/echo'
-// @ts-ignore
-import { employerProfileApi } from '@/lib/api/profile'
+import { useEcho } from '@/components/providers/echo-provider'
+import { useUser } from '@/components/providers/user-provider'
 import { notificationApi } from '@/lib/api/notifications'
 // @ts-ignore
 import { useToast } from '@/components/ui/toast'
@@ -90,68 +89,57 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         return () => window.removeEventListener('notificationSettingsUpdated', fetchSettings)
     }, [])
 
+    const { echo } = useEcho()
+    const { user } = useUser()
+
     useEffect(() => {
-        let echoInstance: any;
+        if (!echo || !user?.id) return
 
-        const setupEcho = async () => {
-            const token = localStorage.getItem('auth_token')
-            if (!token) return
+        const userId = user.id
+        console.log(`NotificationProvider: Subscribing to channel: user.${userId}`);
+        const channel = echo.private(`user.${userId}`);
 
-            try {
-                const response: any = await employerProfileApi.getProfile()
-                if (response.success || (response.data && response.data.id)) {
-                    const data = response.success ? response.data : response
-                    const userId = data.id
-                    if (!userId) return
+        const handleEvent = (e: any, type: NotificationType = 'system') => {
+            console.log('NotificationProvider: EVENT RECEIVED:', e);
 
-                    echoInstance = createEcho(token)
-                    console.log(`Subscribing to channel: user.${userId}`);
-                    const channel = echoInstance.private(`user.${userId}`);
+            const newNotif: Notification = {
+                id: Date.now().toString(),
+                type: type,
+                title: e.title || (e.data?.title) || 'Notification',
+                description: e.message || (e.data?.message) || 'You have a new notification',
+                timestamp: 'Just now',
+                isUnread: true,
+                data: e
+            };
 
-                    const handleEvent = (e: any, type: NotificationType = 'system') => {
-                        console.log('EVENT RECEIVED:', e);
+            setNotifications(prev => [newNotif, ...prev]);
 
-                        const newNotif: Notification = {
-                            id: Date.now().toString(),
-                            type: type,
-                            title: e.title || (e.data?.title) || 'Notification',
-                            description: e.message || (e.data?.message) || 'You have a new notification',
-                            timestamp: 'Just now',
-                            isUnread: true,
-                            data: e
-                        };
-
-                        setNotifications(prev => [newNotif, ...prev]);
-
-                        if (realTimeAlertsEnabled) {
-                            success(
-                                <span className="block">
-                                    <span className="font-semibold text-neutral-900">{newNotif.title}</span>
-                                    <span className="block text-sm text-neutral-600 mt-1">{newNotif.description}</span>
-                                </span>,
-                                { duration: 5000 }
-                            );
-                        }
-                    };
-
-                    channel
-                        .listen('.job.application.received', (e: any) => handleEvent(e, 'application'))
-                        .listen('job.application.received', (e: any) => handleEvent(e, 'application'))
-                        .listen('.job.status.changed', (e: any) => handleEvent(e, 'job')) // or 'job' type if you have one
-                        .listen('.notification.sent', (e: any) => handleEvent(e, 'system'))
-                        .error((error: any) => console.error('Echo Channel Error:', error));
-                }
-            } catch (error) {
-                console.error('Failed to setup notification listener:', error)
+            if (realTimeAlertsEnabled) {
+                success(
+                    <span className="block">
+                        <span className="font-semibold text-neutral-900">{newNotif.title}</span>
+                        <span className="block text-sm text-neutral-600 mt-1">{newNotif.description}</span>
+                    </span>,
+                    { duration: 5000 }
+                );
             }
-        }
+        };
 
-        setupEcho()
+        channel
+            .listen('.job.application.received', (e: any) => handleEvent(e, 'application'))
+            .listen('job.application.received', (e: any) => handleEvent(e, 'application'))
+            .listen('.job.status.changed', (e: any) => handleEvent(e, 'job'))
+            .listen('.notification.sent', (e: any) => handleEvent(e, 'system'))
+            .error((error: any) => console.error('NotificationProvider: Echo Channel Error:', error));
 
         return () => {
-            if (echoInstance) echoInstance.disconnect();
+            console.log('NotificationProvider: Cleaning up listeners');
+            channel.stopListening('.job.application.received')
+            channel.stopListening('job.application.received')
+            channel.stopListening('.job.status.changed')
+            channel.stopListening('.notification.sent')
         }
-    }, [success, realTimeAlertsEnabled])
+    }, [echo, user, success, realTimeAlertsEnabled])
 
     const markAsRead = (id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, isUnread: false } : n));
