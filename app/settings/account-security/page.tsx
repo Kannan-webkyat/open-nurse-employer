@@ -1,4 +1,4 @@
-"use client"
+"use client" // Force re-render
 
 import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard/layout"
