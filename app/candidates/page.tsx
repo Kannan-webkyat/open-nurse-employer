@@ -1148,6 +1148,7 @@ export default function CandidatesPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             rowsPerPage={rowsPerPage}
+            totalItems={totalItems}
             onPageChange={setCurrentPage}
             onRowsPerPageChange={handleRowsPerPageChange}
           />
