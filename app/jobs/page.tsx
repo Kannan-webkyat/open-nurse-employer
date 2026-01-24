@@ -400,6 +400,7 @@ export default function JobsPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             rowsPerPage={rowsPerPage}
+            totalItems={totalItems}
             onPageChange={setCurrentPage}
             onRowsPerPageChange={handleRowsPerPageChange}
           />

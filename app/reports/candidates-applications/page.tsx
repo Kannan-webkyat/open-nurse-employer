@@ -88,6 +88,7 @@ export default function CandidatesApplicationsPage() {
     rejected_applications: 0,
   })
   const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
 
   // Fetch data from API
   const fetchApplications = async () => {
@@ -104,6 +105,7 @@ export default function CandidatesApplicationsPage() {
         rejected_applications: 0,
       })
       setTotalPages(1)
+      setTotalItems(0)
       return
     }
 
@@ -134,6 +136,7 @@ export default function CandidatesApplicationsPage() {
           rejected_applications: 0,
         })
         setTotalPages(response.data.pagination?.last_page || 1)
+        setTotalItems(response.data.pagination?.total || 0)
       } else {
         setError(response.message || "Failed to load applications")
       }
@@ -532,6 +535,7 @@ export default function CandidatesApplicationsPage() {
                     currentPage={currentPage}
                     totalPages={totalPages}
                     rowsPerPage={rowsPerPage}
+                    totalItems={totalItems}
                     onPageChange={setCurrentPage}
                     onRowsPerPageChange={handleRowsPerPageChange}
                   />
