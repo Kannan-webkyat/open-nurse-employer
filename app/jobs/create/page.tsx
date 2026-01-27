@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
+import { LocationInput } from "@/components/LocationInput"
 import { Button } from "@/components/ui/button"
-import { Calendar, X } from "lucide-react"
+import { Calendar, X, Plus } from "lucide-react"
 import Link from "next/link"
+import { Modal } from "@/components/ui/modal"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import dynamic from "next/dynamic"
@@ -31,6 +33,13 @@ export default function CreateJobPage() {
     jobTitle: "",
     specialization: "",
     location: "",
+    latitude: "",
+    longitude: "",
+    city: "",
+    state: "",
+    country: "",
+    zip_code: "",
+    formatted_address: "",
     employmentType: "",
     yearsOfExperience: "",
     postedDate: "",
@@ -45,10 +54,61 @@ export default function CreateJobPage() {
     overview: "",
     qualifications: "",
     applicationProcess: "",
+    category: "",
   })
+
+  const [categories, setCategories] = useState<any[]>([])
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [newCategory, setNewCategory] = useState("")
+
+  const fetchCategories = async () => {
+    try {
+      const response = await jobPostApi.getCategories()
+      if (response.success) {
+        setCategories(response.data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleConfirmAddCategory = () => {
+    if (newCategory.trim()) {
+      // Optimistically add to list or just set it
+      // For now we just treat it as a string that will be sent to backend
+      // But we should also update the local categories list so it appears in dropdown
+      const newCat = { id: Date.now(), name: newCategory.trim() } // Temporary ID
+      setCategories(prev => [...prev, newCat])
+      setFormData(prev => ({ ...prev, category: newCategory.trim() }))
+      setIsCategoryModalOpen(false)
+      setNewCategory("")
+    }
+  }
+
+  const handleLocationChange = (value: string, details?: any) => {
+    if (details) {
+      setFormData(prev => ({
+        ...prev,
+        location: value, // Ensure the display value is updated
+        latitude: details.latitude,
+        longitude: details.longitude,
+        city: details.city,
+        state: details.state,
+        country: details.country,
+        zip_code: details.zip_code,
+        formatted_address: details.formatted_address
+      }))
+    } else {
+      setFormData(prev => ({ ...prev, location: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +121,13 @@ export default function CreateJobPage() {
         title: formData.jobTitle,
         specialization: formData.specialization,
         location: formData.location,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        zip_code: formData.zip_code,
+        formatted_address: formData.formatted_address,
         employment_type: formData.employmentType,
         posted_date: formData.postedDate,
         closed_date: formData.closedDate,
@@ -71,6 +138,7 @@ export default function CreateJobPage() {
         overview: formData.overview,
         qualifications: formData.qualifications,
         application_process: formData.applicationProcess,
+        category: formData.category,
       }
 
       // Add payment fields based on payment type
@@ -161,13 +229,40 @@ export default function CreateJobPage() {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Location <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  placeholder="Enter job location"
+                <LocationInput
                   value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  onChange={handleLocationChange}
                   className="w-full"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleInputChange("category", e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => setIsCategoryModalOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    New
+                  </Button>
+                </div>
               </div>
 
               <div>

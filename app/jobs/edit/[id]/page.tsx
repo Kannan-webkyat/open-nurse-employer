@@ -4,9 +4,11 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
+import { LocationInput } from "@/components/LocationInput"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "lucide-react"
+import { Calendar, Plus } from "lucide-react"
 import Link from "next/link"
+import { Modal } from "@/components/ui/modal"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import dynamic from "next/dynamic"
@@ -35,6 +37,13 @@ export default function EditJobPage() {
     jobTitle: "",
     jobId: "",
     location: "",
+    latitude: "",
+    longitude: "",
+    city: "",
+    state: "",
+    country: "",
+    zip_code: "",
+    formatted_address: "",
     specialization: "",
     employmentType: "",
     yearsOfExperience: "",
@@ -50,7 +59,12 @@ export default function EditJobPage() {
     overview: "",
     qualifications: "",
     applicationProcess: "",
+    category: "",
   })
+
+  const [categories, setCategories] = useState<any[]>([])
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [newCategory, setNewCategory] = useState("")
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -72,7 +86,14 @@ export default function EditJobPage() {
           setFormData({
             jobTitle: job.title || "",
             jobId: job.job_id || "",
-            location: job.location || "",
+            location: job.formatted_address || job.location || "",
+            latitude: job.latitude || "",
+            longitude: job.longitude || "",
+            city: job.city || "",
+            state: job.state || "",
+            country: job.country || "",
+            zip_code: job.zip_code || "",
+            formatted_address: job.formatted_address || "",
             specialization: job.specialization || "",
             employmentType: job.employment_type || "",
             yearsOfExperience: job.years_of_experience?.toString() || "",
@@ -88,6 +109,7 @@ export default function EditJobPage() {
             overview: job.overview || "",
             qualifications: job.qualifications || "",
             applicationProcess: job.application_process || "",
+            category: job.category || "",
           })
         } else {
           console.error('Failed to fetch job:', response.message)
@@ -114,11 +136,51 @@ export default function EditJobPage() {
       }
     }
 
+    const fetchCategories = async () => {
+      try {
+        const response = await jobPostApi.getCategories()
+        if (response.success) {
+          setCategories(response.data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch categories", error)
+      }
+    }
+
     fetchJob()
+    fetchCategories()
   }, [jobId, router])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleConfirmAddCategory = () => {
+    if (newCategory.trim()) {
+      const newCat = { id: Date.now(), name: newCategory.trim() }
+      setCategories(prev => [...prev, newCat])
+      setFormData(prev => ({ ...prev, category: newCategory.trim() }))
+      setIsCategoryModalOpen(false)
+      setNewCategory("")
+    }
+  }
+
+  const handleLocationChange = (value: string, details?: any) => {
+    if (details) {
+      setFormData(prev => ({
+        ...prev,
+        location: value, // Ensure the display value is updated
+        latitude: details.latitude,
+        longitude: details.longitude,
+        city: details.city,
+        state: details.state,
+        country: details.country,
+        zip_code: details.zip_code,
+        formatted_address: details.formatted_address
+      }))
+    } else {
+       setFormData(prev => ({ ...prev, location: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +193,13 @@ export default function EditJobPage() {
         title: formData.jobTitle,
         specialization: formData.specialization,
         location: formData.location,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        zip_code: formData.zip_code,
+        formatted_address: formData.formatted_address,
         employment_type: formData.employmentType,
         posted_date: formData.postedDate,
         closed_date: formData.closedDate,
@@ -141,6 +210,7 @@ export default function EditJobPage() {
         overview: formData.overview,
         qualifications: formData.qualifications,
         application_process: formData.applicationProcess,
+        category: formData.category,
       }
 
       // Add payment fields based on payment type
@@ -250,11 +320,9 @@ export default function EditJobPage() {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Location <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  placeholder="Enter job location"
+                <LocationInput
                   value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  onChange={handleLocationChange}
                   className="w-full"
                 />
               </div>

@@ -718,7 +718,9 @@ export default function CompanyProfilePage() {
                                     onClick={handleAddCategory}
                                 >
                                     {preferredCategories.length === 0 && (
-                                        <span className="text-neutral-400 text-sm">Select job categories you hire for...</span>
+                                        <span className="text-neutral-400 text-sm">
+                                            Select job categories you hire for. You can also add a category when creating or editing a job post.
+                                        </span>
                                     )}
                                     {preferredCategories.map((category) => (
                                         <span
