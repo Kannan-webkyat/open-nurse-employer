@@ -526,15 +526,24 @@ export default function JobsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">About the Role</label>
-                    <p className="text-sm text-neutral-900 mt-2 whitespace-pre-line">{selectedJob.overview || "N/A"}</p>
+                    <div
+                      className="text-sm text-neutral-900 mt-2 prose prose-sm max-w-none break-words [&>p]:break-words [&>p]:whitespace-normal"
+                      dangerouslySetInnerHTML={{ __html: (selectedJob.overview || "N/A").replace(/&nbsp;/g, ' ') }}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Qualifications</label>
-                    <p className="text-sm text-neutral-900 mt-2 whitespace-pre-line">{selectedJob.qualifications || "N/A"}</p>
+                    <div
+                      className="text-sm text-neutral-900 mt-2 prose prose-sm max-w-none break-words [&>p]:break-words [&>p]:whitespace-normal"
+                      dangerouslySetInnerHTML={{ __html: (selectedJob.qualifications || "N/A").replace(/&nbsp;/g, ' ') }}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Application Process</label>
-                    <p className="text-sm text-neutral-900 mt-2 whitespace-pre-line">{selectedJob.application_process || "N/A"}</p>
+                    <div
+                      className="text-sm text-neutral-900 mt-2 prose prose-sm max-w-none break-words [&>p]:break-words [&>p]:whitespace-normal"
+                      dangerouslySetInnerHTML={{ __html: (selectedJob.application_process || "N/A").replace(/&nbsp;/g, ' ') }}
+                    />
                   </div>
                 </div>
               </div>

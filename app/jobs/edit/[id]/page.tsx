@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, Plus } from "lucide-react"
 import Link from "next/link"
 import { Modal } from "@/components/ui/modal"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import dynamic from "next/dynamic"
@@ -29,12 +30,13 @@ export default function EditJobPage() {
     warning: (message: string, options?: { title?: string; duration?: number }) => void
   }
   const jobId = params.id as string
-  
+
   const [activeTab, setActiveTab] = useState("overview")
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     jobTitle: "",
+    jobRole: "",
     jobId: "",
     location: "",
     latitude: "",
@@ -63,19 +65,20 @@ export default function EditJobPage() {
   })
 
   const [categories, setCategories] = useState<any[]>([])
+  const [jobRoles, setJobRoles] = useState<any[]>([])
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [newCategory, setNewCategory] = useState("")
 
   useEffect(() => {
     const fetchJob = async () => {
       if (!jobId) return
-      
+
       setIsLoading(true)
       try {
         const response = await jobPostApi.getById(jobId)
         if (response.success && 'data' in response && response.data) {
           const job = response.data as any
-          
+
           // Format dates for input fields (YYYY-MM-DD)
           const formatDateForInput = (dateString: string) => {
             if (!dateString) return ""
@@ -85,6 +88,7 @@ export default function EditJobPage() {
 
           setFormData({
             jobTitle: job.title || "",
+            jobRole: job.job_role || "",
             jobId: job.job_id || "",
             location: job.formatted_address || job.location || "",
             latitude: job.latitude || "",
@@ -136,19 +140,28 @@ export default function EditJobPage() {
       }
     }
 
-    const fetchCategories = async () => {
+
+    const fetchData = async () => {
       try {
-        const response = await jobPostApi.getCategories()
-        if (response.success) {
-          setCategories(response.data)
+        const [categoriesRes, rolesRes] = await Promise.all([
+          jobPostApi.getCategories(),
+          jobPostApi.getJobRoles()
+        ])
+
+        if (categoriesRes.success) {
+          setCategories(categoriesRes.data)
+        }
+
+        if (rolesRes.success) {
+          setJobRoles(rolesRes.data)
         }
       } catch (error) {
-        console.error("Failed to fetch categories", error)
+        console.error("Failed to fetch data", error)
       }
     }
 
     fetchJob()
-    fetchCategories()
+    fetchData()
   }, [jobId, router])
 
   const handleInputChange = (field: string, value: string) => {
@@ -179,7 +192,7 @@ export default function EditJobPage() {
         formatted_address: details.formatted_address
       }))
     } else {
-       setFormData(prev => ({ ...prev, location: value }))
+      setFormData(prev => ({ ...prev, location: value }))
     }
   }
 
@@ -191,6 +204,7 @@ export default function EditJobPage() {
       // Prepare API payload
       const payload: any = {
         title: formData.jobTitle,
+        job_role: formData.jobRole,
         specialization: formData.specialization,
         location: formData.location,
         latitude: formData.latitude,
@@ -271,395 +285,404 @@ export default function EditJobPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Job Details Section */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
-            <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
-            
-            <div className="grid grid-cols-4 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Job Title <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter job title"
-                  value={formData.jobTitle}
-                  onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                  className="w-full"
-                />
-              </div>
+            {/* Job Details Section */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
+              <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Job ID
-                </label>
-                <Input
-                  type="text"
-                  value={formData.jobId}
-                  readOnly
-                  disabled
-                  className="w-full bg-neutral-50 cursor-not-allowed"
-                />
-                <p className="text-xs text-neutral-500 mt-1">Job ID is auto-generated by the system</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Specialization <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter specialization"
-                  value={formData.specialization}
-                  onChange={(e) => handleInputChange("specialization", e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Location <span className="text-red-500">*</span>
-                </label>
-                <LocationInput
-                  value={formData.location}
-                  onChange={handleLocationChange}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Employment Type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.employmentType}
-                  onChange={(e) => handleInputChange("employmentType", e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                >
-                  <option value="">Select Employment type</option>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Temporary">Temporary</option>
-                  <option value="Contract">Contract</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Years of experience <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="text"
-                  placeholder="Enter years of experience"
-                  value={formData.yearsOfExperience}
-                  onChange={(e) => handleInputChange("yearsOfExperience", e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Posted Date <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
+              <div className="grid grid-cols-4 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Job Title <span className="text-red-500">*</span>
+                  </label>
                   <Input
-                    type="date"
-                    value={formData.postedDate}
-                    onChange={(e) => handleInputChange("postedDate", e.target.value)}
+                    type="text"
+                    placeholder="Enter job title"
+                    value={formData.jobTitle}
+                    onChange={(e) => handleInputChange("jobTitle", e.target.value)}
                     className="w-full"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Closed Date <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Job ID
+                  </label>
                   <Input
-                    type="date"
-                    value={formData.closedDate}
-                    onChange={(e) => handleInputChange("closedDate", e.target.value)}
+                    type="text"
+                    value={formData.jobId}
+                    readOnly
+                    disabled
+                    className="w-full bg-neutral-50 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">Job ID is auto-generated by the system</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Job Role <span className="text-red-500">*</span>
+                  </label>
+                  <SearchableSelect
+                    options={jobRoles.map((role) => ({ value: role.name, label: role.name }))}
+                    value={formData.jobRole}
+                    onChange={(value) => handleInputChange("jobRole", value as string)}
+                    placeholder="Select Job Role"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Specialization
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter specialization"
+                    value={formData.specialization}
+                    onChange={(e) => handleInputChange("specialization", e.target.value)}
                     className="w-full"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Number of Openings
-                </label>
-                <Input
-                  type="number"
-                  placeholder="Enter number of openings"
-                  value={formData.numberOfOpenings}
-                  onChange={(e) => handleInputChange("numberOfOpenings", e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Status <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange("status", e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                >
-                  <option value="">Select status</option>
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                  <option value="draft">Draft</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Specify Pay Rate Section */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold text-neutral-900 mb-2">Specify Pay Rate</h2>
-              <p className="text-sm text-neutral-600">Set the pay rate for this job based on your requirements.</p>
-            </div>
-
-            <div className="grid grid-cols-4 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Payment type <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.paymentType}
-                  onChange={(e) => handleInputChange("paymentType", e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                >
-                  <option value="Range">Range</option>
-                  <option value="Starting amount">Starting amount</option>
-                </select>
-              </div>
-
-              {formData.paymentType === "Starting amount" ? (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Amount <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600">£</span>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={formData.startingAmount}
-                        onChange={(e) => handleInputChange("startingAmount", e.target.value)}
-                        className="w-full pl-8"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Rate
-                    </label>
-                    <select
-                      value={formData.rate}
-                      onChange={(e) => handleInputChange("rate", e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                    >
-                      <option value="per month">per month</option>
-                      <option value="per hour">per hour</option>
-                      <option value="per day">per day</option>
-                      <option value="per year">per year</option>
-                    </select>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Minimum <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600">£</span>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={formData.minimum}
-                        onChange={(e) => handleInputChange("minimum", e.target.value)}
-                        className="w-full pl-8"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Maximum <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600">£</span>
-                      <span className="absolute left-8 top-1/2 transform -translate-y-1/2 text-neutral-400 text-sm">to</span>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        value={formData.maximum}
-                        onChange={(e) => handleInputChange("maximum", e.target.value)}
-                        className="w-full pl-14"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
-                      Rate
-                    </label>
-                    <select
-                      value={formData.rate}
-                      onChange={(e) => handleInputChange("rate", e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                    >
-                      <option value="per month">per month</option>
-                      <option value="per hour">per hour</option>
-                      <option value="per day">per day</option>
-                      <option value="per year">per year</option>
-                    </select>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Job Description Section */}
-          <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
-            {/* Tabs */}
-            <div className="border-b border-neutral-200">
-              <div className="flex gap-6">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("overview")}
-                  className={`pb-4 px-1 text-sm font-medium transition-colors ${
-                    activeTab === "overview"
-                      ? "text-sky-600 border-b-2 border-sky-600"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("qualifications")}
-                  className={`pb-4 px-1 text-sm font-medium transition-colors ${
-                    activeTab === "qualifications"
-                      ? "text-sky-600 border-b-2 border-sky-600"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-                >
-                  Qualifications
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("applicationProcess")}
-                  className={`pb-4 px-1 text-sm font-medium transition-colors ${
-                    activeTab === "applicationProcess"
-                      ? "text-sky-600 border-b-2 border-sky-600"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
-                >
-                  Application Process
-                </button>
-              </div>
-            </div>
-
-            {/* Tab Content */}
-            <div>
-              {activeTab === "overview" && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    About the role <span className="text-red-500">*</span>
+                    Location <span className="text-red-500">*</span>
                   </label>
-                  <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.overview}
-                      onChange={(content: string) => handleInputChange("overview", content)}
-                      placeholder="Enter job description..."
-                      modules={{
-                        toolbar: [
-                          [{ 'header': [1, 2, 3, false] }],
-                          ['bold', 'italic', 'underline', 'strike'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                          ['link', 'clean']
-                        ]
-                      }}
-                      className="h-[200px] mb-12"
+                  <LocationInput
+                    value={formData.location}
+                    onChange={handleLocationChange}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Employment Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.employmentType}
+                    onChange={(e) => handleInputChange("employmentType", e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                  >
+                    <option value="">Select Employment type</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Temporary">Temporary</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Years of experience <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Enter years of experience"
+                    value={formData.yearsOfExperience}
+                    onChange={(e) => handleInputChange("yearsOfExperience", e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Posted Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={formData.postedDate}
+                      onChange={(e) => handleInputChange("postedDate", e.target.value)}
+                      className="w-full"
                     />
                   </div>
                 </div>
-              )}
 
-              {activeTab === "qualifications" && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Qualifications <span className="text-red-500">*</span>
+                    Closed Date <span className="text-red-500">*</span>
                   </label>
-                  <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.qualifications}
-                      onChange={(content: string) => handleInputChange("qualifications", content)}
-                      placeholder="Enter required qualifications..."
-                      modules={{
-                        toolbar: [
-                          [{ 'header': [1, 2, 3, false] }],
-                          ['bold', 'italic', 'underline', 'strike'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                          ['link', 'clean']
-                        ]
-                      }}
-                      className="h-[200px] mb-12"
+                  <div className="relative">
+                    <Input
+                      type="date"
+                      value={formData.closedDate}
+                      onChange={(e) => handleInputChange("closedDate", e.target.value)}
+                      className="w-full"
                     />
                   </div>
                 </div>
-              )}
 
-              {activeTab === "applicationProcess" && (
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Application Process <span className="text-red-500">*</span>
+                    Number of Openings
                   </label>
-                  <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
-                    <ReactQuill
-                      theme="snow"
-                      value={formData.applicationProcess}
-                      onChange={(content: string) => handleInputChange("applicationProcess", content)}
-                      placeholder="Enter application process details..."
-                      modules={{
-                        toolbar: [
-                          [{ 'header': [1, 2, 3, false] }],
-                          ['bold', 'italic', 'underline', 'strike'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                          ['link', 'clean']
-                        ]
-                      }}
-                      className="h-[200px] mb-12"
-                    />
-                  </div>
+                  <Input
+                    type="number"
+                    placeholder="Enter number of openings"
+                    value={formData.numberOfOpenings}
+                    onChange={(e) => handleInputChange("numberOfOpenings", e.target.value)}
+                    className="w-full"
+                  />
                 </div>
-              )}
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => handleInputChange("status", e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                  >
+                    <option value="">Select status</option>
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="draft">Draft</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-4 pb-6">
-            <Link href="/jobs">
-              <Button variant="outline" type="button">
-                Cancel
+            {/* Specify Pay Rate Section */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 mb-2">Specify Pay Rate</h2>
+                <p className="text-sm text-neutral-600">Set the pay rate for this job based on your requirements.</p>
+              </div>
+
+              <div className="grid grid-cols-4 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Payment type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.paymentType}
+                    onChange={(e) => handleInputChange("paymentType", e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                  >
+                    <option value="Range">Range</option>
+                    <option value="Starting amount">Starting amount</option>
+                  </select>
+                </div>
+
+                {formData.paymentType === "Starting amount" ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Amount <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600">£</span>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={formData.startingAmount}
+                          onChange={(e) => handleInputChange("startingAmount", e.target.value)}
+                          className="w-full pl-8"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Rate
+                      </label>
+                      <select
+                        value={formData.rate}
+                        onChange={(e) => handleInputChange("rate", e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                      >
+                        <option value="per month">per month</option>
+                        <option value="per hour">per hour</option>
+                        <option value="per day">per day</option>
+                        <option value="per year">per year</option>
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Minimum <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600">£</span>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={formData.minimum}
+                          onChange={(e) => handleInputChange("minimum", e.target.value)}
+                          className="w-full pl-8"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Maximum <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600">£</span>
+                        <span className="absolute left-8 top-1/2 transform -translate-y-1/2 text-neutral-400 text-sm">to</span>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={formData.maximum}
+                          onChange={(e) => handleInputChange("maximum", e.target.value)}
+                          className="w-full pl-14"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">
+                        Rate
+                      </label>
+                      <select
+                        value={formData.rate}
+                        onChange={(e) => handleInputChange("rate", e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                      >
+                        <option value="per month">per month</option>
+                        <option value="per hour">per hour</option>
+                        <option value="per day">per day</option>
+                        <option value="per year">per year</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Job Description Section */}
+            <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
+              {/* Tabs */}
+              <div className="border-b border-neutral-200">
+                <div className="flex gap-6">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("overview")}
+                    className={`pb-4 px-1 text-sm font-medium transition-colors ${activeTab === "overview"
+                      ? "text-sky-600 border-b-2 border-sky-600"
+                      : "text-neutral-600 hover:text-neutral-900"
+                      }`}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("qualifications")}
+                    className={`pb-4 px-1 text-sm font-medium transition-colors ${activeTab === "qualifications"
+                      ? "text-sky-600 border-b-2 border-sky-600"
+                      : "text-neutral-600 hover:text-neutral-900"
+                      }`}
+                  >
+                    Qualifications
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("applicationProcess")}
+                    className={`pb-4 px-1 text-sm font-medium transition-colors ${activeTab === "applicationProcess"
+                      ? "text-sky-600 border-b-2 border-sky-600"
+                      : "text-neutral-600 hover:text-neutral-900"
+                      }`}
+                  >
+                    Application Process
+                  </button>
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              <div>
+                {activeTab === "overview" && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      About the role <span className="text-red-500">*</span>
+                    </label>
+                    <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
+                      <ReactQuill
+                        theme="snow"
+                        value={formData.overview}
+                        onChange={(content: string) => handleInputChange("overview", content)}
+                        placeholder="Enter job description..."
+                        modules={{
+                          toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            ['link', 'clean']
+                          ]
+                        }}
+                        className="h-[200px] mb-12"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "qualifications" && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Qualifications <span className="text-red-500">*</span>
+                    </label>
+                    <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
+                      <ReactQuill
+                        theme="snow"
+                        value={formData.qualifications}
+                        onChange={(content: string) => handleInputChange("qualifications", content)}
+                        placeholder="Enter required qualifications..."
+                        modules={{
+                          toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            ['link', 'clean']
+                          ]
+                        }}
+                        className="h-[200px] mb-12"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "applicationProcess" && (
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                      Application Process <span className="text-red-500">*</span>
+                    </label>
+                    <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
+                      <ReactQuill
+                        theme="snow"
+                        value={formData.applicationProcess}
+                        onChange={(content: string) => handleInputChange("applicationProcess", content)}
+                        placeholder="Enter application process details..."
+                        modules={{
+                          toolbar: [
+                            [{ 'header': [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                            ['link', 'clean']
+                          ]
+                        }}
+                        className="h-[200px] mb-12"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-4 pb-6">
+              <Link href="/jobs">
+                <Button variant="outline" type="button">
+                  Cancel
+                </Button>
+              </Link>
+              <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full" disabled={isSubmitting}>
+                {isSubmitting ? "Updating..." : "Update Job"}
               </Button>
-            </Link>
-            <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full" disabled={isSubmitting}>
-              {isSubmitting ? "Updating..." : "Update Job"}
-            </Button>
-          </div>
-        </form>
+            </div>
+          </form>
         )}
       </div>
     </DashboardLayout>

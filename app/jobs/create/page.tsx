@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, X, Plus } from "lucide-react"
 import Link from "next/link"
 import { Modal } from "@/components/ui/modal"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import dynamic from "next/dynamic"
@@ -32,6 +33,7 @@ export default function CreateJobPage() {
   const [formData, setFormData] = useState({
     jobTitle: "",
     specialization: "",
+    jobRole: "",
     location: "",
     latitude: "",
     longitude: "",
@@ -58,22 +60,31 @@ export default function CreateJobPage() {
   })
 
   const [categories, setCategories] = useState<any[]>([])
+  const [jobRoles, setJobRoles] = useState<any[]>([])
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
   const [newCategory, setNewCategory] = useState("")
 
-  const fetchCategories = async () => {
+  const fetchData = async () => {
     try {
-      const response = await jobPostApi.getCategories()
-      if (response.success) {
-        setCategories(response.data)
+      const [categoriesRes, rolesRes] = await Promise.all([
+        jobPostApi.getCategories(),
+        jobPostApi.getJobRoles()
+      ])
+
+      if (categoriesRes.success) {
+        setCategories(categoriesRes.data)
+      }
+
+      if (rolesRes.success) {
+        setJobRoles(rolesRes.data)
       }
     } catch (error) {
-      console.error("Failed to fetch categories", error)
+      console.error("Failed to fetch data", error)
     }
   }
 
   useEffect(() => {
-    fetchCategories()
+    fetchData()
   }, [])
 
   const handleInputChange = (field: string, value: string) => {
@@ -119,6 +130,7 @@ export default function CreateJobPage() {
       // Prepare API payload
       const payload: any = {
         title: formData.jobTitle,
+        job_role: formData.jobRole,
         specialization: formData.specialization,
         location: formData.location,
         latitude: formData.latitude,
@@ -197,7 +209,7 @@ export default function CreateJobPage() {
           {/* Job Details Section */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
-            
+
             <div className="grid grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
@@ -214,7 +226,19 @@ export default function CreateJobPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Specialization <span className="text-red-500">*</span>
+                  Job Role <span className="text-red-500">*</span>
+                </label>
+                <SearchableSelect
+                  options={jobRoles.map((role) => ({ value: role.name, label: role.name }))}
+                  value={formData.jobRole}
+                  onChange={(value) => handleInputChange("jobRole", value as string)}
+                  placeholder="Select Job Role"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  Specialization
                 </label>
                 <Input
                   type="text"
@@ -306,7 +330,7 @@ export default function CreateJobPage() {
                     onChange={(e) => handleInputChange("postedDate", e.target.value)}
                     className="w-full"
                   />
-         
+
                 </div>
               </div>
 
@@ -321,7 +345,7 @@ export default function CreateJobPage() {
                     onChange={(e) => handleInputChange("closedDate", e.target.value)}
                     className="w-full"
                   />
-         
+
                 </div>
               </div>
 
@@ -476,33 +500,30 @@ export default function CreateJobPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("overview")}
-                  className={`pb-4 px-1 text-sm font-medium transition-colors ${
-                    activeTab === "overview"
-                      ? "text-sky-600 border-b-2 border-sky-600"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+                  className={`pb-4 px-1 text-sm font-medium transition-colors ${activeTab === "overview"
+                    ? "text-sky-600 border-b-2 border-sky-600"
+                    : "text-neutral-600 hover:text-neutral-900"
+                    }`}
                 >
                   Overview
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("qualifications")}
-                  className={`pb-4 px-1 text-sm font-medium transition-colors ${
-                    activeTab === "qualifications"
-                      ? "text-sky-600 border-b-2 border-sky-600"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+                  className={`pb-4 px-1 text-sm font-medium transition-colors ${activeTab === "qualifications"
+                    ? "text-sky-600 border-b-2 border-sky-600"
+                    : "text-neutral-600 hover:text-neutral-900"
+                    }`}
                 >
                   Qualifications
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("applicationProcess")}
-                  className={`pb-4 px-1 text-sm font-medium transition-colors ${
-                    activeTab === "applicationProcess"
-                      ? "text-sky-600 border-b-2 border-sky-600"
-                      : "text-neutral-600 hover:text-neutral-900"
-                  }`}
+                  className={`pb-4 px-1 text-sm font-medium transition-colors ${activeTab === "applicationProcess"
+                    ? "text-sky-600 border-b-2 border-sky-600"
+                    : "text-neutral-600 hover:text-neutral-900"
+                    }`}
                 >
                   Application Process
                 </button>
@@ -526,7 +547,7 @@ export default function CreateJobPage() {
                         toolbar: [
                           [{ 'header': [1, 2, 3, false] }],
                           ['bold', 'italic', 'underline', 'strike'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                           ['link', 'clean']
                         ]
                       }}
@@ -551,7 +572,7 @@ export default function CreateJobPage() {
                         toolbar: [
                           [{ 'header': [1, 2, 3, false] }],
                           ['bold', 'italic', 'underline', 'strike'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                           ['link', 'clean']
                         ]
                       }}
@@ -576,7 +597,7 @@ export default function CreateJobPage() {
                         toolbar: [
                           [{ 'header': [1, 2, 3, false] }],
                           ['bold', 'italic', 'underline', 'strike'],
-                          [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                           ['link', 'clean']
                         ]
                       }}

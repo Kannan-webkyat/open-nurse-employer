@@ -127,8 +127,8 @@ export default function CompanyProfilePage() {
           if (employer.company_logo) {
             const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
             // Handle both relative paths (starting with /) and paths without leading slash
-            const logoPath = employer.company_logo.startsWith('/') 
-              ? employer.company_logo.substring(1) 
+            const logoPath = employer.company_logo.startsWith('/')
+              ? employer.company_logo.substring(1)
               : employer.company_logo
             const newLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
             setLogoUrl(newLogoUrl)
@@ -143,7 +143,7 @@ export default function CompanyProfilePage() {
       } else {
         // Extract error message from response
         let errorMessage = 'Failed to update logo'
-        
+
         // Check for field-specific errors first
         if (response.errors && response.errors.company_logo && Array.isArray(response.errors.company_logo)) {
           errorMessage = response.errors.company_logo[0]
@@ -154,12 +154,12 @@ export default function CompanyProfilePage() {
         } else if (typeof response === 'string') {
           errorMessage = response
         }
-        
+
         toast.error(errorMessage, {
           title: 'Upload Failed',
           duration: 6000,
         })
-        
+
         // Revert preview on error
         setLogoPreview(logoUrl || null)
         setLogoFile(null)
@@ -169,13 +169,13 @@ export default function CompanyProfilePage() {
       }
     } catch (error: any) {
       console.error('Error uploading logo:', error)
-      
+
       // Extract error message from various possible formats
       let errorMessage = 'An error occurred while uploading the logo'
-      
+
       if (error?.response?.data) {
         const errorData = error.response.data
-        
+
         // Check for field-specific errors
         if (errorData.errors?.company_logo) {
           const logoErrors = errorData.errors.company_logo
@@ -189,12 +189,12 @@ export default function CompanyProfilePage() {
         const logoErrors = error.errors.company_logo
         errorMessage = Array.isArray(logoErrors) ? logoErrors[0] : logoErrors
       }
-      
+
       toast.error(errorMessage, {
         title: 'Upload Failed',
         duration: 6000,
       })
-      
+
       // Revert preview on error
       setLogoPreview(logoUrl || null)
       setLogoFile(null)
@@ -324,8 +324,8 @@ export default function CompanyProfilePage() {
         if (employer.company_logo) {
           const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
           // Handle both relative paths (starting with /) and paths without leading slash
-          const logoPath = employer.company_logo.startsWith('/') 
-            ? employer.company_logo.substring(1) 
+          const logoPath = employer.company_logo.startsWith('/')
+            ? employer.company_logo.substring(1)
             : employer.company_logo
           const logoUrl = `${apiBaseUrl}/storage/${logoPath}`
           setLogoUrl(logoUrl)
@@ -470,489 +470,485 @@ export default function CompanyProfilePage() {
             <p className="text-neutral-500 mt-1">Manage your organization&apos;s presence and settings</p>
           </div>
           <div className="flex gap-3">
-             <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
-             <Button 
-                type="submit" 
-                onClick={handleSave} 
-                disabled={isSubmitting}
-                className="bg-[#0576B8] hover:bg-[#04659e]"
-             >
-                {isSubmitting ? (
-                    <>Saving...</>
-                ) : (
-                    <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save Changes
-                    </>
-                )}
-             </Button>
+            <Button type="button" variant="outline" onClick={handleCancel}>Cancel</Button>
+            <Button
+              type="submit"
+              onClick={handleSave}
+              disabled={isSubmitting}
+              className="bg-[#0576B8] hover:bg-[#04659e]"
+            >
+              {isSubmitting ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="border-b border-neutral-200">
-            <div className="flex gap-6 overflow-x-auto no-scrollbar">
-                <button
-                    onClick={() => setActiveTab('overview')}
-                    className={`pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-                        activeTab === 'overview' 
-                            ? 'border-[#0576B8] text-[#0576B8]' 
-                            : 'border-transparent text-neutral-500 hover:text-neutral-700'
-                    }`}
-                >
-                    <Building className="w-4 h-4" />
-                    Company Overview
-                </button>
-                <button
-                    onClick={() => setActiveTab('business')}
-                    className={`pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-                        activeTab === 'business' 
-                            ? 'border-[#0576B8] text-[#0576B8]' 
-                            : 'border-transparent text-neutral-500 hover:text-neutral-700'
-                    }`}
-                >
-                    <ShieldCheck className="w-4 h-4" />
-                    Business Details
-                </button>
-                <button
-                    onClick={() => setActiveTab('social')}
-                    className={`pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${
-                        activeTab === 'social' 
-                            ? 'border-[#0576B8] text-[#0576B8]' 
-                            : 'border-transparent text-neutral-500 hover:text-neutral-700'
-                    }`}
-                >
-                    <Globe className="w-4 h-4" />
-                    Social & Web
-                </button>
-            </div>
+          <div className="flex gap-6 overflow-x-auto no-scrollbar">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'overview'
+                ? 'border-[#0576B8] text-[#0576B8]'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                }`}
+            >
+              <Building className="w-4 h-4" />
+              Company Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('business')}
+              className={`pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'business'
+                ? 'border-[#0576B8] text-[#0576B8]'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Business Details
+            </button>
+            <button
+              onClick={() => setActiveTab('social')}
+              className={`pb-4 text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex items-center gap-2 ${activeTab === 'social'
+                ? 'border-[#0576B8] text-[#0576B8]'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                }`}
+            >
+              <Globe className="w-4 h-4" />
+              Social & Web
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0576B8]"></div>
-            </div>
+          <div className="flex items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0576B8]"></div>
+          </div>
         ) : (
-            <form onSubmit={handleSave} className="space-y-8 animate-in fade-in duration-500 pt-6">
-              
-              {/* Overview Tab */}
-              {activeTab === 'overview' && (
-                <div className="grid gap-6">
-                    {/* Logo Card */}
-                    <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h2 className="text-lg font-semibold text-neutral-900">Company Logo</h2>
-                                <p className="text-sm text-neutral-500">This logo will appear on your job postings and company profile.</p>
-                            </div>
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row items-center gap-8">
-                            <div className="relative group">
-                                <div className={`w-32 h-32 rounded-full border-4 border-neutral-50 bg-neutral-100 overflow-hidden shadow-sm flex items-center justify-center relative ${isUploadingLogo ? 'opacity-50' : ''}`}>
-                                    {isUploadingLogo ? (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/80 z-10">
-                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0576B8]"></div>
-                                        </div>
-                                    ) : null}
-                                    {logoPreview ? (
-                                        <img src={logoPreview} alt="Company Logo" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Building className="w-12 h-12 text-neutral-300" />
-                                    )}
-                                </div>
-                                {logoPreview && !isUploadingLogo && (
-                                    <button
-                                        type="button"
-                                        onClick={handleLogoDelete}
-                                        className="absolute bottom-0 right-0 p-2 bg-white rounded-full border border-neutral-200 shadow-md text-red-500 hover:bg-red-50 transition-colors z-20"
-                                        title="Remove Logo"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                )}
-                            </div>
-                            
-                            <div className={`flex-1 w-full border-2 border-dashed border-neutral-200 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors ${isUploadingLogo ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-300 hover:bg-neutral-50/50 cursor-pointer'}`} onClick={() => !isUploadingLogo && logoInputRef.current?.click()}>
-                                <input
-                                    ref={logoInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleLogoUpload}
-                                    className="hidden"
-                                    disabled={isUploadingLogo}
-                                />
-                                <div className="w-10 h-10 rounded-full bg-[#0576B8]/10 text-[#0576B8] flex items-center justify-center mb-3">
-                                    {isUploadingLogo ? (
-                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0576B8]"></div>
-                                    ) : (
-                                        <Upload className="w-5 h-5" />
-                                    )}
-                                </div>
-                                <p className="text-sm font-medium text-neutral-900">
-                                    {isUploadingLogo ? 'Uploading...' : 'Click to upload or drag and drop'}
-                                </p>
-                                <p className="text-xs text-neutral-500 mt-1">SVG, PNG, JPG or GIF (max. 5MB)</p>
-                            </div>
-                        </div>
+          <form onSubmit={handleSave} className="space-y-8 animate-in fade-in duration-500 pt-6">
+
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <div className="grid gap-6">
+                {/* Logo Card */}
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-lg font-semibold text-neutral-900">Company Logo</h2>
+                      <p className="text-sm text-neutral-500">This logo will appear on your job postings and company profile.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-8">
+                    <div className="relative group">
+                      <div className={`w-32 h-32 rounded-full border-4 border-neutral-50 bg-neutral-100 overflow-hidden shadow-sm flex items-center justify-center relative ${isUploadingLogo ? 'opacity-50' : ''}`}>
+                        {isUploadingLogo ? (
+                          <div className="absolute inset-0 flex items-center justify-center bg-neutral-100/80 z-10">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0576B8]"></div>
+                          </div>
+                        ) : null}
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Company Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          <Building className="w-12 h-12 text-neutral-300" />
+                        )}
+                      </div>
+                      {logoPreview && !isUploadingLogo && (
+                        <button
+                          type="button"
+                          onClick={handleLogoDelete}
+                          className="absolute bottom-0 right-0 p-2 bg-white rounded-full border border-neutral-200 shadow-md text-red-500 hover:bg-red-50 transition-colors z-20"
+                          title="Remove Logo"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
-                    {/* Basic Info Card */}
-                    <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-neutral-400" />
-                            Basic Information
-                        </h2>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Company Name <span className="text-red-500">*</span></label>
-                                <Input 
-                                    value={formData.companyName} 
-                                    onChange={(e) => handleInputChange("companyName", e.target.value)}
-                                    placeholder="e.g. Acme Corp"
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Contact Person <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
-                                    <Input 
-                                        value={formData.contactPersonName} 
-                                        onChange={(e) => handleInputChange("contactPersonName", e.target.value)}
-                                        className="pl-9"
-                                        placeholder="Full Name"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Business Email <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
-                                    <Input 
-                                        type="email"
-                                        value={formData.businessEmail} 
-                                        onChange={(e) => handleInputChange("businessEmail", e.target.value)}
-                                        className="pl-9 bg-neutral-50"
-                                        readOnly
-                                        disabled
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Phone Number</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
-                                    <Input 
-                                        type="tel"
-                                        value={formData.contactNumber} 
-                                        onChange={(e) => handleInputChange("contactNumber", e.target.value)}
-                                        className="pl-9"
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-span-1 md:col-span-2 space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Company Address <span className="text-red-500">*</span></label>
-                                <div className="relative">
-                                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
-                                    <Input 
-                                        value={formData.companyAddress} 
-                                        onChange={(e) => handleInputChange("companyAddress", e.target.value)}
-                                        className="pl-9"
-                                        placeholder="Full business address"
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            <div className="col-span-1 md:col-span-2 space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">About Company <span className="text-red-500">*</span></label>
-                                <textarea
-                                    value={formData.aboutCompany}
-                                    onChange={(e) => handleInputChange("aboutCompany", e.target.value)}
-                                    rows={5}
-                                    className="flex w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-                                    placeholder="Tell us about your company, mission, and culture..."
-                                    required
-                                />
-                            </div>
-                        </div>
+                    <div className={`flex-1 w-full border-2 border-dashed border-neutral-200 rounded-xl p-8 flex flex-col items-center justify-center text-center transition-colors ${isUploadingLogo ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-300 hover:bg-neutral-50/50 cursor-pointer'}`} onClick={() => !isUploadingLogo && logoInputRef.current?.click()}>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                        disabled={isUploadingLogo}
+                      />
+                      <div className="w-10 h-10 rounded-full bg-[#0576B8]/10 text-[#0576B8] flex items-center justify-center mb-3">
+                        {isUploadingLogo ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0576B8]"></div>
+                        ) : (
+                          <Upload className="w-5 h-5" />
+                        )}
+                      </div>
+                      <p className="text-sm font-medium text-neutral-900">
+                        {isUploadingLogo ? 'Uploading...' : 'Click to upload or drag and drop'}
+                      </p>
+                      <p className="text-xs text-neutral-500 mt-1">SVG, PNG, JPG or GIF (max. 5MB)</p>
                     </div>
+                  </div>
                 </div>
-              )}
 
-              {/* Business Details Tab */}
-              {activeTab === 'business' && (
-                <div className="grid gap-6">
-                    {/* Compliance Card */}
-                    <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
-                            <ShieldCheck className="w-5 h-5 text-neutral-400" />
-                            Use Compliance & Verification
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Registration Number <span className="text-red-500">*</span></label>
-                                <Input 
-                                    value={formData.registrationNumber} 
-                                    onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
-                                    placeholder="Company Reg. No."
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">VAT / Tax ID <span className="text-red-500">*</span></label>
-                                <Input 
-                                    value={formData.vatTaxId} 
-                                    onChange={(e) => handleInputChange("vatTaxId", e.target.value)}
-                                    placeholder="Tax ID"
-                                    required
-                                />
-                            </div>
-                            <div className="col-span-1 md:col-span-2 space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Hiring Preferences (Categories)</label>
-                                <div 
-                                    className="flex flex-wrap gap-2 min-h-[48px] p-3 border border-neutral-300 rounded-lg cursor-pointer hover:border-[#0576B8] transition-colors bg-white items-center focus-within:ring-2 focus-within:ring-[#0576B8] focus-within:border-transparent"
-                                    onClick={handleAddCategory}
-                                >
-                                    {preferredCategories.length === 0 && (
-                                        <span className="text-neutral-400 text-sm">
-                                            Select job categories you hire for. You can also add a category when creating or editing a job post.
-                                        </span>
-                                    )}
-                                    {preferredCategories.map((category) => (
-                                        <span
-                                            key={category}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0576B8]/10 text-[#0576B8] rounded-full text-sm font-medium"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {category}
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    handleRemoveCategory(category)
-                                                }}
-                                                className="hover:text-[#0576B8]/80"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="col-span-1 md:col-span-2 space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">KYC Document <span className="text-red-500">*</span></label>
-                                <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50 flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400">
-                                            <FileText className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-neutral-900">
-                                                {kycFileName || (kycFile ? kycFile.name : "No document uploaded")}
-                                            </p>
-                                            {kycFileUrl && !kycFile ? (
-                                                <a href={kycFileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0576B8] hover:underline flex items-center gap-1 mt-0.5">
-                                                    View Current Document <LinkIcon className="w-3 h-3" />
-                                                </a>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <input
-                                            ref={kycInputRef}
-                                            type="file"
-                                            accept=".pdf,.doc,.docx"
-                                            onChange={handleKycUpload}
-                                            className="hidden"
-                                        />
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            size="sm"
-                                            onClick={() => kycInputRef.current?.click()}
-                                        >
-                                            {kycFileName ? "Replace" : "Upload"}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                {/* Basic Info Card */}
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-neutral-400" />
+                    Basic Information
+                  </h2>
 
-                    {/* Stats Card */}
-                    <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
-                            <Layout className="w-5 h-5 text-neutral-400" />
-                            Organization Stats
-                        </h2>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Company Size (Employees) <span className="text-red-500">*</span></label>
-                                <select
-                                    value={formData.numberOfEmployees}
-                                    onChange={(e) => handleInputChange("numberOfEmployees", e.target.value)}
-                                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent"
-                                    required
-                                >
-                                    <option value="" disabled>Select Size</option>
-                                    <option value="1-10">1-10</option>
-                                    <option value="11-50">11-50</option>
-                                    <option value="51-200">51-200</option>
-                                    <option value="201-500">201-500</option>
-                                    <option value="501-1000">501-1000</option>
-                                    <option value="1000+">1000+</option>
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Year Established <span className="text-red-500">*</span></label>
-                                <select
-                                    value={formData.yearEstablished}
-                                    onChange={(e) => handleInputChange("yearEstablished", e.target.value)}
-                                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent"
-                                    required
-                                >
-                                    <option value="" disabled>Select Year</option>
-                                    {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                                        <option key={year} value={year.toString()}>{year}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Average Monthly Hiring</label>
-                                <select
-                                    value={formData.averageMonthlyHiring}
-                                    onChange={(e) => handleInputChange("averageMonthlyHiring", e.target.value)}
-                                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent"
-                                >
-                                    <option value="">Select Volume</option>
-                                    <option value="1-5">1-5</option>
-                                    <option value="6-10">6-10</option>
-                                    <option value="11-20">11-20</option>
-                                    <option value="21-50">21-50</option>
-                                    <option value="50+">50+</option>
-                                </select>
-                            </div>
-                        </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Company Name <span className="text-red-500">*</span></label>
+                      <Input
+                        value={formData.companyName}
+                        onChange={(e) => handleInputChange("companyName", e.target.value)}
+                        placeholder="e.g. Acme Corp"
+                        required
+                      />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Contact Person <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+                        <Input
+                          value={formData.contactPersonName}
+                          onChange={(e) => handleInputChange("contactPersonName", e.target.value)}
+                          className="pl-9"
+                          placeholder="Full Name"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Business Email <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+                        <Input
+                          type="email"
+                          value={formData.businessEmail}
+                          onChange={(e) => handleInputChange("businessEmail", e.target.value)}
+                          className="pl-9 bg-neutral-50"
+                          readOnly
+                          disabled
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+                        <Input
+                          type="tel"
+                          value={formData.contactNumber}
+                          onChange={(e) => handleInputChange("contactNumber", e.target.value)}
+                          className="pl-9"
+                          placeholder="+1 (555) 000-0000"
+                        />
+                      </div>
+                    </div>
+                    <div className="col-span-1 md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Company Address <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+                        <Input
+                          value={formData.companyAddress}
+                          onChange={(e) => handleInputChange("companyAddress", e.target.value)}
+                          className="pl-9"
+                          placeholder="Full business address"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="col-span-1 md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">About Company <span className="text-red-500">*</span></label>
+                      <textarea
+                        value={formData.aboutCompany}
+                        onChange={(e) => handleInputChange("aboutCompany", e.target.value)}
+                        rows={5}
+                        className="flex w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                        placeholder="Tell us about your company, mission, and culture..."
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Social Tab */}
-              {activeTab === 'social' && (
-                <div className="space-y-6">
-                    <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
-                            <Globe className="w-5 h-5 text-neutral-400" />
-                            Online Presence
-                        </h2>
-                        
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-neutral-700">Company Website</label>
-                                <div className="relative">
-                                    <Globe className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
-                                    <Input 
-                                        value={formData.companyWebsite} 
-                                        onChange={(e) => handleInputChange("companyWebsite", e.target.value)}
-                                        className="pl-9"
-                                        placeholder="https://example.com"
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-neutral-100">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-neutral-700">LinkedIn Profile</label>
-                                    <Input 
-                                        value={formData.linkedin} 
-                                        onChange={(e) => handleInputChange("linkedin", e.target.value)}
-                                        placeholder="LinkedIn URL"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-neutral-700">Twitter Profile</label>
-                                    <Input 
-                                        value={formData.twitter} 
-                                        onChange={(e) => handleInputChange("twitter", e.target.value)}
-                                        placeholder="Twitter URL"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-neutral-700">Facebook Page</label>
-                                    <Input 
-                                        value={formData.facebook} 
-                                        onChange={(e) => handleInputChange("facebook", e.target.value)}
-                                        placeholder="Facebook URL"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-neutral-700">Instagram Profile</label>
-                                    <Input 
-                                        value={formData.instagram} 
-                                        onChange={(e) => handleInputChange("instagram", e.target.value)}
-                                        placeholder="Instagram URL"
-                                    />
-                                </div>
-                            </div>
-                        </div>
+            {/* Business Details Tab */}
+            {activeTab === 'business' && (
+              <div className="grid gap-6">
+                {/* Compliance Card */}
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
+                    <ShieldCheck className="w-5 h-5 text-neutral-400" />
+                    Use Compliance & Verification
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Registration Number <span className="text-red-500">*</span></label>
+                      <Input
+                        value={formData.registrationNumber}
+                        onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
+                        placeholder="Company Reg. No."
+                        required
+                      />
                     </div>
-                    
-                    <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center gap-2">
-                            <Building className="w-5 h-5 text-neutral-400" />
-                            Job Visibility
-                        </h2>
-                        <div className="flex flex-col gap-4">
-                            <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors">
-                                <input
-                                    type="radio"
-                                    name="jobVisibility"
-                                    value="public"
-                                    checked={formData.jobVisibility === "public"}
-                                    onChange={(e) => handleInputChange("jobVisibility", e.target.value)}
-                                    className="mt-1 w-4 h-4 text-[#0576B8] focus:ring-[#0576B8]"
-                                />
-                                <div>
-                                    <span className="block text-sm font-medium text-neutral-900">Public Visibility</span>
-                                    <span className="block text-sm text-neutral-500">Your jobs will be visible to all candidates on the platform and search engines.</span>
-                                </div>
-                            </label>
-                            <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors">
-                                <input
-                                    type="radio"
-                                    name="jobVisibility"
-                                    value="limited"
-                                    checked={formData.jobVisibility === "limited"}
-                                    onChange={(e) => handleInputChange("jobVisibility", e.target.value)}
-                                    className="mt-1 w-4 h-4 text-[#0576B8] focus:ring-[#0576B8]"
-                                />
-                                <div>
-                                    <span className="block text-sm font-medium text-neutral-900">Limited Visibility</span>
-                                    <span className="block text-sm text-neutral-500">Your jobs will only be visible to logged-in candidates.</span>
-                                </div>
-                            </label>
-                        </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">VAT / Tax ID</label>
+                      <Input
+                        value={formData.vatTaxId}
+                        onChange={(e) => handleInputChange("vatTaxId", e.target.value)}
+                        placeholder="Tax ID"
+                      />
                     </div>
+                    <div className="col-span-1 md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Hiring Preferences (Categories)</label>
+                      <div
+                        className="flex flex-wrap gap-2 min-h-[48px] p-3 border border-neutral-300 rounded-lg cursor-pointer hover:border-[#0576B8] transition-colors bg-white items-center focus-within:ring-2 focus-within:ring-[#0576B8] focus-within:border-transparent"
+                        onClick={handleAddCategory}
+                      >
+                        {preferredCategories.length === 0 && (
+                          <span className="text-neutral-400 text-sm">
+                            Select job categories you hire for. You can also add a category when creating or editing a job post.
+                          </span>
+                        )}
+                        {preferredCategories.map((category) => (
+                          <span
+                            key={category}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#0576B8]/10 text-[#0576B8] rounded-full text-sm font-medium"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {category}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveCategory(category)
+                              }}
+                              className="hover:text-[#0576B8]/80"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="col-span-1 md:col-span-2 space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">KYC Document</label>
+                      <div className="border border-neutral-200 rounded-lg p-4 bg-neutral-50 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white border border-neutral-200 flex items-center justify-center text-neutral-400">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-neutral-900">
+                              {kycFileName || (kycFile ? kycFile.name : "No document uploaded")}
+                            </p>
+                            {kycFileUrl && !kycFile ? (
+                              <a href={kycFileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0576B8] hover:underline flex items-center gap-1 mt-0.5">
+                                View Current Document <LinkIcon className="w-3 h-3" />
+                              </a>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            ref={kycInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={handleKycUpload}
+                            className="hidden"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => kycInputRef.current?.click()}
+                          >
+                            {kycFileName ? "Replace" : "Upload"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </form>
+
+                {/* Stats Card */}
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
+                    <Layout className="w-5 h-5 text-neutral-400" />
+                    Organization Stats
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Company Size (Employees) <span className="text-red-500">*</span></label>
+                      <select
+                        value={formData.numberOfEmployees}
+                        onChange={(e) => handleInputChange("numberOfEmployees", e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent"
+                        required
+                      >
+                        <option value="" disabled>Select Size</option>
+                        <option value="1-10">1-10</option>
+                        <option value="11-50">11-50</option>
+                        <option value="51-200">51-200</option>
+                        <option value="201-500">201-500</option>
+                        <option value="501-1000">501-1000</option>
+                        <option value="1000+">1000+</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Year Established <span className="text-red-500">*</span></label>
+                      <select
+                        value={formData.yearEstablished}
+                        onChange={(e) => handleInputChange("yearEstablished", e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent"
+                        required
+                      >
+                        <option value="" disabled>Select Year</option>
+                        {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                          <option key={year} value={year.toString()}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Average Monthly Hiring</label>
+                      <select
+                        value={formData.averageMonthlyHiring}
+                        onChange={(e) => handleInputChange("averageMonthlyHiring", e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent"
+                      >
+                        <option value="">Select Volume</option>
+                        <option value="1-5">1-5</option>
+                        <option value="6-10">6-10</option>
+                        <option value="11-20">11-20</option>
+                        <option value="21-50">21-50</option>
+                        <option value="50+">50+</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Social Tab */}
+            {activeTab === 'social' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-neutral-400" />
+                    Online Presence
+                  </h2>
+
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Company Website</label>
+                      <div className="relative">
+                        <Globe className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+                        <Input
+                          value={formData.companyWebsite}
+                          onChange={(e) => handleInputChange("companyWebsite", e.target.value)}
+                          className="pl-9"
+                          placeholder="https://example.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-neutral-100">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-neutral-700">LinkedIn Profile</label>
+                        <Input
+                          value={formData.linkedin}
+                          onChange={(e) => handleInputChange("linkedin", e.target.value)}
+                          placeholder="LinkedIn URL"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-neutral-700">Twitter Profile</label>
+                        <Input
+                          value={formData.twitter}
+                          onChange={(e) => handleInputChange("twitter", e.target.value)}
+                          placeholder="Twitter URL"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-neutral-700">Facebook Page</label>
+                        <Input
+                          value={formData.facebook}
+                          onChange={(e) => handleInputChange("facebook", e.target.value)}
+                          placeholder="Facebook URL"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-neutral-700">Instagram Profile</label>
+                        <Input
+                          value={formData.instagram}
+                          onChange={(e) => handleInputChange("instagram", e.target.value)}
+                          placeholder="Instagram URL"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl border border-neutral-200 p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <Building className="w-5 h-5 text-neutral-400" />
+                    Job Visibility
+                  </h2>
+                  <div className="flex flex-col gap-4">
+                    <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="jobVisibility"
+                        value="public"
+                        checked={formData.jobVisibility === "public"}
+                        onChange={(e) => handleInputChange("jobVisibility", e.target.value)}
+                        className="mt-1 w-4 h-4 text-[#0576B8] focus:ring-[#0576B8]"
+                      />
+                      <div>
+                        <span className="block text-sm font-medium text-neutral-900">Public Visibility</span>
+                        <span className="block text-sm text-neutral-500">Your jobs will be visible to all candidates on the platform and search engines.</span>
+                      </div>
+                    </label>
+                    <label className="flex items-start gap-3 p-4 border border-neutral-200 rounded-lg cursor-pointer hover:bg-neutral-50 transition-colors">
+                      <input
+                        type="radio"
+                        name="jobVisibility"
+                        value="limited"
+                        checked={formData.jobVisibility === "limited"}
+                        onChange={(e) => handleInputChange("jobVisibility", e.target.value)}
+                        className="mt-1 w-4 h-4 text-[#0576B8] focus:ring-[#0576B8]"
+                      />
+                      <div>
+                        <span className="block text-sm font-medium text-neutral-900">Limited Visibility</span>
+                        <span className="block text-sm text-neutral-500">Your jobs will only be visible to logged-in candidates.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
         )}
       </div>
 
-      <Modal 
-        isOpen={isCategoryModalOpen} 
+      <Modal
+        isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         title="Add Job Category"
         description="Enter the name of the job category you want to add."
         footer={
-           <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleConfirmAddCategory} className="bg-[#0576B8] hover:bg-[#04659e]">Add Category</Button>
-           </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmAddCategory} className="bg-[#0576B8] hover:bg-[#04659e]">Add Category</Button>
+          </div>
         }
       >
         <div className="py-4">
@@ -963,10 +959,10 @@ export default function CompanyProfilePage() {
             placeholder="e.g. Critical Care, Pediatrics"
             autoFocus
             onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleConfirmAddCategory();
-                }
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleConfirmAddCategory();
+              }
             }}
           />
         </div>
