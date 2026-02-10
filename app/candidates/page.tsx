@@ -14,6 +14,19 @@ import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 
+interface WorkExperience {
+  role: string
+  employer: string
+  countryOfWork: string
+  jobLocationArea: string
+  isCurrentJob: boolean
+  fromMonth: string | number
+  fromYear: string | number
+  toMonth: string | number
+  toYear: string | number
+  notes?: string
+}
+
 interface Candidate {
   id: number
   nurseId?: number
@@ -50,7 +63,22 @@ interface Candidate {
   toMonth?: string
   toYear?: string
   workNotes?: string
+  workExperiences?: WorkExperience[]
 }
+
+// ... helper ...
+const getMonthName = (month: string | number | undefined) => {
+  if (!month) return ''
+  if (typeof month === 'number') {
+    const date = new Date();
+    date.setMonth(month - 1);
+    return date.toLocaleString('default', { month: 'long' });
+  }
+  return month;
+}
+
+
+
 
 // Format date helper
 const formatDate = (dateString: string | null) => {
@@ -212,7 +240,48 @@ export default function CandidatesPage() {
             location: app.location || app.jobPost?.location || "",
             interviewAt: app.interview_at,
             meetingLink: app.meeting_link,
+
+            // Extended details
+            email: app.user?.email,
+            contactNumber: app.user?.phone,
+            willingToRelocate: app.user?.nurse?.willing_to_relocate === 1 || app.user?.nurse?.willing_to_relocate === true,
+            inUK: app.user?.nurse?.current_location === 'UK',
+
+            // Work Info
+            jobRole: app.user?.nurse?.job_role,
+            workExperiences: (app.work_experiences && app.work_experiences.length > 0)
+              ? app.work_experiences.map((exp: any) => ({
+                role: exp.role,
+                employer: exp.employer,
+                countryOfWork: exp.country_of_work,
+                jobLocationArea: exp.job_location_area,
+                isCurrentJob: !!exp.is_current_job,
+                fromMonth: exp.from_month,
+                fromYear: exp.from_year,
+                toMonth: exp.to_month,
+                toYear: exp.to_year,
+                notes: exp.notes
+              }))
+              : (app.role || app.employer) ? [{
+                role: app.role,
+                employer: app.employer,
+                countryOfWork: app.country_of_work,
+                jobLocationArea: app.job_location_area,
+                isCurrentJob: !!app.is_current_job,
+                fromMonth: app.from_month,
+                fromYear: app.from_year,
+                toMonth: app.to_month,
+                toYear: app.to_year,
+                notes: app.notes
+              }] : [],
+
+            workNotes: app.work_notes,
+            resumeUrl: app.resume_url,
+            certificatesUrl: app.certificates_url,
           }))
+
+          console.log('API Response Applications:', applications);
+          console.log('Transformed Candidates:', transformedCandidates);
 
           setCandidates(transformedCandidates)
           setTotalPages(paginatedData.last_page || 1)
@@ -663,8 +732,8 @@ export default function CandidatesPage() {
           applyDate: formatDate(app.submitted_at || app.created_at),
           location: app.location || app.jobPost?.location || "",
           // Additional details
-          email: app.email,
-          contactNumber: app.contact_number,
+          email: app.email || app.user?.email,
+          contactNumber: app.contact_number || app.user?.phone,
           willingToRelocate: app.willing_to_relocate,
           inUK: app.in_uk,
           jobRole: app.job_role,
@@ -686,6 +755,32 @@ export default function CandidatesPage() {
           toMonth: app.to_month,
           toYear: app.to_year,
           workNotes: app.work_notes,
+
+          workExperiences: (app.work_experiences && app.work_experiences.length > 0)
+            ? app.work_experiences.map((exp: any) => ({
+              role: exp.role,
+              employer: exp.employer,
+              countryOfWork: exp.country_of_work,
+              jobLocationArea: exp.job_location_area,
+              isCurrentJob: !!exp.is_current_job,
+              fromMonth: exp.from_month,
+              fromYear: exp.from_year,
+              toMonth: exp.to_month,
+              toYear: exp.to_year,
+              notes: exp.notes
+            }))
+            : (app.role || app.work_role || app.employer) ? [{
+              role: app.role || app.work_role,
+              employer: app.employer,
+              countryOfWork: app.country_of_work,
+              jobLocationArea: app.job_location_area,
+              isCurrentJob: !!app.is_current_job,
+              fromMonth: app.from_month,
+              fromYear: app.from_year,
+              toMonth: app.to_month,
+              toYear: app.to_year,
+              notes: app.notes
+            }] : [],
         }
         setViewCandidate(transformedCandidate)
         setIsViewModalOpen(true)
@@ -799,7 +894,7 @@ export default function CandidatesPage() {
             { key: "new", label: "New" },
             { key: "reviewed", label: "Reviewed" },
             { key: "shortlisted", label: "Shortlist" },
-            { key: "contacting", label: "Contacting" },
+
             { key: "interviewing", label: "Interviewing" },
             { key: "interviewed", label: "Interviewed" },
             { key: "rejected", label: "Rejected" },
@@ -1561,6 +1656,7 @@ export default function CandidatesPage() {
               )}
 
               {/* Work Information Section */}
+              {/* Work Information Section */}
               {(viewCandidate.jobRole || viewCandidate.contractType || viewCandidate.registrationStatus) && (
                 <div className="border-t border-neutral-200 pt-6">
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Work Information</h3>
@@ -1585,74 +1681,71 @@ export default function CandidatesPage() {
                     )}
                   </div>
                   {viewCandidate.notes && (
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-neutral-600">Additional Notes</label>
-                      <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">{viewCandidate.notes}</p>
-                    </div>
+                    <p className="text-sm text-neutral-900 mt-4 whitespace-pre-wrap">{viewCandidate.notes}</p>
                   )}
+
                 </div>
               )}
 
               {/* Work Experience Section */}
-              {(viewCandidate.nhsBand || viewCandidate.keySkills || viewCandidate.workRole || viewCandidate.employer) && (
+              {(viewCandidate.keySkills || (viewCandidate.workExperiences && viewCandidate.workExperiences.length > 0)) && (
                 <div className="border-t border-neutral-200 pt-6">
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Work Experience</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    {viewCandidate.nhsBand && (
-                      <div>
-                        <label className="text-sm font-medium text-neutral-600">NHS Band</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.nhsBand}</p>
-                      </div>
-                    )}
-                    {viewCandidate.justStartingOut !== undefined && (
-                      <div>
-                        <label className="text-sm font-medium text-neutral-600">Career Level</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.justStartingOut ? 'Just Starting Out' : 'Experienced'}</p>
-                      </div>
-                    )}
-                    {viewCandidate.workRole && (
-                      <div>
-                        <label className="text-sm font-medium text-neutral-600">Previous Role</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.workRole}</p>
-                      </div>
-                    )}
-                    {viewCandidate.employer && (
-                      <div>
-                        <label className="text-sm font-medium text-neutral-600">Employer</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.employer}</p>
-                      </div>
-                    )}
-                    {viewCandidate.countryOfWork && (
-                      <div>
-                        <label className="text-sm font-medium text-neutral-600">Country of Work</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.countryOfWork}</p>
-                      </div>
-                    )}
-                    {viewCandidate.jobLocationArea && (
-                      <div>
-                        <label className="text-sm font-medium text-neutral-600">Work Location</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.jobLocationArea}</p>
-                      </div>
-                    )}
-                  </div>
+
                   {viewCandidate.keySkills && (
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-neutral-600">Key Skills</label>
-                      <p className="text-sm text-neutral-900 mt-1">{viewCandidate.keySkills}</p>
+                    <div className="mb-6">
+                      <label className="text-sm font-medium text-neutral-600 block mb-1">Key Skills</label>
+                      <p className="text-sm text-neutral-900">{viewCandidate.keySkills}</p>
                     </div>
                   )}
-                  {(viewCandidate.fromMonth || viewCandidate.fromYear) && (
-                    <div className="mt-4">
-                      <label className="text-sm font-medium text-neutral-600">Employment Period</label>
-                      <p className="text-sm text-neutral-900 mt-1">
-                        {viewCandidate.fromMonth && viewCandidate.fromYear && `${viewCandidate.fromMonth} ${viewCandidate.fromYear}`}
-                        {viewCandidate.isCurrentJob ? ' - Present' : (viewCandidate.toMonth && viewCandidate.toYear && ` - ${viewCandidate.toMonth} ${viewCandidate.toYear}`)}
-                      </p>
+
+                  {viewCandidate.justStartingOut !== undefined && (
+                    <div className="mb-6">
+                      <label className="text-sm font-medium text-neutral-600 block mb-1">Career Level</label>
+                      <p className="text-sm text-neutral-900">{viewCandidate.justStartingOut ? 'Just Starting Out' : 'Experienced'}</p>
                     </div>
                   )}
+
+                  <div className="space-y-6">
+                    {viewCandidate.workExperiences?.map((exp, index) => (
+                      <div key={index} className="bg-neutral-50 rounded-lg p-4 border border-neutral-100">
+                        <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-200 pb-2 mb-3">
+                          {exp.role || 'Role'} at {exp.employer || 'Employer'}
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          {exp.countryOfWork && (
+                            <div>
+                              <label className="text-xs text-neutral-500 block">Country</label>
+                              <p className="text-sm text-neutral-900">{exp.countryOfWork}</p>
+                            </div>
+                          )}
+                          {exp.jobLocationArea && (
+                            <div>
+                              <label className="text-xs text-neutral-500 block">Location</label>
+                              <p className="text-sm text-neutral-900">{exp.jobLocationArea}</p>
+                            </div>
+                          )}
+                          <div className="col-span-2">
+                            <label className="text-xs text-neutral-500 block">Period</label>
+                            <p className="text-sm text-neutral-900">
+                              {getMonthName(exp.fromMonth)} {exp.fromYear} - {exp.isCurrentJob ? 'Present' : `${getMonthName(exp.toMonth)} ${exp.toYear}`}
+                            </p>
+                          </div>
+                          {/* Only show notes if they exist in experience (removed from form but existed in DB) */}
+                          {exp.notes && (
+                            <div className="col-span-2">
+                              <label className="text-xs text-neutral-500 block">Notes</label>
+                              <p className="text-sm text-neutral-900">{exp.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
                   {viewCandidate.workNotes && (
                     <div className="mt-4">
-                      <label className="text-sm font-medium text-neutral-600">Work Experience Notes</label>
+                      <label className="text-sm font-medium text-neutral-600">Additional Work Notes</label>
                       <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">{viewCandidate.workNotes}</p>
                     </div>
                   )}
