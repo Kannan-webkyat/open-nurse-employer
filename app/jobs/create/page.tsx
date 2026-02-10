@@ -10,7 +10,7 @@ import { Calendar, X, Plus } from "lucide-react"
 import Link from "next/link"
 import { Modal } from "@/components/ui/modal"
 import { SearchableSelect } from "@/components/ui/searchable-select"
-import { jobPostApi } from "@/lib/api"
+import { jobPostApi, employerProfileApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import dynamic from "next/dynamic"
 import "react-quill-new/dist/quill.snow.css"
@@ -91,16 +91,41 @@ export default function CreateJobPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleConfirmAddCategory = () => {
+  const handleConfirmAddCategory = async () => {
     if (newCategory.trim()) {
+      const categoryName = newCategory.trim()
+
       // Optimistically add to list or just set it
       // For now we just treat it as a string that will be sent to backend
       // But we should also update the local categories list so it appears in dropdown
-      const newCat = { id: Date.now(), name: newCategory.trim() } // Temporary ID
+      const newCat = { id: Date.now(), name: categoryName } // Temporary ID
       setCategories(prev => [...prev, newCat])
-      setFormData(prev => ({ ...prev, category: newCategory.trim() }))
+      setFormData(prev => ({ ...prev, category: categoryName }))
       setIsCategoryModalOpen(false)
       setNewCategory("")
+
+      // Update backend profile to include this category so it appears in profile page too
+      try {
+        const profileRes = await employerProfileApi.getProfile()
+        if (profileRes.success && profileRes.data) {
+          const user = profileRes.data as any
+          const employer = user.employer || {}
+          let currentCategories: string[] = []
+          if (employer.job_categories && Array.isArray(employer.job_categories)) {
+            currentCategories = employer.job_categories.map((c: any) => c.name || c.slug)
+          }
+
+          if (!currentCategories.includes(categoryName)) {
+            const updatedCategories = [...currentCategories, categoryName]
+            await employerProfileApi.updateProfile({
+              preferred_job_categories: updatedCategories
+            })
+            toast.success("Category added to your profile")
+          }
+        }
+      } catch (error) {
+        console.error("Failed to update profile categories", error)
+      }
     }
   }
 
@@ -622,6 +647,35 @@ export default function CreateJobPage() {
           </div>
         </form>
       </div>
+
+      <Modal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        title="Add Job Category"
+        description="Enter the name of the job category you want to create."
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmAddCategory} className="bg-sky-500 hover:bg-sky-600 text-white">Add Category</Button>
+          </div>
+        }
+      >
+        <div className="py-4">
+          <label className="text-sm font-medium text-neutral-700 mb-2 block">Category Name</label>
+          <Input
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            placeholder="e.g. Critical Care, Pediatrics"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleConfirmAddCategory();
+              }
+            }}
+          />
+        </div>
+      </Modal>
     </DashboardLayout>
   )
 }
