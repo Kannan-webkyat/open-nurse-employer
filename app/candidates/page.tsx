@@ -1680,9 +1680,7 @@ export default function CandidatesPage() {
                       </div>
                     )}
                   </div>
-                  {viewCandidate.notes && (
-                    <p className="text-sm text-neutral-900 mt-4 whitespace-pre-wrap">{viewCandidate.notes}</p>
-                  )}
+
 
                 </div>
               )}
@@ -1749,6 +1747,17 @@ export default function CandidatesPage() {
                       <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">{viewCandidate.workNotes}</p>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Additional Information Section */}
+              {viewCandidate.notes && (
+                <div className="border-t border-neutral-200 pt-6">
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">Additional Information</h3>
+                  <div>
+                    <label className="text-sm font-medium text-neutral-600">Notes</label>
+                    <p className="text-sm text-neutral-900 mt-1 whitespace-pre-wrap">{viewCandidate.notes}</p>
+                  </div>
                 </div>
               )}
 
