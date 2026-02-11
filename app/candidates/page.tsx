@@ -65,6 +65,7 @@ interface Candidate {
   toYear?: string
   workNotes?: string
   workExperiences?: WorkExperience[]
+  submitResumeLater?: boolean
 }
 
 // ... helper ...
