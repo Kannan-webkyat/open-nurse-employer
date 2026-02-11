@@ -84,7 +84,7 @@ export function GooglePlacesInput({
                 onChange={handleInput}
                 disabled={!ready || disabled}
                 placeholder={placeholder}
-                className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all placeholder:text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-white border border-slate-200 text-slate-900 rounded-lg py-2.5 pl-9 pr-3 text-xs font-medium focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8] disabled:cursor-not-allowed disabled:opacity-50"
                 autoComplete="off"
             />
 

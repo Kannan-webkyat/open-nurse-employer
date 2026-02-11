@@ -9,6 +9,7 @@ import Image from "next/image"
 import { employerProfileApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import { Modal } from "@/components/ui/modal"
+import { GooglePlacesInput } from "@/components/ui/google-places-input"
 
 export default function CompanyProfilePage() {
   const toast = useToast() as {
@@ -37,6 +38,7 @@ export default function CompanyProfilePage() {
     facebook: "",
     twitter: "",
     instagram: "",
+    companyLocation: "",
   })
 
   const [preferredCategories, setPreferredCategories] = useState<string[]>([])
@@ -306,6 +308,7 @@ export default function CompanyProfilePage() {
           businessEmail: user.email || "",
           contactNumber: user.phone || "",
           companyWebsite: employer.company_website || "",
+          companyLocation: employer.company_location || "",
           companyAddress: employer.company_address || "",
           aboutCompany: employer.about_company || "",
           registrationNumber: employer.company_registration_number || "",
@@ -384,6 +387,7 @@ export default function CompanyProfilePage() {
         company_name: formData.companyName,
         hiring_person_name: formData.contactPersonName,
         company_website: formData.companyWebsite || undefined,
+        company_location: formData.companyLocation,
         company_address: formData.companyAddress,
         about_company: formData.aboutCompany,
         company_registration_number: formData.registrationNumber,
@@ -651,18 +655,21 @@ export default function CompanyProfilePage() {
                         />
                       </div>
                     </div>
-                    <div className="col-span-1 md:col-span-2 space-y-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-neutral-700">Company Location <span className="text-red-500">*</span></label>
+                      <GooglePlacesInput
+                        value={formData.companyLocation}
+                        onChange={(value) => handleInputChange("companyLocation", value)}
+                        placeholder="City, State, Country"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <label className="text-sm font-medium text-neutral-700">Company Address <span className="text-red-500">*</span></label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
-                        <Input
-                          value={formData.companyAddress}
-                          onChange={(e) => handleInputChange("companyAddress", e.target.value)}
-                          className="pl-9"
-                          placeholder="Full business address"
-                          required
-                        />
-                      </div>
+                      <GooglePlacesInput
+                        value={formData.companyAddress}
+                        onChange={(value) => handleInputChange("companyAddress", value)}
+                        placeholder="Full street address"
+                      />
                     </div>
                     <div className="col-span-1 md:col-span-2 space-y-2">
                       <label className="text-sm font-medium text-neutral-700">About Company <span className="text-red-500">*</span></label>
@@ -670,7 +677,7 @@ export default function CompanyProfilePage() {
                         value={formData.aboutCompany}
                         onChange={(e) => handleInputChange("aboutCompany", e.target.value)}
                         rows={5}
-                        className="flex w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0576B8] focus-visible:border-transparent disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                        className="flex w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm placeholder:text-neutral-400 focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8] disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                         placeholder="Tell us about your company, mission, and culture..."
                         required
                       />

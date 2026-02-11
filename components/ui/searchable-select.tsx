@@ -119,7 +119,7 @@ export function SearchableSelect({
                     onKeyDown={handleKeyDown}
                     onFocus={() => setIsOpen(true)}
                     placeholder={placeholder}
-                    className="w-full h-9 sm:h-10 rounded-lg border border-neutral-300 bg-white pl-3 pr-10 text-xs sm:text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                    className="w-full h-9 sm:h-10 rounded-lg border border-neutral-300 bg-white pl-3 pr-10 text-xs sm:text-sm focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8] disabled:cursor-not-allowed disabled:opacity-50 transition-all"
                 />
                 <div
                     className="absolute right-0 top-0 h-full px-3 flex items-center justify-center cursor-pointer"
@@ -139,8 +139,8 @@ export function SearchableSelect({
                                 key={option.value}
                                 onClick={() => handleOptionSelect(option)}
                                 className={`px-3 py-2 text-xs sm:text-sm cursor-pointer rounded-md transition-colors ${option.value === value
-                                        ? "bg-sky-50 text-sky-700 font-medium"
-                                        : "text-neutral-700 hover:bg-neutral-50"
+                                    ? "bg-sky-50 text-sky-700 font-medium"
+                                    : "text-neutral-700 hover:bg-neutral-50"
                                     }`}
                             >
                                 {option.label}
