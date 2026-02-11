@@ -17,7 +17,7 @@ const nextConfig = {
       },
     ],
     // Also allow any hostname for development (you can restrict this in production)
-    domains: ['localhost'],
+    domains: ['localhost', 'images.unsplash.com'],
   },
 }
 

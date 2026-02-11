@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { authApi } from '@/lib/api/auth';
 import { useUser } from '@/components/providers/user-provider';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
 function LoginForm() {
     const router = useRouter();
@@ -37,7 +37,7 @@ function LoginForm() {
     // Check for registration success
     React.useEffect(() => {
         if (searchParams.get('registered') === 'true') {
-            setSuccess('Registration successful! Your account is pending administrator approval. Please wait for confirmation.');
+            setSuccess('Registration successful! Please check your email.');
         }
     }, [searchParams]);
 
@@ -148,129 +148,106 @@ function LoginForm() {
             }
         } catch (err: any) {
             console.error('Login error:', err);
-            setError(err.response?.data?.message || err.message || 'Invalid credentials. Please try again.');
+            // Check if error message is an object (validation errors)
+            if (err.response?.data?.errors) {
+                const firstError = Object.values(err.response.data.errors)[0];
+                setError(Array.isArray(firstError) ? firstError[0] : 'Login failed');
+            } else {
+                setError(err.response?.data?.message || err.message || 'Invalid credentials. Please try again.');
+            }
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 w-full h-full flex bg-gradient-to-br from-neutral-50 via-white to-emerald-50/30 font-sans z-[9999]">
-            {/* Left Side: Enhanced Form */}
-            <div className="w-full lg:w-[45%] flex flex-col justify-between p-8 md:p-12 lg:p-20 relative bg-white/80 backdrop-blur-sm overflow-hidden">
-                {/* Decorative Background Elements */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-40">
-                    <div className="absolute -top-20 -left-20 w-64 h-64 bg-gradient-to-br from-emerald-200 to-sky-200 rounded-full blur-3xl animate-pulse" />
-                    <div className="absolute -bottom-32 -right-20 w-80 h-80 bg-gradient-to-tl from-sky-200 to-emerald-200 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}} />
-                    
-                    {/* Subtle Grid Pattern */}
-                    <div className="absolute inset-0 opacity-[0.03]" style={{
-                        backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
-                        backgroundSize: '40px 40px'
-                    }} />
-                </div>
+        <div className="fixed inset-0 w-full h-full flex bg-[#F0F4F8] font-sans z-[9999]">
+            {/* Left Side: Ultra Condensed Form (Matching Register Page) */}
+            <div className="w-full lg:w-1/2 flex flex-col justify-center bg-white shadow-2xl z-20 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-blue-600"></div>
 
-                {/* Header/Logo */}
-                <div className="relative z-10">
-                    <Link href="/" className="inline-block group">
-                        <div className="transform transition-all duration-300 hover:scale-105">
-                            <Image src="/logo.svg" alt="Open Nurses Logo" width={30} height={30} className="h-8 w-auto drop-shadow-sm" />
-                        </div>
-                    </Link>
-                </div>
-
-                {/* Center Content - Enhanced Form */}
-                <div className="w-full max-w-[420px] mx-auto relative z-10">
-                    {/* Welcome Badge */}
-                    <div className="flex justify-center mb-8">
-                        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-sky-50 px-4 py-2 rounded-full border border-emerald-100 shadow-sm">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-xs font-bold text-emerald-700">Employer Portal</span>
-                        </div>
-                    </div>
-
-                    <div className="text-center mb-10">
-                        <h1 className="text-[36px] font-black text-neutral-900 mb-3 leading-tight tracking-tight">
-                            {showOtpInput ? 'Two-Factor Authentication' : 'Welcome back'}
+                <div className="w-full max-w-xl p-6 md:p-10 flex flex-col justify-center mx-auto">
+                    {/* Header */}
+                    <div className="mb-6">
+                        <Link href="/" className="inline-block mb-4">
+                            <Image src="/logo.svg" alt="Open Nurses" width={120} height={35} className="h-3 w-auto" />
+                        </Link>
+                        <h1 className="text-[40px] font-semibold text-slate-900 leading-tight">
+                            {showOtpInput ? 'Verify Identity' : 'Welcome Back'}
                         </h1>
-                        <p className="text-neutral-500 text-sm font-medium">
-                            {showOtpInput
-                                ? 'Please enter the 6-digit code sent to your email'
-                                : 'Sign in to access your employer dashboard'}
+                        <p className="text-sm text-slate-500 mt-1">
+                            {showOtpInput ? 'Enter the code sent to your email.' : 'Sign in to access your dashboard.'}
                         </p>
                     </div>
 
-                    <form onSubmit={showOtpInput ? handleVerifyOtp : handleSubmit} className="space-y-5">
+                    <form onSubmit={showOtpInput ? handleVerifyOtp : handleSubmit} className="space-y-3 flex-1">
                         {success && (
-                            <div className="p-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl font-medium">
+                            <div className="p-2.5 text-xs text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg font-medium flex items-center gap-2">
+                                <span className="w-1 h-1 bg-emerald-500 rounded-full shrink-0"></span>
                                 {success}
                             </div>
                         )}
 
                         {error && (
-                            <div className="p-4 text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl font-medium">
+                            <div className="p-2.5 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg font-medium flex items-center gap-2">
+                                <span className="w-1 h-1 bg-rose-500 rounded-full shrink-0"></span>
                                 {error}
                             </div>
                         )}
 
                         {!showOtpInput ? (
                             <>
-                                {/* Email Input - Enhanced */}
-                                <div className="space-y-2 group">
-                                    <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wide mb-2">
-                                        Email Address
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            id="email"
-                                            name="email"
-                                            type="email"
-                                            placeholder="name@company.com"
-                                            required
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            className="w-full bg-white border-2 border-neutral-200 text-neutral-900 rounded-xl py-3.5 px-4 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-neutral-400 text-sm font-medium shadow-sm hover:border-neutral-300"
-                                        />
+                                {/* Email */}
+                                <div className="relative group">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-sky-500 transition-colors">
+                                        <Mail size={14} />
                                     </div>
+                                    <input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        placeholder="Email Address"
+                                        required
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg py-2.5 pl-9 pr-3 text-xs font-medium focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all placeholder:text-slate-400"
+                                    />
                                 </div>
 
-                                {/* Password Input - Enhanced */}
-                                <div className="space-y-2 group">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wide">
-                                            Password
-                                        </label>
-                                        <Link href="/forgot-password" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-colors relative group/link">
-                                            Forgot password?
-                                            <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-emerald-600 group-hover/link:w-full transition-all duration-300" />
-                                        </Link>
-                                    </div>
-                                    <div className="relative">
+                                {/* Password */}
+                                <div className="space-y-1">
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-sky-500 transition-colors">
+                                            <Lock size={14} />
+                                        </div>
                                         <input
                                             id="password"
                                             name="password"
                                             type={showPassword ? 'text' : 'password'}
+                                            placeholder="Password"
                                             required
                                             value={formData.password}
                                             onChange={handleChange}
-                                            className="w-full bg-white border-2 border-neutral-200 text-neutral-900 rounded-xl py-3.5 px-4 pr-12 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-neutral-400 text-sm font-medium shadow-sm hover:border-neutral-300"
+                                            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg py-2.5 pl-9 pr-8 text-xs font-medium focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all placeholder:text-slate-400"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-neutral-400 hover:text-emerald-600 transition-colors focus:outline-none"
+                                            className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-sky-600 transition-colors focus:outline-none"
                                         >
-                                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                            {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
                                         </button>
+                                    </div>
+                                    <div className="flex justify-end">
+                                        <Link href="/forgot-password" className="text-sm text-slate-400 hover:text-sky-600 transition-colors font-medium">
+                                            Forgot password?
+                                        </Link>
                                     </div>
                                 </div>
                             </>
                         ) : (
-                            /* OTP Input - Enhanced */
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wide mb-2">
-                                        Verification Code
-                                    </label>
+                            /* OTP Input */
+                            <div className="space-y-3">
+                                <div className="relative group">
                                     <input
                                         id="otp"
                                         name="otp"
@@ -280,167 +257,89 @@ function LoginForm() {
                                         maxLength={6}
                                         value={otp}
                                         onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                                        className="w-full bg-white border-2 border-neutral-200 text-neutral-900 rounded-xl py-3.5 px-4 focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-neutral-400 text-lg font-medium shadow-sm hover:border-neutral-300 text-center tracking-widest"
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-lg py-2.5 px-3 text-center text-sm font-medium focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all placeholder:text-slate-400 tracking-widest"
                                     />
                                 </div>
-                                <div className="text-center">
+                                <div className="flex justify-between items-center px-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowOtpInput(false)}
+                                        className="text-[10px] text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                                    >
+                                        ← Back
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={handleResendOtp}
                                         disabled={resendCooldown > 0 || isLoading}
-                                        className="text-sm font-bold text-emerald-600 hover:text-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="text-[10px] font-bold text-sky-600 hover:text-sky-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
-                                    </button>
-                                </div>
-                                <div className="text-center pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowOtpInput(false)}
-                                        className="text-sm text-neutral-600 hover:text-neutral-900 font-medium transition-colors"
-                                    >
-                                        ← Back to login
+                                        {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {/* Submit Button - Premium */}
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-700 hover:to-sky-700 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center text-sm shadow-lg shadow-emerald-600/30 hover:shadow-xl hover:shadow-emerald-600/40 mt-8 group relative overflow-hidden"
+                            className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center text-xs shadow-md shadow-sky-600/20 mt-2"
                         >
-                            {/* Button Shimmer Effect */}
-                            <div className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 -translate-x-full group-hover:translate-x-[200%] transition-transform duration-1000" />
-                            
                             {isLoading ? (
                                 <div className="flex items-center gap-2">
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>{showOtpInput ? 'Verifying...' : 'Signing in...'}</span>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>{showOtpInput ? 'Verifying...' : 'Processing...'}</span>
                                 </div>
                             ) : (
-                                <span>{showOtpInput ? 'Verify Code' : 'Sign in to Dashboard'}</span>
+                                <span>{showOtpInput ? 'Verify Code' : 'Sign In'}</span>
                             )}
                         </button>
+
+                        {!showOtpInput && (
+                            <div className="text-center pt-2">
+                                <p className="text-sm text-slate-500">
+                                    Don&apos;t have an account?{' '}
+                                    <Link href="/register" className="font-bold text-sky-600 hover:text-sky-700 transition-colors">
+                                        Create Account
+                                    </Link>
+                                </p>
+                            </div>
+                        )}
                     </form>
-
-                    {!showOtpInput && (
-                        <p className="mt-8 text-center text-sm text-neutral-600">
-                            Don&apos;t have an account?{' '}
-                            <Link href="/register" className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
-                                Register now
-                            </Link>
-                        </p>
-                    )}
-
-                    {/* Additional Info */}
-                    <div className="mt-8 text-center">
-                        <p className="text-xs text-neutral-500 font-medium">
-                            Protected by enterprise-grade security
-                        </p>
-                        <div className="flex items-center justify-center gap-2 mt-2">
-                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                            <span className="text-xs font-bold text-emerald-600">All systems operational</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer - Enhanced */}
-                <div className="text-center relative z-10">
-                    <div className="flex items-center justify-center gap-6 text-xs text-neutral-500 font-medium">
-                        <Link href="#" className="hover:text-neutral-900 transition-colors">Privacy Policy</Link>
-                        <span>•</span>
-                        <Link href="#" className="hover:text-neutral-900 transition-colors">Terms of Service</Link>
-                        <span>•</span>
-                        <Link href="#" className="hover:text-neutral-900 transition-colors">Support</Link>
-                    </div>
-                    <p className="mt-3 text-xs text-neutral-400">
-                        © 2024 Open Nurses. All rights reserved.
-                    </p>
                 </div>
             </div>
 
-            {/* Right Side: Premium Dashboard Preview with Animations */}
-            <div className="hidden lg:flex flex-1 items-center justify-center p-12 bg-gradient-to-br from-emerald-600 via-sky-600 to-indigo-600 relative overflow-hidden">
-                {/* Animated Gradient Mesh Background */}
-                <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute top-[-10%] right-[-5%] w-[45%] h-[45%] rounded-full bg-emerald-400/30 blur-[120px] animate-pulse" />
-                    <div className="absolute bottom-[-10%] left-[10%] w-[35%] h-[35%] rounded-full bg-sky-300/30 blur-[120px] animate-pulse" style={{animationDelay: '0.7s'}} />
-                    <div className="absolute top-[40%] left-[-5%] w-[25%] h-[25%] rounded-full bg-indigo-300/20 blur-[100px] animate-pulse" style={{animationDelay: '1.4s'}} />
-                    
-                    {/* Floating Particles */}
-                    <div className="absolute top-[20%] right-[15%] w-2 h-2 bg-white/20 rounded-full animate-ping" style={{animationDelay: '0.3s'}} />
-                    <div className="absolute top-[60%] right-[25%] w-1.5 h-1.5 bg-white/15 rounded-full animate-ping" style={{animationDelay: '1.1s'}} />
-                    <div className="absolute top-[45%] right-[40%] w-2.5 h-2.5 bg-white/10 rounded-full animate-ping" style={{animationDelay: '2.3s'}} />
-                    
-                    {/* Grid Pattern Overlay */}
-                    <div className="absolute inset-0 opacity-10">
-                        <div className="absolute inset-0" style={{
-                            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                            backgroundSize: '50px 50px'
-                        }} />
+            {/* Right Side: Modern Image Layout (Same as Register) */}
+            <div className="hidden lg:block lg:w-1/2 relative overflow-hidden bg-slate-900">
+                <Image
+                    src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=2940&auto=format&fit=crop"
+                    alt="Medical Team"
+                    fill
+                    className="object-cover opacity-90"
+                    priority
+                />
+
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-transparent to-transparent"></div>
+
+                {/* Sky Blue Accent Shapes */}
+                <div className="absolute top-10 right-10 w-32 h-32 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+                <div className="absolute bottom-10 left-1/3 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+                {/* Content Overlay */}
+                <div className="absolute bottom-0 left-0 w-full p-12 md:p-16 lg:p-20 text-white">
+                    <div className="max-w-2xl">
+                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight tracking-tight">
+                            Build Your <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-300">Dream Medical Team</span>
+                        </h2>
+
+                        <p className="text-lg text-slate-300 max-w-xl leading-relaxed font-light mb-10">
+                            Connect with skilled, trusted healthcare professionals tailored to your needs.
+                        </p>
                     </div>
                 </div>
-
-                {/* Dashboard Preview - Employer Theme */}
-                <div className="relative z-10 w-full max-w-2xl">
-                    <div className="space-y-6 transform hover:scale-[1.02] transition-all duration-700" style={{animation: 'float 6s ease-in-out infinite'}}>
-                        <div className="text-center mb-8">
-                            <h2 className="text-3xl font-black text-white mb-2">Hire Top Nursing Talent</h2>
-                            <p className="text-white/80 text-sm">Streamline your recruitment process</p>
-                        </div>
-
-                        {/* Stats Preview */}
-                        <div className="bg-white/95 backdrop-blur-md rounded-3xl p-6 shadow-2xl">
-                            <div className="grid grid-cols-4 gap-4">
-                                {[
-                                    { label: 'Active Jobs', value: '12', icon: '💼' },
-                                    { label: 'Applications', value: '248', icon: '📋' },
-                                    { label: 'Interviews', value: '18', icon: '📅' },
-                                    { label: 'Hired', value: '6', icon: '✓' }
-                                ].map((stat, i) => (
-                                    <div key={i} className="text-center">
-                                        <div className="text-2xl mb-1">{stat.icon}</div>
-                                        <div className="text-2xl font-black text-neutral-900">{stat.value}</div>
-                                        <div className="text-[10px] font-bold text-neutral-500 uppercase">{stat.label}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Features */}
-                        <div className="grid grid-cols-2 gap-4">
-                            {[
-                                { title: 'Post Jobs', desc: 'Reach qualified nurses', icon: '🎯' },
-                                { title: 'Review Applicants', desc: 'Find the perfect match', icon: '👥' },
-                                { title: 'Schedule Interviews', desc: 'Streamlined process', icon: '🗓️' },
-                                { title: 'Track Progress', desc: 'Real-time analytics', icon: '📊' }
-                            ].map((feature, i) => (
-                                <div key={i} className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 hover:bg-white transition-all">
-                                    <div className="text-3xl mb-2">{feature.icon}</div>
-                                    <div className="text-sm font-bold text-neutral-900">{feature.title}</div>
-                                    <div className="text-xs text-neutral-600">{feature.desc}</div>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="text-center">
-                            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
-                                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                                <p className="text-white text-sm font-bold">Powered by Open Nurses</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Floating Animation Keyframes */}
-                <style jsx>{`
-                    @keyframes float {
-                        0%, 100% { transform: translateY(0px); }
-                        50% { transform: translateY(-10px); }
-                    }
-                `}</style>
             </div>
         </div>
     );
@@ -449,8 +348,8 @@ function LoginForm() {
 export default function LoginPage() {
     return (
         <Suspense fallback={
-            <div className="flex min-h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="flex min-h-screen items-center justify-center bg-[#F0F4F8]">
+                <Loader2 className="h-8 w-8 animate-spin text-sky-600" />
             </div>
         }>
             <LoginForm />
