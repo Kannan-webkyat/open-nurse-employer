@@ -280,6 +280,7 @@ export default function CandidatesPage() {
             workNotes: app.work_notes,
             resumeUrl: app.resume_url,
             certificatesUrl: app.certificates_url,
+            submitResumeLater: app.submit_resume_later === 1 || app.submit_resume_later === true,
           }))
 
           console.log('API Response Applications:', applications);
@@ -743,6 +744,7 @@ export default function CandidatesPage() {
           contractType: app.contract_type,
           registrationStatus: app.registration_status,
           notes: app.notes,
+          submitResumeLater: app.submit_resume_later === 1 || app.submit_resume_later === true,
           resumeUrl: app.resume_url,
           certificatesUrl: app.certificates_url,
           nhsBand: app.nhs_band,
@@ -1771,10 +1773,19 @@ export default function CandidatesPage() {
               )}
 
               {/* Documents Section */}
-              {(viewCandidate.resumeUrl || viewCandidate.certificatesUrl) && (
+              {/* Documents Section */}
+              {(viewCandidate.resumeUrl || viewCandidate.certificatesUrl || viewCandidate.submitResumeLater) && (
                 <div className="border-t border-neutral-200 pt-6">
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Documents</h3>
                   <div className="flex flex-wrap gap-3">
+                    {/* Submit resume later badge */}
+                    {viewCandidate.submitResumeLater && !viewCandidate.resumeUrl && (
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">Will submit resume later</span>
+                      </div>
+                    )}
+
                     {viewCandidate.resumeUrl && (
                       <a
                         href={viewCandidate.resumeUrl}
