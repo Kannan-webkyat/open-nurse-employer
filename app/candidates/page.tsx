@@ -44,6 +44,7 @@ interface Candidate {
   contactNumber?: string
   willingToRelocate?: boolean
   inUK?: boolean
+  needSponsorship?: boolean
   jobRole?: string
   contractType?: string
   registrationStatus?: string
@@ -243,9 +244,10 @@ export default function CandidatesPage() {
 
             // Extended details
             email: app.user?.email,
-            contactNumber: app.user?.phone,
-            willingToRelocate: app.user?.nurse?.willing_to_relocate === 1 || app.user?.nurse?.willing_to_relocate === true,
-            inUK: app.user?.nurse?.current_location === 'UK',
+            contactNumber: app.contact_number || app.user?.phone, // Prefer application contact number if available
+            willingToRelocate: app.willing_to_relocate === 1 || app.willing_to_relocate === true,
+            inUK: app.in_uk === 1 || app.in_uk === true,
+            needSponsorship: app.need_sponsorship === 1 || app.need_sponsorship === true,
 
             // Work Info
             jobRole: app.user?.nurse?.job_role,
@@ -734,8 +736,9 @@ export default function CandidatesPage() {
           // Additional details
           email: app.email || app.user?.email,
           contactNumber: app.contact_number || app.user?.phone,
-          willingToRelocate: app.willing_to_relocate,
-          inUK: app.in_uk,
+          willingToRelocate: app.willing_to_relocate === 1 || app.willing_to_relocate === true,
+          inUK: app.in_uk === 1 || app.in_uk === true,
+          needSponsorship: app.need_sponsorship === 1 || app.need_sponsorship === true,
           jobRole: app.job_role,
           contractType: app.contract_type,
           registrationStatus: app.registration_status,
@@ -1647,8 +1650,14 @@ export default function CandidatesPage() {
                     )}
                     {viewCandidate.inUK !== undefined && (
                       <div>
-                        <label className="text-sm font-medium text-neutral-600">Location Status</label>
-                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.inUK ? 'UK' : 'Non-UK'}</p>
+                        <label className="text-sm font-medium text-neutral-600">Current Location</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.inUK ? 'UK' : 'Non UK'}</p>
+                      </div>
+                    )}
+                    {viewCandidate.needSponsorship !== undefined && (
+                      <div>
+                        <label className="text-sm font-medium text-neutral-600">Need Sponsorship</label>
+                        <p className="text-sm text-neutral-900 mt-1">{viewCandidate.needSponsorship ? 'Yes' : 'No'}</p>
                       </div>
                     )}
                   </div>
