@@ -4,10 +4,9 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut } from "lucide-react"
+import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut, Menu } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { useNotifications, Notification } from "@/components/providers/notification-provider"
-import { useMessages } from "@/components/providers/message-provider"
 import { useUser } from "@/components/providers/user-provider"
 
 const getNotificationIcon = (type: Notification["type"]) => {
@@ -91,7 +90,6 @@ const getInitials = (name: string): string => {
 export function Header() {
   const router = useRouter()
   const { notifications, unreadCount, markAsRead, clearNotifications } = useNotifications()
-  const { unreadCount: unreadMessageCount } = useMessages()
   const { user, isLoading: isLoadingUser, logout, refreshUser } = useUser()
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
@@ -132,8 +130,8 @@ export function Header() {
       if (employer.company_logo) {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
         // Handle both relative paths (starting with /) and paths without leading slash
-        const logoPath = employer.company_logo.startsWith('/') 
-          ? employer.company_logo.substring(1) 
+        const logoPath = employer.company_logo.startsWith('/')
+          ? employer.company_logo.substring(1)
           : employer.company_logo
         companyLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
         // Add timestamp to force refresh if image was just updated
@@ -197,11 +195,11 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-neutral-50">
-      <div className="my-2 mx-2 bg-white px-6 py-4 h-[65px] flex items-center justify-between border border-neutral-200 rounded-full shadow-sm">
-        <div className="flex items-center gap-3">
-          <Image src="/logo.svg" alt="logo" width={40} height={40} className="w-36" />
+      <div className="my-2 mx-2 bg-white px-4 md:px-6 py-4 h-[65px] flex items-center justify-between border border-neutral-200 rounded-full shadow-sm">
+        <div className="flex items-center gap-2 md:gap-3">
+          <Image src="/logo.svg" alt="logo" width={40} height={40} className="w-28 md:w-36 flex-shrink-0" />
         </div>
-        <div className="flex items-center gap-4 relative">
+        <div className="flex items-center gap-2 md:gap-4 relative">
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -325,16 +323,12 @@ export function Header() {
             )}
           </div>
 
-          <Link href="/messages" className="relative">
-            <button className="p-2 hover:bg-neutral-100 rounded-full text-neutral-800 transition-colors relative">
-              <MessageCircle className="w-5 h-5" />
-              {unreadMessageCount > 0 && (
-                <span className="absolute top-0 right-0 w-5 h-5 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center">
-                  {unreadMessageCount}
-                </span>
-              )}
-            </button>
-          </Link>
+          <button
+            className="md:hidden p-2 hover:bg-neutral-100 rounded-full text-neutral-800 transition-colors relative flex-shrink-0"
+            onClick={() => window.dispatchEvent(new Event('toggle-mobile-menu'))}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
           {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
