@@ -313,7 +313,12 @@ export default function MonthlyJobReportsPage() {
                     type="date"
                     value={dateFrom}
                     onChange={(e) => handleDateFromChange(e.target.value)}
-                    className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-28 sm:w-32 outline-none shrink-0"
+                    onClick={(e) => {
+                      try {
+                        (e.target as any).showPicker?.();
+                      } catch (err) { }
+                    }}
+                    className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-28 sm:w-32 outline-none shrink-0 cursor-pointer"
                     disabled={loading}
                   />
                   <span className="text-neutral-300 text-xs shrink-0">to</span>
@@ -321,7 +326,12 @@ export default function MonthlyJobReportsPage() {
                     type="date"
                     value={dateTo}
                     onChange={(e) => handleDateToChange(e.target.value)}
-                    className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-28 sm:w-32 outline-none shrink-0"
+                    onClick={(e) => {
+                      try {
+                        (e.target as any).showPicker?.();
+                      } catch (err) { }
+                    }}
+                    className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-28 sm:w-32 outline-none shrink-0 cursor-pointer"
                     disabled={loading}
                   />
                 </div>

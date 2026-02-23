@@ -273,76 +273,87 @@ export default function CandidatesApplicationsPage() {
         {/* Floating Gradient Metric Cards */}
         <div className="space-y-4">
           {/* Pill Filters */}
-          <div className="flex flex-wrap !items-center justify-between gap-2" >
-            <div className="relative z-10 flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className="appearance-none pl-3 pr-8 py-1.5 border border-neutral-200 rounded-lg bg-white text-sm font-medium text-neutral-600 focus:ring-1 focus:ring-sky-500 focus:outline-none cursor-pointer hover:border-neutral-300 transition-colors shadow-sm"
-                  disabled={loading}
-                >
-                  <option value="">All Status</option>
-                  <option value="new">New</option>
-                  <option value="reviewed">Reviewed</option>
-                  <option value="shortlisted">Shortlisted</option>
-                  <option value="contacting">Contacting</option>
-                  <option value="interviewing">Interviewing</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="accepted">Hired</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
-              </div>
-
-              {activeFilterCount > 0 && (
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 text-neutral-600 rounded-full text-xs font-medium hover:bg-neutral-200 transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                  Reset Filters
-                </button>
-              )}
-              {/* Search Input */}
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-indigo-500 transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search by candidate, role..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-9 pr-4 py-1.5 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-none focus:border-sky-600 w-64 transition-all shadow-sm"
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-neutral-200 shadow-sm">
-                <div className="px-2 border-r border-neutral-200">
-                  <Calendar className="w-4 h-4 text-neutral-400" />
+          <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 w-full" >
+            <div className="w-full xl:w-auto flex-1">
+              <div className="relative z-10 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 w-full">
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className="appearance-none pl-3 pr-8 py-1.5 border border-neutral-200 rounded-lg bg-white text-sm font-medium text-neutral-600 focus:ring-1 focus:ring-sky-500 focus:outline-none cursor-pointer hover:border-neutral-300 transition-colors shadow-sm w-full"
+                    disabled={loading}
+                  >
+                    <option value="">All Status</option>
+                    <option value="new">New</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="contacting">Contacting</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="accepted">Hired</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
                 </div>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => handleDateFromChange(e.target.value)}
-                  className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-32 outline-none"
-                  disabled={loading}
-                />
-                <span className="text-neutral-300 text-xs">to</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => handleDateToChange(e.target.value)}
-                  className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-32 outline-none"
-                  disabled={loading}
-                />
+
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-neutral-100 text-neutral-600 rounded-full text-xs font-medium hover:bg-neutral-200 transition-colors w-full sm:w-auto"
+                  >
+                    <X className="w-3 h-3" />
+                    Reset Filters
+                  </button>
+                )}
+                {/* Search Input */}
+                <div className="relative group w-full sm:flex-1 sm:min-w-[200px] xl:max-w-xs">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-indigo-500 transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Search by candidate, role..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="pl-9 pr-4 py-1.5 border border-neutral-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-none focus:border-sky-600 w-full transition-all shadow-sm"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-neutral-200 shadow-sm w-full sm:w-auto overflow-x-auto whitespace-nowrap hide-scrollbar">
+                  <div className="px-2 border-r border-neutral-200">
+                    <Calendar className="w-4 h-4 text-neutral-400" />
+                  </div>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => handleDateFromChange(e.target.value)}
+                    onClick={(e) => {
+                      try {
+                        (e.target as any).showPicker?.();
+                      } catch (err) { }
+                    }}
+                    className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-28 sm:w-32 outline-none shrink-0 cursor-pointer"
+                    disabled={loading}
+                  />
+                  <span className="text-neutral-300 text-xs shrink-0">to</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => handleDateToChange(e.target.value)}
+                    onClick={(e) => {
+                      try {
+                        (e.target as any).showPicker?.();
+                      } catch (err) { }
+                    }}
+                    className="bg-transparent border-none text-sm text-neutral-700 focus:ring-0 p-1 w-28 sm:w-32 outline-none shrink-0 cursor-pointer"
+                    disabled={loading}
+                  />
+                </div>
               </div>
-
-
             </div>
-            <div className="relative" ref={exportMenuRef}>
+
+            <div className="relative w-full xl:w-auto flex justify-end shrink-0" ref={exportMenuRef}>
               <button
                 onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 rounded-full transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full xl:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-sky-500 text-white text-sm font-medium hover:bg-sky-600 rounded-full transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={loading || applications.length === 0}
               >
                 <Download className="w-4 h-4" />
@@ -350,7 +361,7 @@ export default function CandidatesApplicationsPage() {
                 <ChevronDown className="w-4 h-4" />
               </button>
               {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-neutral-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute right-0 top-full mt-2 w-full xl:w-48 bg-white rounded-lg shadow-xl border border-neutral-100 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                   {['CSV', 'Excel', 'PDF'].map((type) => (
                     <button
                       key={type}
@@ -369,7 +380,7 @@ export default function CandidatesApplicationsPage() {
               <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {/* Total Applications */}
               <div className="relative overflow-hidden p-4 rounded-xl border border-neutral-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] hover:shadow-md hover:border-indigo-100 transition-all duration-300 group">
                 <div className="absolute inset-0 bg-gradient-to-br from-white via-white to-indigo-50/60 opacity-100"></div>
