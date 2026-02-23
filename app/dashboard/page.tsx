@@ -284,7 +284,7 @@ const DashboardPage = () => {
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
-                className="space-y-6 animate-in fade-in duration-500 max-w-[1800px] mx-auto p-4 md:p-6 text-neutral-800 relative z-10"
+                className="space-y-6 animate-in fade-in duration-500 max-w-[1800px] mx-auto p-0 md:p-6 text-neutral-800 relative z-10"
             >
                 {/* Hero Welcome Section */}
                 <motion.div
