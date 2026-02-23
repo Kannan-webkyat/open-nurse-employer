@@ -431,7 +431,7 @@ export default function JobsPage() {
               {/* Job Details Section */}
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">Job Details</h3>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Job Title</label>
                     <p className="text-sm text-neutral-900 mt-1">{selectedJob.title}</p>
@@ -485,7 +485,7 @@ export default function JobsPage() {
               {/* Pay Rate Section */}
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">Pay Rate</h3>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Payment Type</label>
                     <p className="text-sm text-neutral-900 mt-1">

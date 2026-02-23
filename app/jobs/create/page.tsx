@@ -235,7 +235,7 @@ export default function CreateJobPage() {
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
 
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Job Title <span className="text-red-500">*</span>
@@ -413,7 +413,7 @@ export default function CreateJobPage() {
               <p className="text-sm text-neutral-600">Set the pay rate for this job based on your requirements.</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Payment type <span className="text-red-500">*</span>
@@ -521,7 +521,7 @@ export default function CreateJobPage() {
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             {/* Tabs */}
             <div className="border-b border-neutral-200">
-              <div className="flex gap-6">
+              <div className="flex gap-4 sm:gap-6 overflow-x-auto whitespace-nowrap hide-scrollbar">
                 <button
                   type="button"
                   onClick={() => setActiveTab("overview")}
