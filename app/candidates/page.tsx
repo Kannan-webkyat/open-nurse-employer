@@ -620,7 +620,14 @@ export default function CandidatesPage() {
   const handleInterviewSubmit = async () => {
     if (candidateToAction && interviewFormData.date && interviewFormData.time && interviewFormData.meetingUrl) {
       try {
-        const interviewDateTime = `${interviewFormData.date} ${interviewFormData.time}:00`
+        const interviewDateTime = (() => {
+          // Build a Date object from the local date + time the employer picked
+          const [year, month, day] = interviewFormData.date.split('-').map(Number);
+          const [hours, minutes] = interviewFormData.time.split(':').map(Number);
+          const localDate = new Date(year, month - 1, day, hours, minutes, 0);
+          // Send as ISO string which includes timezone offset so Laravel stores correct UTC
+          return localDate.toISOString();
+        })();
         const payload = {
           interview_at: interviewDateTime,
           meeting_link: interviewFormData.meetingUrl
