@@ -258,37 +258,39 @@ export default function JobsPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold text-neutral-900">Jobs</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 w-64"
+                className="pl-10 w-full sm:w-64"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button
-              variant="outline"
-              className="bg-white border-neutral-300 text-neutral-700 relative"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="ml-2 bg-sky-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </Button>
-            <Link href="/jobs/create">
-              <Button className="bg-sky-500 hover:bg-sky-700 text-white rounded-full">
-                Post Job
+            <div className="flex w-full sm:w-auto gap-3 items-center">
+              <Button
+                variant="outline"
+                className="flex-1 sm:flex-none justify-center bg-white border-neutral-300 text-neutral-700 relative whitespace-nowrap"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="ml-2 bg-sky-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
               </Button>
-            </Link>
+              <Link href="/jobs/create" className="flex-1 sm:flex-none">
+                <Button className="w-full bg-sky-500 hover:bg-sky-700 text-white rounded-full whitespace-nowrap">
+                  Post Job
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

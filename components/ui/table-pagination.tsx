@@ -19,13 +19,13 @@ export function TablePagination({
   totalItems,
   onPageChange,
   onRowsPerPageChange,
-  rowsPerPageOptions = [ 5, 10, 15, 25, 50, 100],
+  rowsPerPageOptions = [5, 10, 15, 25, 50, 100],
 }: TablePaginationProps) {
   return (
-    <div className="bg-white px-6 py-4 border-t border-neutral-200 flex items-center justify-between">
-      <div className="flex items-center gap-4">
+    <div className="bg-white px-4 sm:px-6 py-4 border-t border-neutral-200 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="flex flex-row items-center justify-center gap-3 sm:gap-4 w-full md:w-auto">
         <div className="flex items-center gap-2">
-          <span className="text-sm text-neutral-700">Rows</span>
+          <span className="text-sm text-neutral-700 whitespace-nowrap">Rows</span>
           <select
             className="text-sm border border-neutral-300 rounded px-2 py-1 text-neutral-700"
             value={rowsPerPage}
@@ -38,11 +38,11 @@ export function TablePagination({
             ))}
           </select>
         </div>
-        <span className="text-sm text-neutral-500">
+        <span className="text-sm text-neutral-500 whitespace-nowrap">
           Showing {Math.min((currentPage - 1) * rowsPerPage + 1, totalItems)} - {Math.min(currentPage * rowsPerPage, totalItems)} of {totalItems}
         </span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap justify-center items-center gap-2 w-full md:w-auto">
         <Button
           variant="outline"
           size="sm"
@@ -61,42 +61,42 @@ export function TablePagination({
         >
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        
+
         {(() => {
           const pageNumbers = [];
           const siblingCount = 1;
-          
+
           // Always show first page
           pageNumbers.push(1);
-          
+
           if (currentPage > siblingCount + 2) {
             pageNumbers.push('...');
           }
-          
+
           let startPage = Math.max(2, currentPage - siblingCount);
           let endPage = Math.min(totalPages - 1, currentPage + siblingCount);
-          
+
           for (let i = startPage; i <= endPage; i++) {
             pageNumbers.push(i);
           }
-          
+
           if (currentPage < totalPages - siblingCount - 1) {
             pageNumbers.push('...');
           }
-          
+
           // Always show last page if visible and not already added
           if (totalPages > 1) {
             pageNumbers.push(totalPages);
           }
-          
+
           return pageNumbers.map((page, index) => {
-             if (page === '...') {
-                return (
-                  <span key={`ellipsis-${index}`} className="px-2 text-neutral-400">...</span>
-                );
-             }
-             
-             return (
+            if (page === '...') {
+              return (
+                <span key={`ellipsis-${index}`} className="px-2 text-neutral-400">...</span>
+              );
+            }
+
+            return (
               <Button
                 key={page}
                 variant={currentPage === page ? "default" : "outline"}
@@ -110,7 +110,7 @@ export function TablePagination({
               >
                 {page}
               </Button>
-             );
+            );
           });
         })()}
 
