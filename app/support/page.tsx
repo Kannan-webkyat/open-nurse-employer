@@ -46,7 +46,7 @@ export default function SupportPage() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Header */}
           <div>
             <h1 className="text-2xl font-bold text-neutral-900 mb-2">Support / Help Center</h1>
@@ -54,8 +54,8 @@ export default function SupportPage() {
           </div>
 
           {/* Search Bar */}
-          <div className="flex justify-end">
-            <div className="relative w-full max-w-md">
+          <div className="flex justify-start sm:justify-end w-full sm:w-auto">
+            <div className="relative w-full sm:w-64 md:w-80 lg:w-96">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
               <Input
                 type="text"
