@@ -871,22 +871,22 @@ export default function CandidatesPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold text-neutral-900">Candidates</h1>
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-auto">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 w-64"
+                className="pl-10 w-full sm:w-64"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
             <Button
               variant="outline"
-              className="bg-white border-neutral-300 text-neutral-700 relative"
+              className="bg-white border-neutral-300 text-neutral-700 relative w-full"
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
               <Filter className="w-4 h-4 mr-2" />
@@ -901,7 +901,7 @@ export default function CandidatesPage() {
         </div>
 
         {/* Status Tabs */}
-        <div className="flex items-center gap-1 border-b border-neutral-200">
+        <div className="flex items-center gap-1 border-b border-neutral-200 overflow-x-auto hide-scrollbar whitespace-nowrap">
           {([
             { key: "all", label: "All applications" },
             { key: "new", label: "New" },
@@ -1559,7 +1559,7 @@ export default function CandidatesPage() {
               {/* Candidate Details Section */}
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 mb-4">Candidate Details</h3>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Candidate Name</label>
                     <p className="text-sm text-neutral-900 mt-1">{viewCandidate.candidateName}</p>
@@ -1639,7 +1639,7 @@ export default function CandidatesPage() {
               {(viewCandidate.email || viewCandidate.contactNumber) && (
                 <div className="border-t border-neutral-200 pt-6">
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Personal Information</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {viewCandidate.email && (
                       <div>
                         <label className="text-sm font-medium text-neutral-600">Email</label>
@@ -1679,7 +1679,7 @@ export default function CandidatesPage() {
               {(viewCandidate.jobRole || viewCandidate.contractType || viewCandidate.registrationStatus) && (
                 <div className="border-t border-neutral-200 pt-6">
                   <h3 className="text-lg font-semibold text-neutral-900 mb-4">Work Information</h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {viewCandidate.jobRole && (
                       <div>
                         <label className="text-sm font-medium text-neutral-600">Job Role</label>
@@ -1729,7 +1729,7 @@ export default function CandidatesPage() {
                         <h4 className="text-sm font-semibold text-neutral-800 border-b border-neutral-200 pb-2 mb-3">
                           {exp.role || 'Role'} at {exp.employer || 'Employer'}
                         </h4>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {exp.countryOfWork && (
                             <div>
                               <label className="text-xs text-neutral-500 block">Country</label>
