@@ -17,8 +17,8 @@ export default function AccountSecuritySupportPage() {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Help Center
                     </Link>
-                    <h1 className="text-3xl font-bold text-neutral-900">Account & Security</h1>
-                    <p className="text-lg text-neutral-600">Keep your account secure and manage your team settings.</p>
+                    <h1 className="text-2xl font-bold text-neutral-900">Account & Security</h1>
+                    <p className="text-base text-neutral-600">Keep your account secure and manage your team settings.</p>
                 </div>
 
                 {/* Content */}
@@ -26,7 +26,7 @@ export default function AccountSecuritySupportPage() {
 
                     {/* Section 1 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             <Lock className="w-6 h-6 text-neutral-600" />
                             Password Management
                         </h2>
@@ -52,7 +52,7 @@ export default function AccountSecuritySupportPage() {
 
                     {/* Section 2 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             <ShieldCheck className="w-6 h-6 text-green-600" />
                             Two-Factor Authentication (2FA)
                         </h2>
@@ -69,7 +69,7 @@ export default function AccountSecuritySupportPage() {
 
                     {/* Section 3 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             <UserCog className="w-6 h-6 text-sky-600" />
                             Account Settings
                         </h2>

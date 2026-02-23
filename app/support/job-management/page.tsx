@@ -17,8 +17,8 @@ export default function JobManagementSupportPage() {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Help Center
                     </Link>
-                    <h1 className="text-3xl font-bold text-neutral-900">Job Management</h1>
-                    <p className="text-lg text-neutral-600">How to manage your job listings and track applications effectively.</p>
+                    <h1 className="text-2xl font-bold text-neutral-900">Job Management</h1>
+                    <p className="text-base text-neutral-600">How to manage your job listings and track applications effectively.</p>
                 </div>
 
                 {/* Content */}
@@ -26,7 +26,7 @@ export default function JobManagementSupportPage() {
 
                     {/* Section 1 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             Editing & Deleting Job Postings
                         </h2>
                         <div className="prose prose-neutral max-w-none text-neutral-600 space-y-6">
@@ -71,7 +71,7 @@ export default function JobManagementSupportPage() {
 
                     {/* Section 2 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             Application Tracking
                         </h2>
                         <div className="prose prose-neutral max-w-none text-neutral-600 space-y-4">

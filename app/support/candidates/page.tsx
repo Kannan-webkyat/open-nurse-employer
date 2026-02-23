@@ -17,8 +17,8 @@ export default function CandidatesSupportPage() {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Help Center
                     </Link>
-                    <h1 className="text-3xl font-bold text-neutral-900">Candidates</h1>
-                    <p className="text-lg text-neutral-600">Learn how to review, shortlist, and communicate with applicants.</p>
+                    <h1 className="text-2xl font-bold text-neutral-900">Candidates</h1>
+                    <p className="text-base text-neutral-600">Learn how to review, shortlist, and communicate with applicants.</p>
                 </div>
 
                 {/* Content */}
@@ -26,7 +26,7 @@ export default function CandidatesSupportPage() {
 
                     {/* Section 1 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6">Processing Applications</h2>
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6">Processing Applications</h2>
                         <div className="grid md:grid-cols-3 gap-6">
 
                             {/* Viewing */}
@@ -67,7 +67,7 @@ export default function CandidatesSupportPage() {
 
                     {/* Section 2 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             <MessageSquare className="w-6 h-6 text-sky-600" />
                             Messaging Candidates
                         </h2>

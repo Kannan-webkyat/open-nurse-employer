@@ -17,8 +17,8 @@ export default function TechnicalSupportPage() {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Help Center
                     </Link>
-                    <h1 className="text-3xl font-bold text-neutral-900">Technical Support</h1>
-                    <p className="text-lg text-neutral-600">Solutions for common technical issues and platform errors.</p>
+                    <h1 className="text-2xl font-bold text-neutral-900">Technical Support</h1>
+                    <p className="text-base text-neutral-600">Solutions for common technical issues and platform errors.</p>
                 </div>
 
                 {/* Content */}
@@ -26,7 +26,7 @@ export default function TechnicalSupportPage() {
 
                     {/* Section 1 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             <MonitorX className="w-6 h-6 text-red-500" />
                             Common Issues & Fixes
                         </h2>
@@ -62,7 +62,7 @@ export default function TechnicalSupportPage() {
 
                     {/* Section 2 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-4 flex items-center gap-3">
                             <WifiOff className="w-6 h-6 text-neutral-600" />
                             Browser Compatibility
                         </h2>
@@ -84,7 +84,7 @@ export default function TechnicalSupportPage() {
 
                     {/* Section 3 */}
                     <section className="bg-white rounded-2xl border border-neutral-200 p-8 shadow-sm">
-                        <h2 className="text-2xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
+                        <h2 className="text-xl font-bold text-neutral-900 mb-6 flex items-center gap-3">
                             <HelpCircle className="w-6 h-6 text-sky-600" />
                             Still need help?
                         </h2>
