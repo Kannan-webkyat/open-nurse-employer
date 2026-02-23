@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { DashboardLayout } from "@/components/dashboard/layout"
-import { Search, User, Paperclip, Send, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Image as ImageIcon, Link as LinkIcon, MessageSquare, File, Download, XCircle, Check, CheckCheck } from "lucide-react"
+import { Search, User, Paperclip, Send, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Image as ImageIcon, Link as LinkIcon, MessageSquare, File, Download, XCircle, Check, CheckCheck, ArrowLeft } from "lucide-react"
 import { useEcho } from "@/components/providers/echo-provider"
 import apiMiddleware, { chatApi } from "@/lib/api"
 import { useMessages } from "@/components/providers/message-provider"
@@ -136,18 +136,18 @@ export default function MessagesPage() {
     if (!userId) return
 
     console.log('MessagesPage: Setting up window event listener');
-    
+
     const handleMessageSent = (event: any) => {
       const e = event.detail as { message: ChatMessage, conversation_id: number };
       console.log('MessagesPage: Received messageSentEvent', e);
-      
+
       setConversations(prev => {
         const updated = prev.map(c => {
           if (c.id === e.message.conversation_id) {
             const isFromUs = e.message.sender_id === userId
             const isOpen = selectedConversationIdRef.current === c.id
             const increment = (!isFromUs && !isOpen) ? 1 : 0
-            
+
             console.log(`MessagesPage: Updating conv ${c.id}: isFromUs=${isFromUs}, isOpen=${isOpen}, increment=${increment}`);
 
             return {
@@ -368,7 +368,7 @@ export default function MessagesPage() {
       <div className="flex flex-col h-[calc(100vh-140px)] overflow-hidden bg-white">
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <div className="w-80 md:w-96 flex flex-col border-r border-neutral-200 bg-white z-10">
+          <div className={`w-full md:w-96 shrink-0 flex-col border-r border-neutral-200 bg-white z-10 ${selectedConversation ? 'hidden md:flex' : 'flex'}`}>
             {/* Sidebar Header */}
             <div className="p-4 border-b border-neutral-100">
               <div className="flex items-center justify-between mb-4">
@@ -481,12 +481,18 @@ export default function MessagesPage() {
           </div>
 
           {/* Main Chat Area */}
-          <div className="flex-1 flex flex-col min-w-0 bg-white">
+          <div className={`flex-1 flex-col min-w-0 bg-white ${!selectedConversation ? 'hidden md:flex' : 'flex'}`}>
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="h-[73px] px-6 border-b border-neutral-200 bg-white/80 backdrop-blur-xl sticky top-0 z-10 flex items-center justify-between">
+                <div className="h-[73px] px-4 md:px-6 border-b border-neutral-200 bg-white/80 backdrop-blur-xl sticky top-0 z-10 flex items-center justify-between">
                   <div className="flex items-center gap-3">
+                    <button
+                      className="md:hidden p-2 -ml-2 text-neutral-500 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all"
+                      onClick={() => setSelectedConversation(null)}
+                    >
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
                     <div className="relative">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-sm">
                         {getOtherPartyName(selectedConversation).charAt(0)}
