@@ -435,13 +435,13 @@ export default function BillingPage() {
 
         {/* Current Subscription */}
         <div className="bg-white rounded-lg border border-neutral-200">
-          <div className="flex items-center justify-between border-b border-neutral-200 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 p-6 gap-4 sm:gap-0">
             <h2 className="text-lg font-semibold text-neutral-900">Current Subscription</h2>
-            <Badge variant={currentSubscription?.status === 'active' ? 'active' : 'default'}>
+            <Badge variant={currentSubscription?.status === 'active' ? 'active' : 'default'} className="w-fit">
               {currentSubscription?.status ? currentSubscription.status.charAt(0).toUpperCase() + currentSubscription.status.slice(1) : 'Inactive'}
             </Badge>
           </div>
-          <div className="grid grid-cols-3 gap-6 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div>
               <p className="text-sm text-neutral-600 mb-1">Plan</p>
               <div className="flex items-center gap-2">
@@ -468,10 +468,10 @@ export default function BillingPage() {
 
         {/* Payment Method */}
         <div className="bg-white rounded-lg border border-neutral-200">
-          <div className="flex items-center justify-between border-b border-neutral-200 p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 p-6 gap-4 sm:gap-0">
             <h2 className="text-lg font-semibold text-neutral-900">Payment Method</h2>
             <Button
-              className="text-white bg-neutral-950 hover:bg-neutral-900"
+              className="text-white bg-neutral-950 hover:bg-neutral-900 w-full sm:w-auto"
               onClick={() => setIsAddPaymentModalOpen(true)}
             >
               Add Payment Method
@@ -481,35 +481,37 @@ export default function BillingPage() {
             {paymentMethodsList.map((method) => (
               <div
                 key={method.id}
-                className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer border border-neutral-100"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-neutral-50 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer border border-neutral-100 gap-4 sm:gap-0"
                 onClick={() => handleViewPaymentMethod(method)}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
                   {method.type === "bank" ? (
-                    <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-neutral-100">
+                    <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-neutral-100 shrink-0">
                       <Image src="/bank-transfer.svg" alt="Bank" width={24} height={24} className="object-contain" />
                     </div>
                   ) : method.type === "visa" ? (
-                    <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-neutral-100">
+                    <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-neutral-100 shrink-0">
                       <Image src="/visa.svg" alt="VISA" width={40} height={24} className="object-contain" />
                     </div>
                   ) : (
-                    <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-neutral-100">
+                    <div className="w-12 h-8 bg-white rounded flex items-center justify-center border border-neutral-100 shrink-0">
                       <Image src="/mastercard.svg" alt="Mastercard" width={40} height={24} className="object-contain" />
                     </div>
                   )}
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-neutral-900 truncate">
                       {method.type === "bank" ? "Bank Account" : `*** *** *** ${method.lastFour}`}
                     </p>
                     {method.type === "bank" && (
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-neutral-500 truncate">
                         Ending in {method.lastFour}
                       </p>
                     )}
                   </div>
+                </div>
+                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">
                   {method.isDefault ? (
-                    <Badge className="bg-yellow-100 text-yellow-600">
+                    <Badge className="bg-yellow-100 text-yellow-600 truncate">
                       Default Method
                     </Badge>
                   ) : (
@@ -521,13 +523,13 @@ export default function BillingPage() {
                         e.stopPropagation()
                         handleMarkAsDefault(method.id)
                       }}
-                      className="border-none text-neutral-400 bg-neutral-100 !rounded-full text-sm"
+                      className="border-none text-neutral-400 bg-neutral-100 !rounded-full text-sm truncate"
                     >
                       {markingDefaultId === method.id ? <Loader2 className="w-4 h-4 animate-spin text-neutral-500" /> : "Mark As Default"}
                     </Button>
                   )}
+                  <ChevronRight className="w-5 h-5 text-neutral-400 shrink-0" />
                 </div>
-                <ChevronRight className="w-5 h-5 text-neutral-400" />
               </div>
             ))}
           </div>
@@ -539,94 +541,96 @@ export default function BillingPage() {
         {/* Billing History */}
         <div className="bg-white rounded-lg border border-neutral-200 p-6">
           <h2 className="text-lg font-semibold text-neutral-900 mb-6">Billing History</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px] whitespace-nowrap">Sl.No</TableHead>
-                <TableHead className="w-[180px]">Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Invoice</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {transactions && transactions.length > 0 ? (
-                transactions.map((txn, index) => (
-                  <TableRow key={`${txn.id}-${index}`}>
-                    <TableCell className="text-neutral-500 font-mono text-xs">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell className="text-neutral-800 font-medium">
-                      {new Date(txn.paid_at || txn.created_at).toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-neutral-900 font-medium">
-                          {txn.description || (txn.type === 'subscription' ? 'Subscription' : 'Payment')}
-                        </span>
-                        <span className="text-xs text-neutral-500 font-mono mt-0.5">
-                          ID: {txn.invoice_number || (txn.invoice_id ? txn.invoice_id.substring(0, 14) + '...' : txn.id)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-neutral-800">
-                      {txn.currency?.toUpperCase() === 'GBP' ? '£' : (txn.currency === 'usd' ? '$' : txn.currency?.toUpperCase() + ' ')}
-                      {txn.amount}
-                    </TableCell>
-                    <TableCell>
-                      {txn.status === "paid" || txn.status === "active" ? (
-                        <Badge variant="default" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 shadow-none font-normal">
-                          Paid
-                        </Badge>
-                      ) : txn.status === "pending" || txn.status === "incomplete" ? (
-                        <Badge variant="default" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200 shadow-none font-normal">
-                          Pending
-                        </Badge>
-                      ) : txn.status === "failed" || txn.status === "canceled" || txn.status === "rejected" ? (
-                        <Badge variant="default" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200 shadow-none font-normal">
-                          {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
-                        </Badge>
-                      ) : (
-                        <Badge variant="default" className="font-normal text-neutral-500 bg-transparent border border-neutral-200 shadow-none hover:bg-neutral-50">
-                          {txn.status}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`h-9 w-9 p-0 rounded-full transition-all duration-200 ${['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())
-                          ? "bg-gradient-to-b from-white to-slate-50 border border-slate-200 text-slate-600 shadow-sm hover:from-blue-50 hover:to-white hover:text-blue-600 hover:border-blue-300 hover:shadow-md"
-                          : "text-gray-300 cursor-not-allowed bg-transparent"
-                          }`}
-                        onClick={() => handleDownloadInvoice(txn.id)}
-                        disabled={downloadingId === txn.id || !['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())}
-                        title={['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase()) ? "Download Invoice" : "Invoice unavailable"}
-                      >
-                        {downloadingId === txn.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+          <div className="overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[80px] whitespace-nowrap">Sl.No</TableHead>
+                  <TableHead className="w-[180px]">Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Invoice</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions && transactions.length > 0 ? (
+                  transactions.map((txn, index) => (
+                    <TableRow key={`${txn.id}-${index}`}>
+                      <TableCell className="text-neutral-500 font-mono text-xs">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="text-neutral-800 font-medium">
+                        {new Date(txn.paid_at || txn.created_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="text-neutral-900 font-medium">
+                            {txn.description || (txn.type === 'subscription' ? 'Subscription' : 'Payment')}
+                          </span>
+                          <span className="text-xs text-neutral-500 font-mono mt-0.5">
+                            ID: {txn.invoice_number || (txn.invoice_id ? txn.invoice_id.substring(0, 14) + '...' : txn.id)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-neutral-800">
+                        {txn.currency?.toUpperCase() === 'GBP' ? '£' : (txn.currency === 'usd' ? '$' : txn.currency?.toUpperCase() + ' ')}
+                        {txn.amount}
+                      </TableCell>
+                      <TableCell>
+                        {txn.status === "paid" || txn.status === "active" ? (
+                          <Badge variant="default" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 shadow-none font-normal">
+                            Paid
+                          </Badge>
+                        ) : txn.status === "pending" || txn.status === "incomplete" ? (
+                          <Badge variant="default" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200 shadow-none font-normal">
+                            Pending
+                          </Badge>
+                        ) : txn.status === "failed" || txn.status === "canceled" || txn.status === "rejected" ? (
+                          <Badge variant="default" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200 shadow-none font-normal">
+                            {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
+                          </Badge>
                         ) : (
-                          <Download className="w-4 h-4" />
+                          <Badge variant="default" className="font-normal text-neutral-500 bg-transparent border border-neutral-200 shadow-none hover:bg-neutral-50">
+                            {txn.status}
+                          </Badge>
                         )}
-                      </Button>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-9 w-9 p-0 rounded-full transition-all duration-200 ${['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())
+                            ? "bg-gradient-to-b from-white to-slate-50 border border-slate-200 text-slate-600 shadow-sm hover:from-blue-50 hover:to-white hover:text-blue-600 hover:border-blue-300 hover:shadow-md"
+                            : "text-gray-300 cursor-not-allowed bg-transparent"
+                            }`}
+                          onClick={() => handleDownloadInvoice(txn.id)}
+                          disabled={downloadingId === txn.id || !['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())}
+                          title={['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase()) ? "Download Invoice" : "Invoice unavailable"}
+                        >
+                          {downloadingId === txn.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                          ) : (
+                            <Download className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                      No billing history found.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
-                    No billing history found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         {/* Add Payment Method Modal */}
