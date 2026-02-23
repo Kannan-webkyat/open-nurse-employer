@@ -165,7 +165,8 @@ const DashboardPage = () => {
             subValue: `${data.stats.active_jobs} Active`,
             icon: Briefcase,
             color: "sky",
-            description: "All time postings"
+            description: "All time postings",
+            link: "/jobs"
         },
         {
             title: "Total Applications",
@@ -173,7 +174,8 @@ const DashboardPage = () => {
             subValue: `${data.stats.new_candidates} New`,
             icon: Users,
             color: "emerald",
-            description: "Candidates applied"
+            description: "Candidates applied",
+            link: "/candidates"
         },
         {
             title: "Interviews",
@@ -181,7 +183,8 @@ const DashboardPage = () => {
             subValue: "Scheduled",
             icon: Calendar,
             color: "sky",
-            description: "Upcoming sessions"
+            description: "Upcoming sessions",
+            link: "/candidates"
         },
         {
             title: "Hired Candidates",
@@ -189,7 +192,8 @@ const DashboardPage = () => {
             subValue: "Filled positions",
             icon: CheckCircle,
             color: "amber",
-            description: "Successfully hired"
+            description: "Successfully hired",
+            link: "/candidates"
         }
     ]
 
@@ -249,41 +253,41 @@ const DashboardPage = () => {
 
             {/* Premium Background Elements */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <motion.div 
-                    animate={{ 
+                <motion.div
+                    animate={{
                         scale: [1, 1.2, 1],
-                        opacity: [0.1, 0.2, 0.1] 
+                        opacity: [0.1, 0.2, 0.1]
                     }}
                     transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-emerald-200 blur-[100px]" 
+                    className="absolute top-[-10%] right-[-5%] w-[40%] h-[40%] rounded-full bg-emerald-200 blur-[100px]"
                 />
-                <motion.div 
-                    animate={{ 
+                <motion.div
+                    animate={{
                         scale: [1, 1.3, 1],
-                        opacity: [0.1, 0.2, 0.1] 
+                        opacity: [0.1, 0.2, 0.1]
                     }}
                     transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                    className="absolute top-[20%] left-[-10%] w-[30%] h-[30%] rounded-full bg-sky-200 blur-[100px]" 
+                    className="absolute top-[20%] left-[-10%] w-[30%] h-[30%] rounded-full bg-sky-200 blur-[100px]"
                 />
-                <motion.div 
-                    animate={{ 
+                <motion.div
+                    animate={{
                         scale: [1, 1.1, 1],
-                        opacity: [0.1, 0.2, 0.1] 
+                        opacity: [0.1, 0.2, 0.1]
                     }}
                     transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                    className="absolute bottom-[-10%] right-[10%] w-[30%] h-[30%] rounded-full bg-indigo-100 blur-[100px]" 
+                    className="absolute bottom-[-10%] right-[10%] w-[30%] h-[30%] rounded-full bg-indigo-100 blur-[100px]"
                 />
             </div>
 
             {/* Compact Kleon Layout */}
-            <motion.div 
+            <motion.div
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
                 className="space-y-6 animate-in fade-in duration-500 max-w-[1800px] mx-auto p-4 md:p-6 text-neutral-800 relative z-10"
             >
                 {/* Hero Welcome Section */}
-                <motion.div 
+                <motion.div
                     variants={itemVariants}
                     className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 p-4 md:p-5 shadow-xl text-white mb-6 group"
                 >
@@ -296,7 +300,7 @@ const DashboardPage = () => {
                         </motion.div>
                     </div>
                     <div className="relative z-10">
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.8, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 0.5, delay: 0.5 }}
@@ -305,7 +309,7 @@ const DashboardPage = () => {
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             Portal Active
                         </motion.div>
-                        <motion.h1 
+                        <motion.h1
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.7, delay: 0.6 }}
@@ -313,48 +317,48 @@ const DashboardPage = () => {
                         >
                             Welcome back, {data.company_name || 'Employer'}
                         </motion.h1>
-                        <motion.p 
+                        <motion.p
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.7, delay: 0.7 }}
                             className="text-sky-100 max-w-lg text-[10px] md:text-xs leading-relaxed"
                         >
                             Here's your hiring overview. You have <span className="font-bold text-white underline decoration-white/30 underline-offset-4">{data.stats?.new_candidates || 0} new candidates</span> to review {
-                                selectedRange === 'Today' ? 'today' : 
-                                selectedRange === 'Last 30 Days' ? 'this month' : 
-                                selectedRange === 'Last Year' ? 'this year' : 
-                                'this week'
+                                selectedRange === 'Today' ? 'today' :
+                                    selectedRange === 'Last 30 Days' ? 'this month' :
+                                        selectedRange === 'Last Year' ? 'this year' :
+                                            'this week'
                             }.
                         </motion.p>
                     </div>
                 </motion.div>
                 {/* Header - Compact */}
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <motion.div variants={itemVariants}>
                         <h2 className="text-xl font-bold text-neutral-900">Analytics Overview</h2>
                         <p className="text-neutral-500 text-sm mt-0.5">Key performance metrics for the last 30 days.</p>
                     </motion.div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-3">
 
                         {/* Search Bar - Compact */}
-                        <motion.div variants={itemVariants} className="hidden md:block relative">
+                        <motion.div variants={itemVariants} className="relative w-full sm:w-auto">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4 z-10" />
                             <Input
                                 type="text"
                                 placeholder="Search..."
-                                className="pl-10 w-56 h-10 rounded-lg bg-white shadow-sm border-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-sky-500/20 transition-all"
+                                className="pl-10 w-full sm:w-56 h-10 rounded-lg bg-white shadow-sm border-neutral-100 placeholder:text-neutral-400 focus:ring-2 focus:ring-sky-500/20 transition-all text-sm"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </motion.div>
 
-                        <div className="relative z-20">
+                        <div className="relative z-20 w-full sm:w-auto">
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setIsDateMenuOpen(!isDateMenuOpen)}
-                                className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-neutral-50 text-neutral-600 border border-neutral-100 shadow-sm rounded-xl text-xs font-bold transition-all h-10"
+                                className="flex items-center justify-center sm:justify-start gap-2 px-3 py-2 bg-white hover:bg-neutral-50 text-neutral-600 border border-neutral-100 shadow-sm rounded-xl text-xs font-bold transition-all h-10 whitespace-nowrap w-full sm:w-auto cursor-pointer"
                             >
                                 <Calendar className="w-3.5 h-3.5 text-sky-500" />
                                 {selectedRange}
@@ -362,12 +366,12 @@ const DashboardPage = () => {
 
                             <AnimatePresence>
                                 {isDateMenuOpen && (
-                                    <motion.div 
+                                    <motion.div
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                         transition={{ duration: 0.2 }}
-                                        className="absolute right-0 top-12 w-48 bg-white rounded-xl shadow-xl border border-neutral-100 p-1 z-50"
+                                        className="absolute left-0 sm:left-auto sm:right-0 top-12 w-full sm:w-48 bg-white rounded-xl shadow-xl border border-neutral-100 p-1 z-50 origin-top"
                                     >
                                         {['Today', 'Last 7 Days', 'Last 30 Days', 'Last Year'].map((range) => (
                                             <button
@@ -389,9 +393,9 @@ const DashboardPage = () => {
                             </AnimatePresence>
                         </div>
 
-                        <Link href="/jobs">
-                            <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                <Button className="h-10 px-4 bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/20 border-0 font-bold text-xs rounded-full">
+                        <Link href="/jobs" className="w-full sm:w-auto">
+                            <motion.div variants={itemVariants} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
+                                <Button className="h-10 px-4 bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-600/20 border-0 font-bold text-xs rounded-full whitespace-nowrap w-full sm:w-auto">
                                     <Plus className="w-4 h-4 mr-1.5" /> Post Job
                                 </Button>
                             </motion.div>
@@ -432,30 +436,34 @@ const DashboardPage = () => {
                         const variant = colorVariants[stat.color] || colorVariants.sky;
 
                         return (
-                            <motion.div 
-                                key={index} 
-                                variants={itemVariants}
-                                whileHover={cardHover}
-                                className="bg-white p-5 rounded-3xl shadow-sm border border-neutral-50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group cursor-default relative overflow-hidden"
-                            >                                {/* Gradient Background on Hover */}
-                                <div className={`absolute inset-0 bg-gradient-to-br ${variant.gradient} to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                            <Link href={stat.link} key={index} className="block group">
+                                <motion.div
+                                    variants={itemVariants}
+                                    whileHover={cardHover}
+                                    className="bg-white p-5 rounded-3xl shadow-sm border border-neutral-50 group-hover:shadow-xl group-hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden h-full"
+                                >                                {/* Gradient Background on Hover */}
+                                    <div className={`absolute inset-0 bg-gradient-to-br ${variant.gradient} to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-500`}></div>
 
-                                <div className="flex justify-between items-start relative z-10">
-                                    <div>
-                                        <p className={`text-neutral-500 font-bold text-[10px] uppercase tracking-wider mb-1 ${variant.textHover} transition-colors`}>{stat.title}</p>
-                                        <h3 className="text-2xl font-black text-neutral-900 tracking-tight group-hover:scale-105 transition-transform origin-left">{stat.value}</h3>
+                                    <div className="flex justify-between items-start relative z-10">
+                                        <div>
+                                            <p className={`text-neutral-500 font-bold text-[10px] uppercase tracking-wider mb-1 ${variant.textHover} transition-colors`}>{stat.title}</p>
+                                            <h3 className="text-2xl font-black text-neutral-900 tracking-tight group-hover:scale-105 transition-transform origin-left">{stat.value}</h3>
+                                        </div>
+                                        <div className={`p-2.5 rounded-2xl transition-all duration-300 shadow-sm group-hover:rotate-6 ${variant.iconWrapper} ${variant.bgHover}`}>
+                                            <stat.icon className="w-5 h-5" />
+                                        </div>
                                     </div>
-                                    <div className={`p-2.5 rounded-2xl transition-all duration-300 shadow-sm group-hover:rotate-6 ${variant.iconWrapper} ${variant.bgHover}`}>
-                                        <stat.icon className="w-5 h-5" />
+                                    <div className="mt-4 flex items-center gap-2 relative z-10">
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg group-hover:bg-white/80 transition-colors ${variant.subBadge}`}>
+                                            {stat.subValue}
+                                        </span>
+                                        <span className="text-[10px] text-neutral-400 font-medium">{stat.description}</span>
                                     </div>
-                                </div>
-                                <div className="mt-4 flex items-center gap-2 relative z-10">
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-lg group-hover:bg-white/80 transition-colors ${variant.subBadge}`}>
-                                        {stat.subValue}
-                                    </span>
-                                    <span className="text-[10px] text-neutral-400 font-medium">{stat.description}</span>
-                                </div>
-                            </motion.div>
+                                    <h4 className="absolute z-[-1] opacity-0 group-hover:opacity-10 right-4 top-1/2 -translate-y-1/2 text-8xl transition-all duration-500 scale-50 group-hover:scale-100 group-hover:-translate-x-4">
+                                        <stat.icon className={`text-${stat.color}-900`} />
+                                    </h4>
+                                </motion.div>
+                            </Link>
                         );
                     })}
                 </div>
@@ -466,181 +474,181 @@ const DashboardPage = () => {
                     {/* Left Column (8/12) - Charts Area */}
                     <div className="lg:col-span-8 space-y-5">
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                {/* Job Status Distribution - Warmer Dark Theme */}
-                                <motion.div 
-                                    variants={itemVariants}
-                                    whileHover={cardHover}
-                                    className="bg-neutral-900 rounded-3xl p-6 shadow-xl shadow-black/20 border border-white/10 relative overflow-hidden group backdrop-blur-3xl"
-                                >
-                                    {/* Warmer Base Glow */}
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(251,191,36,0.05),transparent)]" />
-                                    
-                                    {/* High-Tech Background Pattern - Status Unique */}
-                                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover/status:opacity-[0.06] transition-opacity duration-700">
-                                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                            <defs>
-                                                <pattern id="grid-status-final" width="20" height="20" patternUnits="userSpaceOnUse">
-                                                    <circle cx="1" cy="1" r="0.5" fill="white" />
-                                                </pattern>
-                                            </defs>
-                                            <rect width="100" height="100" fill="url(#grid-status-final)" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {/* Job Status Distribution - Warmer Dark Theme */}
+                            <motion.div
+                                variants={itemVariants}
+                                whileHover={cardHover}
+                                className="bg-neutral-900 rounded-3xl p-6 shadow-xl shadow-black/20 border border-white/10 relative overflow-hidden group backdrop-blur-3xl"
+                            >
+                                {/* Warmer Base Glow */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(251,191,36,0.05),transparent)]" />
+
+                                {/* High-Tech Background Pattern - Status Unique */}
+                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none group-hover/status:opacity-[0.06] transition-opacity duration-700">
+                                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        <defs>
+                                            <pattern id="grid-status-final" width="20" height="20" patternUnits="userSpaceOnUse">
+                                                <circle cx="1" cy="1" r="0.5" fill="white" />
+                                            </pattern>
+                                        </defs>
+                                        <rect width="100" height="100" fill="url(#grid-status-final)" />
+                                    </svg>
+                                </div>
+
+                                {/* Topographic Lines Layer */}
+                                <div className="absolute inset-0 opacity-[0.04] pointer-events-none group-hover/status:opacity-[0.08] transition-opacity duration-1000">
+                                    <svg className="w-full h-full" viewBox="0 0 100 100">
+                                        <path d="M-10,40 Q20,20 40,40 T90,40 T140,40" fill="none" stroke="white" strokeWidth="0.3" className="animate-pulse" />
+                                        <path d="M-10,60 Q25,50 45,70 T85,50 T125,70" fill="none" stroke="white" strokeWidth="0.3" style={{ animationDelay: '1.5s' }} className="animate-pulse" />
+                                    </svg>
+                                </div>
+
+                                {/* Decorative Glows */}
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] group-hover/status:bg-emerald-500/20 transition-all duration-700" />
+                                <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] group-hover/status:bg-amber-500/10 transition-all duration-700" />
+
+                                <div className="flex justify-between items-start mb-6 relative z-10">
+                                    <div>
+                                        <h3 className="text-lg font-black text-white tracking-tight">Job Status</h3>
+                                        <p className="text-xs text-neutral-400 font-medium mt-1">Hiring funnel distribution</p>
+                                    </div>
+                                    <div className="bg-white/10 p-2 rounded-xl text-white backdrop-blur-md group-hover/status:bg-white/20 transition-all duration-300 group-hover/status:scale-110">
+                                        <Briefcase className="w-5 h-5" />
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row items-center gap-8 relative z-10">
+                                    {/* Donut Chart */}
+                                    <div className="relative w-32 h-32 flex-shrink-0">
+                                        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                                            {(() => {
+                                                const stats = {
+                                                    active: data.stats.active_jobs || 0,
+                                                    closed: data.stats.closed_jobs || 0,
+                                                    total: data.stats.total_jobs || 1
+                                                };
+                                                const total = stats.total;
+                                                let currentOffset = 0;
+
+                                                const segments = [
+                                                    { key: 'active', value: stats.active, color: '#10B981' },
+                                                    { key: 'closed', value: stats.closed, color: '#94A3B8' },
+                                                ];
+
+                                                return segments.map((seg, i) => {
+                                                    if (seg.value === 0) return null;
+                                                    const circumference = 2 * Math.PI * 40;
+                                                    const dashArray = (seg.value / total) * circumference;
+                                                    const offset = currentOffset;
+                                                    currentOffset -= dashArray;
+
+                                                    return (
+                                                        <motion.circle
+                                                            key={i}
+                                                            cx="50"
+                                                            cy="50"
+                                                            r="40"
+                                                            fill="transparent"
+                                                            stroke={seg.color}
+                                                            strokeWidth="12"
+                                                            strokeDasharray={`${dashArray} ${circumference}`}
+                                                            strokeDashoffset={offset}
+                                                            strokeLinecap="round"
+                                                            initial={{ pathLength: 0, opacity: 0 }}
+                                                            whileInView={{ pathLength: 1, opacity: 1 }}
+                                                            viewport={{ once: true }}
+                                                            transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 + i * 0.1 }}
+                                                            className="transition-all duration-300 hover:stroke-[14px] cursor-pointer"
+                                                        />
+                                                    );
+                                                });
+                                            })()}
                                         </svg>
-                                    </div>
-
-                                    {/* Topographic Lines Layer */}
-                                    <div className="absolute inset-0 opacity-[0.04] pointer-events-none group-hover/status:opacity-[0.08] transition-opacity duration-1000">
-                                        <svg className="w-full h-full" viewBox="0 0 100 100">
-                                            <path d="M-10,40 Q20,20 40,40 T90,40 T140,40" fill="none" stroke="white" strokeWidth="0.3" className="animate-pulse" />
-                                            <path d="M-10,60 Q25,50 45,70 T85,50 T125,70" fill="none" stroke="white" strokeWidth="0.3" style={{ animationDelay: '1.5s' }} className="animate-pulse" />
-                                        </svg>
-                                    </div>
-
-                                    {/* Decorative Glows */}
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] group-hover/status:bg-emerald-500/20 transition-all duration-700" />
-                                    <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] group-hover/status:bg-amber-500/10 transition-all duration-700" />
-                                    
-                                    <div className="flex justify-between items-start mb-6 relative z-10">
-                                        <div>
-                                            <h3 className="text-lg font-black text-white tracking-tight">Job Status</h3>
-                                            <p className="text-xs text-neutral-400 font-medium mt-1">Hiring funnel distribution</p>
-                                        </div>
-                                        <div className="bg-white/10 p-2 rounded-xl text-white backdrop-blur-md group-hover/status:bg-white/20 transition-all duration-300 group-hover/status:scale-110">
-                                            <Briefcase className="w-5 h-5" />
+                                        <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                                            <span className="text-2xl font-black text-white">{data.stats.total_jobs || 0}</span>
+                                            <span className="text-[10px] uppercase font-bold text-neutral-500">Jobs</span>
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col sm:flex-row items-center gap-8 relative z-10">
-                                        {/* Donut Chart */}
-                                        <div className="relative w-32 h-32 flex-shrink-0">
-                                            <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                                                {(() => {
-                                                    const stats = {
-                                                        active: data.stats.active_jobs || 0,
-                                                        closed: data.stats.closed_jobs || 0,
-                                                        total: data.stats.total_jobs || 1
-                                                    };
-                                                    const total = stats.total;
-                                                    let currentOffset = 0;
-                                                    
-                                                    const segments = [
-                                                        { key: 'active', value: stats.active, color: '#10B981' }, 
-                                                        { key: 'closed', value: stats.closed, color: '#94A3B8' },   
-                                                    ];
-
-                                                    return segments.map((seg, i) => {
-                                                        if (seg.value === 0) return null;
-                                                        const circumference = 2 * Math.PI * 40; 
-                                                        const dashArray = (seg.value / total) * circumference;
-                                                        const offset = currentOffset;
-                                                        currentOffset -= dashArray;
-                                                        
-                                                        return (
-                                                            <motion.circle
-                                                                key={i}
-                                                                cx="50"
-                                                                cy="50"
-                                                                r="40"
-                                                                fill="transparent"
-                                                                stroke={seg.color}
-                                                                strokeWidth="12"
-                                                                strokeDasharray={`${dashArray} ${circumference}`}
-                                                                strokeDashoffset={offset}
-                                                                strokeLinecap="round"
-                                                                initial={{ pathLength: 0, opacity: 0 }}
-                                                                whileInView={{ pathLength: 1, opacity: 1 }}
-                                                                viewport={{ once: true }}
-                                                                transition={{ duration: 1.5, ease: "easeInOut", delay: 0.5 + i * 0.1 }}
-                                                                className="transition-all duration-300 hover:stroke-[14px] cursor-pointer"
-                                                            />
-                                                        );
-                                                    });
-                                                })()}
-                                            </svg>
-                                            <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                                                <span className="text-2xl font-black text-white">{data.stats.total_jobs || 0}</span>
-                                                <span className="text-[10px] uppercase font-bold text-neutral-500">Jobs</span>
+                                    <div className="flex-1 w-full space-y-3">
+                                        {[
+                                            { label: 'Active Positions', value: data.stats.active_jobs, color: 'bg-emerald-500' },
+                                            { label: 'Closed/Drafts', value: data.stats.total_jobs - data.stats.active_jobs, color: 'bg-slate-400' }
+                                        ].map((item, i) => (
+                                            <div key={i} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2.5 h-2.5 rounded-full ${item.color}`}></div>
+                                                    <span className="text-xs font-bold text-neutral-300">{item.label}</span>
+                                                </div>
+                                                <span className="text-xs font-black text-white">{item.value || 0}</span>
+                                            </div>
+                                        ))}
+                                        <div className="pt-2 border-t border-white/10 mt-2">
+                                            <div className="flex justify-between items-center bg-white/5 p-2 rounded-xl">
+                                                <span className="text-[10px] font-bold text-indigo-300">Conversion</span>
+                                                <span className="text-xs font-black text-white">{Math.round((data.stats.hired_candidates / Math.max(data.stats.total_applications, 1)) * 100)}%</span>
                                             </div>
                                         </div>
-
-                                        <div className="flex-1 w-full space-y-3">
-                                            {[
-                                                { label: 'Active Positions', value: data.stats.active_jobs, color: 'bg-emerald-500' },
-                                                { label: 'Closed/Drafts', value: data.stats.total_jobs - data.stats.active_jobs, color: 'bg-slate-400' }
-                                            ].map((item, i) => (
-                                                <div key={i} className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-2.5 h-2.5 rounded-full ${item.color}`}></div>
-                                                        <span className="text-xs font-bold text-neutral-300">{item.label}</span>
-                                                    </div>
-                                                    <span className="text-xs font-black text-white">{item.value || 0}</span>
-                                                </div>
-                                            ))}
-                                            <div className="pt-2 border-t border-white/10 mt-2">
-                                                <div className="flex justify-between items-center bg-white/5 p-2 rounded-xl">
-                                                    <span className="text-[10px] font-bold text-indigo-300">Conversion</span>
-                                                    <span className="text-xs font-black text-white">{Math.round((data.stats.hired_candidates / Math.max(data.stats.total_applications, 1)) * 100)}%</span>
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
-                                </motion.div>
+                                </div>
+                            </motion.div>
 
-                                {/* Application Pipeline - Deep Indigo Theme */}
-                                <motion.div 
-                                    variants={itemVariants}
-                                    whileHover={cardHover}
-                                    className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 shadow-xl shadow-black/40 border border-white/5 relative overflow-hidden group/pipeline backdrop-blur-3xl"
-                                >
-                                    {/* Nebula Mesh Background */}
-                                    <div className="absolute inset-0 bg-slate-950 overflow-hidden">
-                                        <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
-                                        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-violet-600/20 rounded-full blur-[120px]" style={{ animationDelay: '2s' }} />
-                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
+                            {/* Application Pipeline - Deep Indigo Theme */}
+                            <motion.div
+                                variants={itemVariants}
+                                whileHover={cardHover}
+                                className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 shadow-xl shadow-black/40 border border-white/5 relative overflow-hidden group/pipeline backdrop-blur-3xl"
+                            >
+                                {/* Nebula Mesh Background */}
+                                <div className="absolute inset-0 bg-slate-950 overflow-hidden">
+                                    <div className="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
+                                    <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-violet-600/20 rounded-full blur-[120px]" style={{ animationDelay: '2s' }} />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
+                                </div>
+
+                                {/* High-Detail Micro-Grid */}
+                                <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay">
+                                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        <defs>
+                                            <pattern id="micro-grid-pipeline" width="4" height="4" patternUnits="userSpaceOnUse">
+                                                <circle cx="0.5" cy="0.5" r="0.2" fill="white" />
+                                            </pattern>
+                                        </defs>
+                                        <rect width="100" height="100" fill="url(#micro-grid-pipeline)" />
+                                    </svg>
+                                </div>
+
+                                {/* Glass Surface Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none opacity-50" />
+                                <div className="absolute inset-0 backdrop-blur-[2px]" />
+
+                                <div className="flex justify-between items-start mb-6 relative z-10">
+                                    <div>
+                                        <h3 className="text-lg font-black text-white tracking-tight">Application Pipeline</h3>
+                                        <p className="text-xs text-emerald-200 font-medium mt-1">Conversion funnel stages</p>
                                     </div>
-
-                                    {/* High-Detail Micro-Grid */}
-                                    <div className="absolute inset-0 opacity-[0.15] pointer-events-none mix-blend-overlay">
-                                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                            <defs>
-                                                <pattern id="micro-grid-pipeline" width="4" height="4" patternUnits="userSpaceOnUse">
-                                                    <circle cx="0.5" cy="0.5" r="0.2" fill="white" />
-                                                </pattern>
-                                            </defs>
-                                            <rect width="100" height="100" fill="url(#micro-grid-pipeline)" />
-                                        </svg>
+                                    <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl text-white transition-transform duration-700 group-hover/pipeline:rotate-[360deg] relative z-20 overflow-hidden">
+                                        <TrendingUp className="w-5 h-5 relative z-10" />
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-sky-400/20 to-transparent opacity-0 group-hover/pipeline:opacity-100 transition-opacity" />
                                     </div>
+                                </div>
 
-                                    {/* Glass Surface Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none opacity-50" />
-                                    <div className="absolute inset-0 backdrop-blur-[2px]" />
-
-                                    <div className="flex justify-between items-start mb-6 relative z-10">
-                                        <div>
-                                            <h3 className="text-lg font-black text-white tracking-tight">Application Pipeline</h3>
-                                            <p className="text-xs text-emerald-200 font-medium mt-1">Conversion funnel stages</p>
-                                        </div>
-                                        <div className="bg-white/10 backdrop-blur-md p-2 rounded-xl text-white transition-transform duration-700 group-hover/pipeline:rotate-[360deg] relative z-20 overflow-hidden">
-                                            <TrendingUp className="w-5 h-5 relative z-10" />
-                                            <div className="absolute inset-0 bg-gradient-to-tr from-sky-400/20 to-transparent opacity-0 group-hover/pipeline:opacity-100 transition-opacity" />
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="space-y-4 relative z-10">
-                                        {(data.application_pipeline?.map((stage: any) => {
-                                            if (stage.name === 'Hired') return { ...stage, value: data.stats.hired_candidates ?? stage.value };
-                                            if (stage.name === 'Interviewing') return { ...stage, value: data.stats.interviews_scheduled ?? stage.value };
-                                            if (stage.name === 'New Applications') return { ...stage, value: data.stats.new_candidates ?? stage.value };
-                                            if (stage.name === 'Rejected') return { ...stage, value: data.stats.rejected_candidates ?? stage.value };
-                                            return stage;
-                                        }) || [
+                                <div className="space-y-4 relative z-10">
+                                    {(data.application_pipeline?.map((stage: any) => {
+                                        if (stage.name === 'Hired') return { ...stage, value: data.stats.hired_candidates ?? stage.value };
+                                        if (stage.name === 'Interviewing') return { ...stage, value: data.stats.interviews_scheduled ?? stage.value };
+                                        if (stage.name === 'New Applications') return { ...stage, value: data.stats.new_candidates ?? stage.value };
+                                        if (stage.name === 'Rejected') return { ...stage, value: data.stats.rejected_candidates ?? stage.value };
+                                        return stage;
+                                    }) || [
                                             { name: 'Candidates', value: data.stats.total_applications || 0, color: 'sky' },
                                             { name: 'Interviews', value: data.stats.interviews_scheduled || 0, color: 'violet' },
                                             { name: 'Hired', value: data.stats.hired_candidates || 0, color: 'emerald' }
                                         ]).map((stage: any, i: number) => {
                                             const max = Math.max(...(data.application_pipeline || []).map((s: any) => s.value), data.stats.total_applications || 1, 1);
                                             const percent = (stage.value / max) * 100;
-                                            
+
                                             return (
                                                 <div key={i} className="group/bar">
                                                     <div className="flex justify-between text-[10px] font-bold mb-1.5 uppercase tracking-wider">
@@ -648,19 +656,18 @@ const DashboardPage = () => {
                                                         <span className="text-white font-black">{stage.value}</span>
                                                     </div>
                                                     <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 shadow-inner p-[1px]">
-                                                        <motion.div 
+                                                        <motion.div
                                                             initial={{ width: 0 }}
                                                             whileInView={{ width: `${percent}%` }}
                                                             viewport={{ once: true }}
                                                             transition={{ duration: 1.5, ease: [0.34, 1.56, 0.64, 1], delay: i * 0.1 }}
-                                                            className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
-                                                            stage.color === 'sky' ? 'bg-gradient-to-r from-sky-400 to-sky-500' :
-                                                            stage.color === 'amber' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
-                                                            stage.color === 'violet' ? 'bg-gradient-to-r from-violet-400 to-violet-500' :
-                                                            stage.color === 'emerald' ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
-                                                            stage.color === 'rose' ? 'bg-gradient-to-r from-rose-400 to-rose-500' :
-                                                            'bg-gradient-to-r from-sky-400 to-sky-500'
-                                                            }`}
+                                                            className={`h-full rounded-full transition-all duration-1000 ease-out relative ${stage.color === 'sky' ? 'bg-gradient-to-r from-sky-400 to-sky-500' :
+                                                                stage.color === 'amber' ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                                                                    stage.color === 'violet' ? 'bg-gradient-to-r from-violet-400 to-violet-500' :
+                                                                        stage.color === 'emerald' ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' :
+                                                                            stage.color === 'rose' ? 'bg-gradient-to-r from-rose-400 to-rose-500' :
+                                                                                'bg-gradient-to-r from-sky-400 to-sky-500'
+                                                                }`}
                                                         >
                                                             <div className="absolute inset-0 bg-white/20 animate-pulse" />
                                                         </motion.div>
@@ -668,191 +675,191 @@ const DashboardPage = () => {
                                                 </div>
                                             )
                                         })}
-                                    </div>
-                                </motion.div>
-                            </div>
+                                </div>
+                            </motion.div>
+                        </div>
 
                         {/* Top Jobs - Redesigned Rich Rows */}
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             whileHover={cardHover}
                             className="bg-white rounded-3xl p-6 shadow-sm border border-neutral-50 hover:shadow-lg transition-shadow duration-300 flex flex-col relative overflow-hidden group"
                         >                                {/* Decorative Vector Background */}
-                                {/* Decorative Vector Background - Refined */}
-                                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                                    {/* Gradient - Radial Pattern - Amber/Gold Theme - Lighter */}
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-amber-100/30 via-orange-50/10 to-transparent"></div>
+                            {/* Decorative Vector Background - Refined */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                {/* Gradient - Radial Pattern - Amber/Gold Theme - Lighter */}
+                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-amber-100/30 via-orange-50/10 to-transparent"></div>
+                            </div>
+
+                            {/* Card Content - Z-Index to stay above background */}
+                            <div className="relative z-10 flex-1 flex flex-col">
+                                <div className="mb-6 flex justify-between items-end">
+                                    <div>
+                                        <h3 className="text-lg font-black text-neutral-900 tracking-tight">Top Jobs</h3>
+                                        <p className="text-xs text-neutral-400 font-medium mt-1">Most popular positions</p>
+                                    </div>
+                                    <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg px-2">
+                                        View All
+                                    </Button>
                                 </div>
 
-                                {/* Card Content - Z-Index to stay above background */}
-                                <div className="relative z-10 flex-1 flex flex-col">
-                                    <div className="mb-6 flex justify-between items-end">
-                                        <div>
-                                            <h3 className="text-lg font-black text-neutral-900 tracking-tight">Top Jobs</h3>
-                                            <p className="text-xs text-neutral-400 font-medium mt-1">Most popular positions</p>
-                                        </div>
-                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg px-2">
-                                            View All
-                                        </Button>
-                                    </div>
+                                <div className="space-y-3">
+                                    {[...data.recent_jobs]
+                                        .sort((a: any, b: any) => b.applications - a.applications)
+                                        .slice(0, 4)
+                                        .map((job: any, i: number) => {
+                                            // Calculate relative intensity
+                                            const maxApps = Math.max(...data.recent_jobs.map((j: any) => j.applications), 1);
+                                            const intensity = (job.applications / maxApps);
 
-                                    <div className="space-y-3">
-                                        {[...data.recent_jobs]
-                                            .sort((a: any, b: any) => b.applications - a.applications)
-                                            .slice(0, 4)
-                                            .map((job: any, i: number) => {
-                                                // Calculate relative intensity
-                                                const maxApps = Math.max(...data.recent_jobs.map((j: any) => j.applications), 1);
-                                                const intensity = (job.applications / maxApps);
-
-                                                return (
-                                                    <div key={i} className="group flex items-center justify-between p-3 rounded-2xl bg-white border border-neutral-100/80 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 cursor-pointer">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-300 shadow-sm ${i === 0 ? 'bg-amber-100 text-amber-600' :
-                                                                i === 1 ? 'bg-neutral-100 text-neutral-500' :
-                                                                    i === 2 ? 'bg-orange-50 text-orange-400' :
-                                                                        'bg-slate-50 text-slate-400'
-                                                                } group-hover:scale-110`}>
-                                                                {job.title.charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <h4 className="font-bold text-neutral-900 text-sm group-hover:text-amber-700 transition-colors truncate max-w-[120px] sm:max-w-[150px]">{job.title}</h4>
-                                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                                    <span className="text-[10px] font-medium text-neutral-400">ID: {job.jobId}</span>
-                                                                    {job.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
-                                                                </div>
-                                                            </div>
+                                            return (
+                                                <div key={i} className="group flex items-center justify-between p-3 rounded-2xl bg-white border border-neutral-100/80 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 cursor-pointer">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-300 shadow-sm ${i === 0 ? 'bg-amber-100 text-amber-600' :
+                                                            i === 1 ? 'bg-neutral-100 text-neutral-500' :
+                                                                i === 2 ? 'bg-orange-50 text-orange-400' :
+                                                                    'bg-slate-50 text-slate-400'
+                                                            } group-hover:scale-110`}>
+                                                            {job.title.charAt(0)}
                                                         </div>
-
-                                                        <div className="flex flex-col items-end gap-1">
-                                                            <div className="flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded-lg border border-neutral-100 group-hover:bg-white group-hover:border-amber-100 transition-colors">
-                                                                <Users className="w-3 h-3 text-amber-500" />
-                                                                <span className="text-xs font-black text-neutral-900">{job.applications}</span>
-                                                            </div>
-                                                            {/* Subtle progress bar at bottom of card */}
-                                                            <div className="w-12 h-1 bg-neutral-100 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${intensity * 100}%` }}></div>
+                                                        <div>
+                                                            <h4 className="font-bold text-neutral-900 text-sm group-hover:text-amber-700 transition-colors truncate max-w-[120px] sm:max-w-[150px]">{job.title}</h4>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <span className="text-[10px] font-medium text-neutral-400">ID: {job.jobId}</span>
+                                                                {job.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
                                                             </div>
                                                         </div>
                                                     </div>
-                                                )
-                                            })}
-                                    </div>
-                                    {data.recent_jobs.length === 0 && (
-                                        <div className="text-center py-8 text-neutral-400 text-xs">No active jobs found.</div>
-                                    )}
-                                </div>
-                            </motion.div>
 
-                            {/* Application Traffic - Bold Neutral Theme */}
-                            <motion.div 
-                                variants={itemVariants}
-                                whileHover={cardHover}
-                                className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-3xl p-6 shadow-xl shadow-black/20 border border-white/10 relative overflow-hidden group/traffic backdrop-blur-3xl"
-                            >
-                                {/* High-Tech Background Pattern - Traffic Unique */}
-                                <div className="absolute inset-0 opacity-[0.08] pointer-events-none group-hover/traffic:opacity-[0.12] transition-opacity duration-700">
-                                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                        <defs>
-                                            <pattern id="traffic-grid-final" width="8" height="20" patternUnits="userSpaceOnUse">
-                                                <line x1="0" y1="0" x2="0" y2="20" stroke="white" strokeWidth="0.4" />
-                                                <line x1="0" y1="20" x2="8" y2="20" stroke="white" strokeWidth="0.1" />
-                                            </pattern>
-                                            <radialGradient id="traffic-glow-final" cx="50%" cy="100%" r="80%">
-                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.5" />
-                                                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-                                            </radialGradient>
-                                        </defs>
-                                        <rect width="100" height="100" fill="url(#traffic-grid-final)" />
-                                        <rect width="100" height="100" fill="url(#traffic-glow-final)" />
-                                    </svg>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <div className="flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded-lg border border-neutral-100 group-hover:bg-white group-hover:border-amber-100 transition-colors">
+                                                            <Users className="w-3 h-3 text-amber-500" />
+                                                            <span className="text-xs font-black text-neutral-900">{job.applications}</span>
+                                                        </div>
+                                                        {/* Subtle progress bar at bottom of card */}
+                                                        <div className="w-12 h-1 bg-neutral-100 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${intensity * 100}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                 </div>
+                                {data.recent_jobs.length === 0 && (
+                                    <div className="text-center py-8 text-neutral-400 text-xs">No active jobs found.</div>
+                                )}
+                            </div>
+                        </motion.div>
 
-                                {/* Floating Data Nodes decorative element */}
-                                <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 group-hover/traffic:opacity-40 transition-opacity duration-1000">
-                                   <div className="absolute top-[20%] left-[10%] w-1 h-1 bg-emerald-200 rounded-full animate-ping" />
-                                   <div className="absolute top-[60%] left-[40%] w-1 h-1 bg-emerald-200 rounded-full animate-ping delay-300" />
-                                   <div className="absolute top-[30%] left-[80%] w-1 h-1 bg-emerald-200 rounded-full animate-ping delay-700" />
-                                </div>
+                        {/* Application Traffic - Bold Neutral Theme */}
+                        <motion.div
+                            variants={itemVariants}
+                            whileHover={cardHover}
+                            className="bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-3xl p-6 shadow-xl shadow-black/20 border border-white/10 relative overflow-hidden group/traffic backdrop-blur-3xl"
+                        >
+                            {/* High-Tech Background Pattern - Traffic Unique */}
+                            <div className="absolute inset-0 opacity-[0.08] pointer-events-none group-hover/traffic:opacity-[0.12] transition-opacity duration-700">
+                                <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    <defs>
+                                        <pattern id="traffic-grid-final" width="8" height="20" patternUnits="userSpaceOnUse">
+                                            <line x1="0" y1="0" x2="0" y2="20" stroke="white" strokeWidth="0.4" />
+                                            <line x1="0" y1="20" x2="8" y2="20" stroke="white" strokeWidth="0.1" />
+                                        </pattern>
+                                        <radialGradient id="traffic-glow-final" cx="50%" cy="100%" r="80%">
+                                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.5" />
+                                            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                                        </radialGradient>
+                                    </defs>
+                                    <rect width="100" height="100" fill="url(#traffic-grid-final)" />
+                                    <rect width="100" height="100" fill="url(#traffic-glow-final)" />
+                                </svg>
+                            </div>
 
-                                <div className="flex justify-between items-center mb-6 relative z-10">
-                                    <div>
-                                        <h3 className="text-lg font-black text-white tracking-tight">Application Traffic</h3>
-                                        <p className="text-xs text-emerald-200 font-medium mt-1">Candidate application trends over time</p>
-                                    </div>
-                                    <div className="relative">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setIsChartFilterOpen(!isChartFilterOpen)}
-                                            className={`!rounded-full border-white/20 text-xs font-bold bg-white/10 text-white hover:bg-white/20 hover:text-white ${isChartFilterOpen ? 'bg-white/20 ring-2 ring-white/30' : ''}`}
-                                        >
-                                            <Filter className="w-3.5 h-3.5 mr-2" /> Filter
-                                        </Button>
-                                    </div>
-                                </div>
+                            {/* Floating Data Nodes decorative element */}
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20 group-hover/traffic:opacity-40 transition-opacity duration-1000">
+                                <div className="absolute top-[20%] left-[10%] w-1 h-1 bg-emerald-200 rounded-full animate-ping" />
+                                <div className="absolute top-[60%] left-[40%] w-1 h-1 bg-emerald-200 rounded-full animate-ping delay-300" />
+                                <div className="absolute top-[30%] left-[80%] w-1 h-1 bg-emerald-200 rounded-full animate-ping delay-700" />
+                            </div>
 
-                                <div className="h-40 w-full relative z-10 group">
-                                    <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
-                                        <defs>
-                                            <linearGradient id="chartGradient-final" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="0%" stopColor="#10B981" stopOpacity="0.4" />
-                                                <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
-                                            </linearGradient>
-                                            <filter id="glow-final" x="-20%" y="-20%" width="140%" height="140%">
-                                                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                                                <feMerge>
-                                                    <feMergeNode in="coloredBlur" />
-                                                    <feMergeNode in="SourceGraphic" />
-                                                </feMerge>
-                                            </filter>
-                                        </defs>
-                                        <motion.path
-                                            initial={{ pathLength: 0, opacity: 0 }}
-                                            animate={{ pathLength: 1, opacity: 1 }}
-                                            transition={{ duration: 1.5, ease: "easeOut" }}
-                                            d={areaPath}
-                                            fill="url(#chartGradient-final)"
-                                        />
-                                        <motion.path
-                                            initial={{ pathLength: 0, opacity: 0 }}
-                                            animate={{ pathLength: 1, opacity: 1 }}
-                                            transition={{ duration: 2, ease: "easeInOut", delay: 0.5 }}
-                                            d={linePath}
-                                            fill="none"
-                                            stroke="#10B981"
-                                            strokeWidth="4"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            filter="url(#glow-final)"
-                                        />
-                                        
-                                        {normalizedPoints.map((p: number[], i: number) => (
-                                            <g key={i} className="group/point">
-                                                <circle
-                                                    cx={p[0]}
-                                                    cy={p[1]}
-                                                    r="4"
-                                                    fill="#fff"
-                                                    stroke="#10B981"
-                                                    strokeWidth="3"
-                                                />
-                                                <text
-                                                    x={p[0]}
-                                                    y={chartHeight + 20}
-                                                    textAnchor="middle"
-                                                    className="text-[10px] fill-emerald-200/50 font-medium"
-                                                >
-                                                    {data.traffic[i]?.day}
-                                                </text>
-                                            </g>
-                                        ))}
-                                    </svg>
+                            <div className="flex justify-between items-center mb-6 relative z-10">
+                                <div>
+                                    <h3 className="text-lg font-black text-white tracking-tight">Application Traffic</h3>
+                                    <p className="text-xs text-emerald-200 font-medium mt-1">Candidate application trends over time</p>
                                 </div>
-                            </motion.div>
+                                <div className="relative">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setIsChartFilterOpen(!isChartFilterOpen)}
+                                        className={`!rounded-full border-white/20 text-xs font-bold bg-white/10 text-white hover:bg-white/20 hover:text-white ${isChartFilterOpen ? 'bg-white/20 ring-2 ring-white/30' : ''}`}
+                                    >
+                                        <Filter className="w-3.5 h-3.5 mr-2" /> Filter
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="h-40 w-full relative z-10 group">
+                                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-full overflow-visible">
+                                    <defs>
+                                        <linearGradient id="chartGradient-final" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#10B981" stopOpacity="0.4" />
+                                            <stop offset="100%" stopColor="#10B981" stopOpacity="0" />
+                                        </linearGradient>
+                                        <filter id="glow-final" x="-20%" y="-20%" width="140%" height="140%">
+                                            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                                            <feMerge>
+                                                <feMergeNode in="coloredBlur" />
+                                                <feMergeNode in="SourceGraphic" />
+                                            </feMerge>
+                                        </filter>
+                                    </defs>
+                                    <motion.path
+                                        initial={{ pathLength: 0, opacity: 0 }}
+                                        animate={{ pathLength: 1, opacity: 1 }}
+                                        transition={{ duration: 1.5, ease: "easeOut" }}
+                                        d={areaPath}
+                                        fill="url(#chartGradient-final)"
+                                    />
+                                    <motion.path
+                                        initial={{ pathLength: 0, opacity: 0 }}
+                                        animate={{ pathLength: 1, opacity: 1 }}
+                                        transition={{ duration: 2, ease: "easeInOut", delay: 0.5 }}
+                                        d={linePath}
+                                        fill="none"
+                                        stroke="#10B981"
+                                        strokeWidth="4"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        filter="url(#glow-final)"
+                                    />
+
+                                    {normalizedPoints.map((p: number[], i: number) => (
+                                        <g key={i} className="group/point">
+                                            <circle
+                                                cx={p[0]}
+                                                cy={p[1]}
+                                                r="4"
+                                                fill="#fff"
+                                                stroke="#10B981"
+                                                strokeWidth="3"
+                                            />
+                                            <text
+                                                x={p[0]}
+                                                y={chartHeight + 20}
+                                                textAnchor="middle"
+                                                className="text-[10px] fill-emerald-200/50 font-medium"
+                                            >
+                                                {data.traffic[i]?.day}
+                                            </text>
+                                        </g>
+                                    ))}
+                                </svg>
+                            </div>
+                        </motion.div>
 
                         {/* Recent Jobs List - With Subtle Vector Background & Hover Effects */}
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             whileHover={cardHover}
                             className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group/card hover:shadow-lg transition-all duration-500"
@@ -926,7 +933,7 @@ const DashboardPage = () => {
                             };
 
                             return (
-                                <motion.div 
+                                <motion.div
                                     variants={itemVariants}
                                     whileHover={cardHover}
                                     className="bg-gradient-to-br from-sky-600 to-indigo-700 rounded-3xl p-5 text-white relative overflow-hidden shadow-lg shadow-sky-600/30 group hover:shadow-sky-600/50 transition-all duration-500 cursor-default"
@@ -982,7 +989,7 @@ const DashboardPage = () => {
                         )}
 
                         {/* Quick Actions - Grid 2x2 Interactive */}
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             whileHover={cardHover}
                             className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
@@ -1034,7 +1041,7 @@ const DashboardPage = () => {
                         </motion.div>
 
                         {/* Recent Activity - List Interactive */}
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             whileHover={cardHover}
                             className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
@@ -1061,7 +1068,7 @@ const DashboardPage = () => {
                         </motion.div>
 
                         {/* Upcoming Interviews - New Widget */}
-                        <motion.div 
+                        <motion.div
                             variants={itemVariants}
                             whileHover={cardHover}
                             className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
