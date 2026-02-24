@@ -59,7 +59,7 @@ export function SupportChatWidget() {
   const widgetRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const markAsReadTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  
+
   const { echo } = useEcho()
 
   // Fetch user on mount
@@ -144,7 +144,7 @@ export function SupportChatWidget() {
   useEffect(() => {
     if (echo && userId && !isOpen) {
       const userChannel = echo.private(`user.${userId}`)
-      
+
       const handleMessage = (e: { message: SupportMessage }) => {
         // Only increment if message is from support
         if (e.message.sender_id !== userId) {
@@ -173,12 +173,12 @@ export function SupportChatWidget() {
             const messagesRes = await supportChatApi.getMessages(res.data.id)
             if (messagesRes.success && messagesRes.data?.messages) {
               setMessages(messagesRes.data.messages)
-              
+
               // Count unread messages before marking as read
               const unreadCount = messagesRes.data.messages.filter(
                 (msg: SupportMessage) => Number(msg.sender_id) !== Number(userId) && !msg.read_at
               ).length
-              
+
               // Mark messages as read when opening conversation
               supportChatApi.markAsRead(res.data.id).then(() => {
                 // Immediately update local state to show read status
@@ -212,7 +212,7 @@ export function SupportChatWidget() {
   useEffect(() => {
     if (conversation && echo && userId && isOpen) {
       const channel = echo.private(`support-conversation.${conversation.id}`)
-      
+
       // Listen for new messages
       channel.listen('SupportMessageSent', (e: { message: SupportMessage }) => {
         setMessages((prev) => {
@@ -272,8 +272,8 @@ export function SupportChatWidget() {
       const userChannel = echo.private(`user.${userId}`)
       userChannel.listen('SupportMessageSent', (e: { message: SupportMessage }) => {
         if (e.message.support_conversation_id === conversation.id) {
-            // Logic handled by the specific conversation listener mostly, but duplicate check safe
-            setMessages((prev) => {
+          // Logic handled by the specific conversation listener mostly, but duplicate check safe
+          setMessages((prev) => {
             if (prev.find((m) => m.id === e.message.id)) return prev
             return [...prev, e.message]
           })
@@ -380,7 +380,7 @@ export function SupportChatWidget() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed z-[60] bottom-8 right-8 bg-gradient-to-r from-sky-500 to-indigo-600 text-white p-4 rounded-full shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 hover:scale-105 transition-all duration-300 group flex items-center gap-2"
+        className="fixed z-[60] bottom-4 sm:bottom-8 right-4 sm:right-8 bg-gradient-to-r from-sky-500 to-indigo-600 text-white p-4 rounded-full shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50 hover:scale-105 transition-all duration-300 group flex items-center gap-2"
         aria-label="Open Support Chat"
       >
         <div className="relative">
@@ -399,7 +399,7 @@ export function SupportChatWidget() {
     return (
       <div
         ref={widgetRef}
-        className="fixed z-[60] bottom-8 right-8 w-[380px] h-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-200 flex flex-col overflow-hidden"
+        className="fixed z-[60] bottom-4 sm:bottom-8 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-[380px] h-[calc(100vh-2rem)] sm:h-[600px] max-h-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-200 flex flex-col overflow-hidden"
       >
         <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
           <h3 className="text-lg font-bold text-neutral-900 pl-2">Support Chat</h3>
@@ -424,7 +424,7 @@ export function SupportChatWidget() {
   return (
     <div
       ref={widgetRef}
-      className="fixed z-[60] bottom-8 right-8 w-[380px] h-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-200 flex flex-col overflow-hidden"
+      className="fixed z-[60] bottom-4 sm:bottom-8 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-[380px] h-[calc(100vh-2rem)] sm:h-[600px] max-h-[600px] bg-white rounded-2xl shadow-2xl border border-neutral-200 flex flex-col overflow-hidden"
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
