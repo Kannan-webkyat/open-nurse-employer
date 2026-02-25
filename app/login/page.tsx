@@ -234,7 +234,7 @@ function LoginForm() {
                                             onClick={() => setShowPassword(!showPassword)}
                                             className="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-sky-600 transition-colors focus:outline-none"
                                         >
-                                            {showPassword ? <EyeOff size={12} /> : <Eye size={12} />}
+                                            {showPassword ? <Eye size={12} /> : <EyeOff size={12} />}
                                         </button>
                                     </div>
                                     <div className="flex justify-end">
