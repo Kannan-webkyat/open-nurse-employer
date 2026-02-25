@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
-import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil } from "lucide-react"
+import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil, Crown } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
@@ -66,6 +66,7 @@ interface Candidate {
   workNotes?: string
   workExperiences?: WorkExperience[]
   submitResumeLater?: boolean
+  isPriority?: boolean
 }
 
 // ... helper ...
@@ -282,6 +283,7 @@ export default function CandidatesPage() {
             resumeUrl: app.resume_url,
             certificatesUrl: app.certificates_url,
             submitResumeLater: app.submit_resume_later === 1 || app.submit_resume_later === true,
+            isPriority: app.is_priority === 1 || app.is_priority === true,
           }))
 
           console.log('API Response Applications:', applications);
@@ -973,7 +975,12 @@ export default function CandidatesPage() {
                         {(currentPage - 1) * rowsPerPage + index + 1}
                       </TableCell>
                       <TableCell className="text-neutral-800">
-                        {candidate.candidateName}
+                        <span className="flex items-center gap-1">
+                          {candidate.candidateName}
+                          {candidate.isPriority && (
+                            <Crown className="w-3 h-3 text-sky-500 shrink-0" />
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="text-neutral-800">
                         {candidate.jobAppliedFor}
