@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
-import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil, Crown } from "lucide-react"
+import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
@@ -977,9 +977,6 @@ export default function CandidatesPage() {
                       <TableCell className="text-neutral-800">
                         <span className="flex items-center gap-1">
                           {candidate.candidateName}
-                          {candidate.isPriority && (
-                            <Crown className="w-3 h-3 text-sky-500 shrink-0" />
-                          )}
                         </span>
                       </TableCell>
                       <TableCell className="text-neutral-800">
