@@ -1,0 +1,21 @@
+{
+    "php.validate.executablePath": "/Applications/XAMPP/xamppfiles/bin/php",
+    "intelephense.environment.phpVersion": "8.2.0",
+    "intelephense.files.exclude": [
+        "**/.git/**",
+        "**/.svn/**",
+        "**/.hg/**",
+        "**/CVS/**",
+        "**/.DS_Store/**",
+        "**/node_modules/**",
+        "**/bower_components/**",
+        "**/vendor/**",
+        "**/.history/**",
+        "**/storage/framework/views/**"
+    ],
+    "intelephense.files.associations": [
+        "*.php"
+    ],
+    "intelephense.diagnostics.undefinedTypes": false,
+    "intelephense.diagnostics.undefinedFunctions": false
+}
