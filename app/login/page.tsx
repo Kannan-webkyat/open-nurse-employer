@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,11 +20,45 @@ function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [lockSeconds, setLockSeconds] = useState(0);
+    const lockIntervalRef = useRef<number | null>(null);
 
     const [showOtpInput, setShowOtpInput] = useState(false);
     const [otp, setOtp] = useState('');
     const [tempEmail, setTempEmail] = useState('');
     const [resendCooldown, setResendCooldown] = useState(0);
+
+    const lockMessage = useMemo(() => {
+        if (lockSeconds <= 0) {
+            return '';
+        }
+        const minutes = Math.floor(lockSeconds / 60);
+        const seconds = lockSeconds % 60;
+        const time = minutes > 0 ? `${minutes}m ${seconds.toString().padStart(2, '0')}s` : `${seconds}s`;
+        return `Too many attempts. Try again in ${time}.`;
+    }, [lockSeconds]);
+
+    useEffect(() => {
+        if (lockIntervalRef.current) {
+            window.clearInterval(lockIntervalRef.current);
+            lockIntervalRef.current = null;
+        }
+
+        if (lockSeconds <= 0) {
+            return;
+        }
+
+        lockIntervalRef.current = window.setInterval(() => {
+            setLockSeconds((s) => Math.max(0, s - 1));
+        }, 1000);
+
+        return () => {
+            if (lockIntervalRef.current) {
+                window.clearInterval(lockIntervalRef.current);
+                lockIntervalRef.current = null;
+            }
+        };
+    }, [lockSeconds]);
 
     // Countdown timer for resend
     React.useEffect(() => {
@@ -52,6 +86,9 @@ function LoginForm() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         setError('');
+        if (lockSeconds > 0) {
+            setLockSeconds(0);
+        }
     };
 
     const handleResendOtp = async () => {
@@ -113,6 +150,9 @@ function LoginForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (lockSeconds > 0) {
+            return;
+        }
         setIsLoading(true);
         setError('');
         setSuccess('');
@@ -148,6 +188,15 @@ function LoginForm() {
             }
         } catch (err: any) {
             console.error('Login error:', err);
+            const retryAfterSecondsRaw = err?.response?.data?.errors?.retry_after_seconds;
+            const retryAfterSeconds =
+                typeof retryAfterSecondsRaw === 'number' ? retryAfterSecondsRaw : parseInt(retryAfterSecondsRaw, 10);
+            if (!Number.isNaN(retryAfterSeconds) && retryAfterSeconds > 0) {
+                setLockSeconds(retryAfterSeconds);
+                setError('');
+                setIsLoading(false);
+                return;
+            }
             // Check if error message is an object (validation errors)
             if (err.response?.data?.errors) {
                 const firstError = Object.values(err.response.data.errors)[0];
@@ -187,10 +236,10 @@ function LoginForm() {
                             </div>
                         )}
 
-                        {error && (
+                        {(lockSeconds > 0 || error) && (
                             <div className="p-2.5 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg font-medium flex items-center gap-2">
                                 <span className="w-1 h-1 bg-rose-500 rounded-full shrink-0"></span>
-                                {error}
+                                {lockSeconds > 0 ? lockMessage : error}
                             </div>
                         )}
 
@@ -282,7 +331,7 @@ function LoginForm() {
 
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || (lockSeconds > 0 && !showOtpInput)}
                             className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center text-xs shadow-md shadow-sky-600/20 mt-2"
                         >
                             {isLoading ? (
