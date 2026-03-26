@@ -13,6 +13,7 @@ import { Search, Filter, Eye, Pencil, Trash2, X, Copy } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
+import { sanitizeHtml } from "@/lib/utils"
 
 interface Job {
   id: number
@@ -530,21 +531,27 @@ export default function JobsPage() {
                     <label className="text-sm font-medium text-neutral-600">About the Role</label>
                     <div
                       className="text-sm text-neutral-900 mt-2 prose prose-sm max-w-none break-words [&>p]:break-words [&>p]:whitespace-normal"
-                      dangerouslySetInnerHTML={{ __html: (selectedJob.overview || "N/A").replace(/&nbsp;/g, ' ') }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml((selectedJob.overview || "N/A").replace(/&nbsp;/g, ' ')),
+                      }}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Qualifications</label>
                     <div
                       className="text-sm text-neutral-900 mt-2 prose prose-sm max-w-none break-words [&>p]:break-words [&>p]:whitespace-normal"
-                      dangerouslySetInnerHTML={{ __html: (selectedJob.qualifications || "N/A").replace(/&nbsp;/g, ' ') }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml((selectedJob.qualifications || "N/A").replace(/&nbsp;/g, ' ')),
+                      }}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Application Process</label>
                     <div
                       className="text-sm text-neutral-900 mt-2 prose prose-sm max-w-none break-words [&>p]:break-words [&>p]:whitespace-normal"
-                      dangerouslySetInnerHTML={{ __html: (selectedJob.application_process || "N/A").replace(/&nbsp;/g, ' ') }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml((selectedJob.application_process || "N/A").replace(/&nbsp;/g, ' ')),
+                      }}
                     />
                   </div>
                 </div>
