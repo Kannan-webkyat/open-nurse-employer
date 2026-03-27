@@ -58,6 +58,25 @@ export default function CompanyProfilePage() {
   const logoInputRef = useRef<HTMLInputElement>(null)
   const kycInputRef = useRef<HTMLInputElement>(null)
 
+  const getApiOrigin = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+    return apiUrl.replace(/\/api\/?$/, "")
+  }
+
+  const buildStorageUrl = (path: string | null | undefined) => {
+    if (!path) return null
+    if (/^https?:\/\//i.test(path)) return path
+
+    const cleanedPath = path.replace(/^\/+/, "")
+    const apiOrigin = getApiOrigin()
+
+    if (cleanedPath.startsWith("storage/")) {
+      return `${apiOrigin}/${cleanedPath}`
+    }
+
+    return `${apiOrigin}/storage/${cleanedPath}`
+  }
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
@@ -127,12 +146,7 @@ export default function CompanyProfilePage() {
           const user = profileResponse.data as any
           const employer = user.employer || {}
           if (employer.company_logo) {
-            const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
-            // Handle both relative paths (starting with /) and paths without leading slash
-            const logoPath = employer.company_logo.startsWith('/')
-              ? employer.company_logo.substring(1)
-              : employer.company_logo
-            const newLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
+            const newLogoUrl = buildStorageUrl(employer.company_logo)
             setLogoUrl(newLogoUrl)
             setLogoPreview(newLogoUrl)
           }
@@ -325,12 +339,7 @@ export default function CompanyProfilePage() {
 
         // Set logo URL if exists
         if (employer.company_logo) {
-          const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
-          // Handle both relative paths (starting with /) and paths without leading slash
-          const logoPath = employer.company_logo.startsWith('/')
-            ? employer.company_logo.substring(1)
-            : employer.company_logo
-          const logoUrl = `${apiBaseUrl}/storage/${logoPath}`
+          const logoUrl = buildStorageUrl(employer.company_logo)
           setLogoUrl(logoUrl)
           setLogoPreview(logoUrl)
           setShouldDeleteLogo(false) // Reset delete flag when fetching profile
@@ -345,7 +354,7 @@ export default function CompanyProfilePage() {
         if (employer.kyc_document) {
           const fileName = employer.kyc_document.split('/').pop() || "Document uploaded"
           setKycFileName(fileName)
-          const kycUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'}/storage/${employer.kyc_document}`
+          const kycUrl = buildStorageUrl(employer.kyc_document)
           setKycFileUrl(kycUrl)
         } else {
           // Clear KYC file name if not present
