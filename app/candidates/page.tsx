@@ -949,7 +949,7 @@ export default function CandidatesPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Job ID</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -987,7 +987,10 @@ export default function CandidatesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-center gap-1">
-                          <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
+                          <Badge 
+                            variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}
+                            className="min-w-[90px] justify-center text-center py-1"
+                          >
                             {statusLabels[candidate.status]}
                           </Badge>
                           {candidate.status === 'interviewing' && candidate.interviewAt && (
