@@ -81,6 +81,7 @@ export default function BillingPage() {
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
   const [transactions, setTransactions] = useState<any[]>([])
+  const [isCancellingSubscription, setIsCancellingSubscription] = useState(false)
 
   // Check if Stripe is configured
   const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -402,6 +403,45 @@ export default function BillingPage() {
     setPaymentClientSecret(null)
     setPaymentUrl(null)
   }
+
+  const handleCancelSubscription = async () => {
+    if (isCancellingSubscription) {
+      return
+    }
+
+    const hasActiveSubscription = ["active", "trialing", "past_due"].includes(
+      (currentSubscription?.status || "").toLowerCase()
+    )
+
+    if (!hasActiveSubscription) {
+      warning("No active subscription available to cancel.")
+      return
+    }
+
+    if (!confirm("Cancel your subscription at the end of the current billing period?")) {
+      return
+    }
+
+    try {
+      setIsCancellingSubscription(true)
+      const response = await subscriptionApi.cancelSubscription({
+        cancel_immediately: false,
+      })
+
+      if (response.success) {
+        success(response.message || "Subscription cancellation has been requested.")
+        await fetchSubscription()
+        await fetchTransactions()
+      } else {
+        error(response.message || "Failed to cancel subscription.")
+      }
+    } catch (err) {
+      console.error(err)
+      error("Failed to cancel subscription.")
+    } finally {
+      setIsCancellingSubscription(false)
+    }
+  }
   // Optionally refresh payment history or subscription status
 
   return (
@@ -444,11 +484,32 @@ export default function BillingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div>
               <p className="text-sm text-neutral-600 mb-1">Plan</p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="text-base font-medium text-neutral-900">{currentSubscription?.plan?.name || 'No Plan'}</p>
                 <Link href="/plans" className="text-xs text-sky-600 hover:text-sky-700 font-medium bg-sky-100 px-2 py-1 rounded-full">
                   Change Plan
                 </Link>
+                {["active", "trialing", "past_due"].includes((currentSubscription?.status || "").toLowerCase()) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isCancellingSubscription || currentSubscription?.cancel_at_period_end}
+                    onClick={handleCancelSubscription}
+                    className="text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  >
+                    {isCancellingSubscription ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Cancelling...
+                      </span>
+                    ) : currentSubscription?.cancel_at_period_end ? (
+                      "Cancellation Scheduled"
+                    ) : (
+                      "Cancel Subscription"
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
             <div>
