@@ -388,34 +388,6 @@ export default function EditJobPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Posted Date <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="date"
-                      value={formData.postedDate}
-                      onChange={(e) => handleInputChange("postedDate", e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
-                    Closed Date <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="date"
-                      value={formData.closedDate}
-                      onChange={(e) => handleInputChange("closedDate", e.target.value)}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
                     Number of Openings
                   </label>
                   <Input
@@ -425,6 +397,36 @@ export default function EditJobPage() {
                     onChange={(e) => handleInputChange("numberOfOpenings", e.target.value)}
                     className="w-full"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Posted Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <Input
+                      type="date"
+                      value={formData.postedDate}
+                      onChange={(e) => handleInputChange("postedDate", e.target.value)}
+                      className="w-full pr-10 appearance-none bg-white font-mono"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none group-focus-within:text-sky-500 transition-colors" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Closed Date <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <Input
+                      type="date"
+                      value={formData.closedDate}
+                      onChange={(e) => handleInputChange("closedDate", e.target.value)}
+                      className="w-full pr-10 appearance-none bg-white font-mono"
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none group-focus-within:text-sky-500 transition-colors" />
+                  </div>
                 </div>
 
                 <div>
