@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { TablePagination } from "@/components/ui/table-pagination"
-import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil } from "lucide-react"
+import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, Paperclip, Send, MapPin, Phone, Calendar, Clock, UserCheck, Trash2, XCircle, ClipboardCheck, AlertCircle, Pencil } from "lucide-react"
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
@@ -949,7 +949,7 @@ export default function CandidatesPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Job ID</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -987,7 +987,10 @@ export default function CandidatesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col items-center gap-1">
-                          <Badge variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}>
+                          <Badge 
+                            variant={statusVariantMap[candidate.status] as keyof typeof statusVariantMap}
+                            className="min-w-[90px] justify-center text-center py-1"
+                          >
                             {statusLabels[candidate.status]}
                           </Badge>
                           {candidate.status === 'interviewing' && candidate.interviewAt && (
@@ -1856,20 +1859,23 @@ export default function CandidatesPage() {
                   <label className="text-sm font-medium text-neutral-900 mb-2 block">
                     Date <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    type="date"
-                    value={interviewFormData.date}
-                    onChange={(e) => {
-                      const selectedDate = e.target.value
-                      const today = new Date().toISOString().split('T')[0]
-                      // Only allow dates from today onwards
-                      if (selectedDate >= today || selectedDate === "") {
-                        setInterviewFormData(prev => ({ ...prev, date: selectedDate }))
-                      }
-                    }}
-                    className="w-full"
-                    min={new Date().toISOString().split('T')[0]}
-                  />
+                  <div className="relative group">
+                    <Input
+                      type="date"
+                      value={interviewFormData.date}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value
+                        const today = new Date().toISOString().split('T')[0]
+                        // Only allow dates from today onwards
+                        if (selectedDate >= today || selectedDate === "") {
+                          setInterviewFormData(prev => ({ ...prev, date: selectedDate }))
+                        }
+                      }}
+                      className="w-full pr-10 bg-white font-mono"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none group-focus-within:text-sky-500 transition-colors" />
+                  </div>
                 </div>
 
                 {/* Time Field */}
@@ -1877,12 +1883,15 @@ export default function CandidatesPage() {
                   <label className="text-sm font-medium text-neutral-900 mb-2 block">
                     Time <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    type="time"
-                    value={interviewFormData.time}
-                    onChange={(e) => setInterviewFormData(prev => ({ ...prev, time: e.target.value }))}
-                    className="w-full"
-                  />
+                  <div className="relative group">
+                    <Input
+                      type="time"
+                      value={interviewFormData.time}
+                      onChange={(e) => setInterviewFormData(prev => ({ ...prev, time: e.target.value }))}
+                      className="w-full pr-10 bg-white font-mono"
+                    />
+                    <Clock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none group-focus-within:text-sky-500 transition-colors" />
+                  </div>
                 </div>
               </div>
 
