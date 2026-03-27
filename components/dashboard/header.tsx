@@ -87,6 +87,37 @@ const getInitials = (name: string): string => {
   return words[0].substring(0, 2).toUpperCase()
 }
 
+const getApiOrigin = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+  const origin = apiUrl.replace(/\/api\/?$/, "")
+
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && origin.startsWith("http://")) {
+    return origin.replace(/^http:\/\//i, "https://")
+  }
+
+  return origin
+}
+
+const buildStorageUrl = (path: string | null | undefined): string | null => {
+  if (!path) {
+    return null
+  }
+
+  if (/^https?:\/\//i.test(path)) {
+    return path
+  }
+
+  const normalizedPath = path.replace(/\\/g, "/")
+  const cleanedPath = normalizedPath.replace(/^\/+/, "")
+  const apiOrigin = getApiOrigin()
+
+  if (cleanedPath.startsWith("storage/")) {
+    return `${apiOrigin}/${cleanedPath}`
+  }
+
+  return `${apiOrigin}/storage/${cleanedPath}`
+}
+
 export function Header() {
   const router = useRouter()
   const { notifications, unreadCount, markAsRead, clearNotifications } = useNotifications()
@@ -128,12 +159,7 @@ export function Header() {
       // Construct company logo URL if exists
       let companyLogoUrl = null
       if (employer.company_logo) {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:8000'
-        // Handle both relative paths (starting with /) and paths without leading slash
-        const logoPath = employer.company_logo.startsWith('/')
-          ? employer.company_logo.substring(1)
-          : employer.company_logo
-        companyLogoUrl = `${apiBaseUrl}/storage/${logoPath}`
+        companyLogoUrl = buildStorageUrl(employer.company_logo)
         // Add timestamp to force refresh if image was just updated
         companyLogoUrl += `?t=${Date.now()}`
       }
