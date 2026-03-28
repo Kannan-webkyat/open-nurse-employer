@@ -230,7 +230,7 @@ export default function BillingPage() {
 
   const handlePaymentSuccess = async () => {
     try {
-      setIsLoading(true)
+      setIsPageLoading(true)
       const response = await paymentMethodApi.getAll()
 
       if (response.success && response.data) {
@@ -254,7 +254,7 @@ export default function BillingPage() {
       console.error(err)
       error("Failed to refresh payment methods")
     } finally {
-      setIsLoading(false)
+      setIsPageLoading(false)
     }
   }
 
