@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -13,6 +14,7 @@ import { Search, Filter, Eye, Pencil, Trash2, X, Copy } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
+import { useSubscriptionFeatures } from "@/hooks/useSubscriptionFeatures"
 import { sanitizeHtml } from "@/lib/utils"
 
 interface Job {
@@ -63,6 +65,7 @@ const formatDate = (dateString: string) => {
 }
 
 export default function JobsPage() {
+  const router = useRouter()
   const toast = useToast() as {
     success: (message: string, options?: { title?: string; duration?: number }) => void
     error: (message: string, options?: { title?: string; duration?: number }) => void
@@ -88,7 +91,32 @@ export default function JobsPage() {
     postedDateTo: "",
   })
 
+  const {
+    canPostJob,
+    activeJobs: slotJobs,
+    jobSlots,
+    hasSubscription,
+    loading: featuresLoading,
+  } = useSubscriptionFeatures()
+
   const activeFilterCount = Object.values(filters).filter(v => v !== "").length
+
+  const handlePostJobClick = () => {
+    if (!featuresLoading && !canPostJob) {
+      toast.info("Upgrade your plan to create more job posts.", {
+        title: "Job post limit reached",
+        duration: 4000,
+      })
+      router.push("/plans")
+      return
+    }
+    router.push("/jobs/create")
+  }
+
+  const slotsLabel =
+    jobSlots == null && hasSubscription
+      ? "Unlimited"
+      : String(jobSlots ?? 1)
 
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -258,39 +286,53 @@ export default function JobsPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {!featuresLoading && !canPostJob && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            <p>
+              You are using all allowed job posts ({slotJobs} / {slotsLabel} concurrent active or paused jobs).
+              Close an existing listing or{" "}
+              <Link href="/plans" className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-800">
+                upgrade your plan
+              </Link>{" "}
+              to post another job.
+            </p>
+          </div>
+        )}
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-neutral-900">Jobs</h1>
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-auto">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <h1 className="shrink-0 text-2xl font-bold text-neutral-900">Jobs</h1>
+          <div className="flex min-w-0 w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="relative w-full min-w-0 sm:max-w-xs sm:flex-1 lg:max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 w-full sm:w-64"
+                className="w-full min-w-0 pl-10"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex w-full sm:w-auto gap-3 items-center">
+            <div className="flex min-w-0 w-full gap-3 sm:w-auto sm:shrink-0">
               <Button
                 variant="outline"
-                className="flex-1 sm:flex-none justify-center bg-white border-neutral-300 text-neutral-700 relative whitespace-nowrap"
+                className="min-w-0 flex-1 justify-center bg-white border-neutral-300 text-neutral-700 sm:flex-initial sm:shrink-0"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
               >
-                <Filter className="w-4 h-4 mr-2" />
-                Filters
+                <Filter className="w-4 h-4 mr-2 shrink-0" />
+                <span className="truncate">Filters</span>
                 {activeFilterCount > 0 && (
-                  <span className="ml-2 bg-sky-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="ml-2 shrink-0 bg-sky-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {activeFilterCount}
                   </span>
                 )}
               </Button>
-              <Link href="/jobs/create" className="flex-1 sm:flex-none">
-                <Button className="w-full bg-sky-500 hover:bg-sky-700 text-white rounded-full whitespace-nowrap">
-                  Post Job
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                onClick={handlePostJobClick}
+                className="min-w-0 flex-1 bg-sky-500 hover:bg-sky-700 text-white rounded-full whitespace-nowrap sm:flex-initial sm:shrink-0 sm:px-6"
+              >
+                Post Job
+              </Button>
             </div>
           </div>
         </div>

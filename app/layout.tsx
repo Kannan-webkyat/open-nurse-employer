@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import './globals.css'
 import { ToastProvider } from '@/components/ui/toast'
+import { SonnerToaster } from '@/components/ui/sonner-toaster'
 import { NotificationProvider } from '@/components/providers/notification-provider'
 import { MessageProvider } from '@/components/providers/message-provider'
 import { UserProvider } from '@/components/providers/user-provider'
@@ -39,6 +40,7 @@ export default function RootLayout({
             </EchoProvider>
           </UserProvider>
         </ToastProvider>
+        <SonnerToaster />
       </body>
     </html>
   )

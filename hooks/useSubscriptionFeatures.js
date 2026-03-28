@@ -33,11 +33,12 @@ export function useSubscriptionFeatures() {
         error,
         refetch: fetchFeatures,
 
-        // Convenience getters
+        // Convenience getters (job_slots is null when plan is unlimited)
         canPostJob: features?.can_post_job ?? false,
-        remainingSlots: features?.remaining_slots ?? 0,
+        remainingSlots: features?.remaining_slots,
         activeJobs: features?.active_jobs ?? 0,
-        jobSlots: features?.job_slots ?? 0,
+        jobSlots: features?.job_slots,
+        hasSubscription: features?.has_subscription ?? false,
         hasAdvancedSearch: features?.has_advanced_search ?? false,
         hasFeaturedListings: features?.has_featured_listings ?? false,
         hasDirectMessaging: features?.has_direct_messaging ?? false,

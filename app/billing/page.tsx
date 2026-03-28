@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { loadStripe } from "@stripe/stripe-js"
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
+import { Elements } from "@stripe/react-stripe-js"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -70,6 +70,22 @@ const invoices: Invoice[] = [
   { id: "INV-001", paidAt: "2025-09-03", amount: "£200", status: "pending" },
 ]
 
+/** Matches API free-tier concurrent job limit (`SubscriptionFeatureService::FREE_TIER_MAX_SLOTS`). */
+const FREE_TIER_JOB_POST_LIMIT = 1
+
+function formatJobPostLimit(sub: {
+  plan?: { nurse_slots?: number; unlimited_job_postings?: boolean } | null
+} | null): string {
+  if (!sub?.plan) {
+    return String(FREE_TIER_JOB_POST_LIMIT)
+  }
+  const plan = sub.plan
+  if (plan.unlimited_job_postings || (plan.nurse_slots ?? 0) >= 100) {
+    return "Unlimited"
+  }
+  return String(Math.max(FREE_TIER_JOB_POST_LIMIT, plan.nurse_slots ?? 0))
+}
+
 export default function BillingPage() {
   const { success, error, warning, info } = useToast() as any
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>([])
@@ -77,63 +93,106 @@ export default function BillingPage() {
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false)
   const [isViewPaymentModalOpen, setIsViewPaymentModalOpen] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  const [setupIntentError, setSetupIntentError] = useState<string | null>(null)
   const [transactions, setTransactions] = useState<any[]>([])
   const [isCancellingSubscription, setIsCancellingSubscription] = useState(false)
 
   // Check if Stripe is configured
   const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  const [isPageLoading, setIsPageLoading] = useState(isStripeConfigured)
 
   // Initialize Stripe Setup Intent when Modal Opens
   useEffect(() => {
-    if (isAddPaymentModalOpen && !paymentUrl) {
-      const initializeStripe = async () => {
-        try {
-          // setIsLoading(true) // Optional: separate loading state for the modal
-          const response = await paymentMethodApi.createSetupIntent()
-
-          if (response.success && response.data) {
-            setPaymentUrl(response.data.url)
-            setPaymentClientSecret(response.data.client_secret)
-          } else {
-            error("Failed to initialize payment method setup")
-          }
-        } catch (err) {
-          console.error(err)
-          error("Failed to connect to payment provider")
-        }
-      }
-
-      initializeStripe()
-    }
-
-    // Cleanup when modal closes
     if (!isAddPaymentModalOpen) {
       setPaymentUrl(null)
       setPaymentClientSecret(null)
+      setSetupIntentError(null)
+      return
     }
-  }, [isAddPaymentModalOpen, paymentUrl])
 
-  // Fetch payment methods on mount
-  useEffect(() => {
-    if (isStripeConfigured) {
-      console.log("Stripe Publishable Key:", process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-      fetchPaymentMethods()
-      fetchSubscription()
-      fetchTransactions()
-    } else {
-      console.warn("Stripe is not configured. Please add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to .env.local")
+    if (paymentUrl || paymentClientSecret) {
+      return
     }
+
+    let cancelled = false
+
+    const initializeStripe = async () => {
+      setSetupIntentError(null)
+      try {
+        const response = await paymentMethodApi.createSetupIntent()
+
+        if (cancelled) {
+          return
+        }
+
+        if (response.success && response.data) {
+          const url = response.data.url ?? null
+          const secret = response.data.client_secret ?? null
+          if (!secret && !url) {
+            setSetupIntentError(
+              response.message || "Payment setup did not return a client secret or checkout URL. Check API Stripe configuration."
+            )
+            error("Could not start payment setup")
+            return
+          }
+          setPaymentUrl(url)
+          setPaymentClientSecret(secret)
+        } else {
+          const msg = response.message || "Failed to initialize payment method setup"
+          setSetupIntentError(msg)
+          error(msg)
+        }
+      } catch (err) {
+        console.error(err)
+        if (!cancelled) {
+          setSetupIntentError("Failed to connect to payment provider")
+          error("Failed to connect to payment provider")
+        }
+      }
+    }
+
+    initializeStripe()
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast stable; avoid re-running init when secrets are set
+  }, [isAddPaymentModalOpen, paymentUrl, paymentClientSecret])
+
+  // Fetch billing data on mount + payment return handling
+  useEffect(() => {
+    let cancelled = false
+
+    const loadBillingData = async () => {
+      if (!isStripeConfigured) {
+        setIsPageLoading(false)
+        return
+      }
+      setIsPageLoading(true)
+      try {
+        await Promise.all([
+          fetchPaymentMethods(),
+          fetchSubscription(),
+          fetchTransactions(),
+        ])
+      } catch (err) {
+        console.error("Failed to load billing data:", err)
+      } finally {
+        if (!cancelled) {
+          setIsPageLoading(false)
+        }
+      }
+    }
+
+    void loadBillingData()
 
     // Check for payment return status
     const params = new URLSearchParams(window.location.search)
     const status = params.get('payment_status')
     const sessionId = params.get('session_id')
     const mode = params.get('mode')
-
-    console.log("Payment Verification Params:", { status, sessionId, mode })
 
     if (status === 'success' && sessionId) {
       if (mode === 'setup') {
@@ -163,7 +222,11 @@ export default function BillingPage() {
     } else if (status === 'cancelled') {
       window.history.replaceState({}, '', window.location.pathname)
     }
-  }, [])
+
+    return () => {
+      cancelled = true
+    }
+  }, [isStripeConfigured])
 
   const handlePaymentSuccess = async () => {
     try {
@@ -178,7 +241,7 @@ export default function BillingPage() {
           isDefault: pm.is_default,
           isBank: false, // Assuming API doesn't return bank accounts mixed yet
           cardholderName: pm.billing_details?.name || "",
-          expiryDate: `${pm.card_exp_month}/${pm.card_exp_year}`,
+          expiryDate: `${pm.expiry_month ?? pm.card_exp_month}/${pm.expiry_year ?? pm.card_exp_year}`,
           cvv: "" // Not stored
         })))
 
@@ -245,9 +308,12 @@ export default function BillingPage() {
       const response = await subscriptionApi.getCurrentSubscription()
       if (response.success && response.data) {
         setCurrentSubscription(response.data)
+      } else {
+        setCurrentSubscription(null)
       }
     } catch (err) {
       console.error("Failed to fetch subscription:", err)
+      setCurrentSubscription(null)
     }
   }
 
@@ -263,7 +329,6 @@ export default function BillingPage() {
   }
 
   const fetchPaymentMethods = async () => {
-    setIsLoading(true)
     try {
       const response = await paymentMethodApi.getAll()
 
@@ -275,7 +340,7 @@ export default function BillingPage() {
           isDefault: pm.is_default,
           isBank: false,
           cardholderName: pm.billing_details?.name || "",
-          expiryDate: `${pm.card_exp_month}/${pm.card_exp_year}`,
+          expiryDate: `${pm.expiry_month ?? pm.card_exp_month}/${pm.expiry_year ?? pm.card_exp_year}`,
           cvv: ""
         })))
       } else {
@@ -285,8 +350,6 @@ export default function BillingPage() {
       console.error("Failed to fetch payment methods:", err)
       error("Failed to load payment methods")
       setPaymentMethodsList([])
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -444,6 +507,26 @@ export default function BillingPage() {
   }
   // Optionally refresh payment history or subscription status
 
+  if (isPageLoading && isStripeConfigured) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">Billing & Subscriptions</h1>
+            <p className="text-neutral-600">Manage your subscription, payments, and invoices</p>
+          </div>
+          <div className="flex min-h-[360px] flex-col items-center justify-center gap-4 rounded-lg border border-neutral-200 bg-white px-6 py-16">
+            <Loader2 className="h-10 w-10 animate-spin text-sky-600" aria-hidden />
+            <p className="text-sm font-medium text-neutral-700">Loading billing data…</p>
+            <p className="text-xs text-neutral-500 text-center max-w-sm">
+              Fetching subscription, payment methods, and billing history.
+            </p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -487,7 +570,7 @@ export default function BillingPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-base font-medium text-neutral-900">{currentSubscription?.plan?.name || 'No Plan'}</p>
                 <Link href="/plans" className="text-xs text-sky-600 hover:text-sky-700 font-medium bg-sky-100 px-2 py-1 rounded-full">
-                  Change Plan
+                  {currentSubscription?.plan?.name ? "Change Plan" : "Get Plan"}
                 </Link>
                 {["active", "trialing", "past_due"].includes((currentSubscription?.status || "").toLowerCase()) && (
                   <Button
@@ -513,9 +596,9 @@ export default function BillingPage() {
               </div>
             </div>
             <div>
-              <p className="text-sm text-neutral-600 mb-1">Nurse Slots Limit</p>
+              <p className="text-sm text-neutral-600 mb-1">Job post limit</p>
               <p className="text-base font-medium text-neutral-900">
-                {currentSubscription?.plan?.nurse_slots || '0'}
+                {formatJobPostLimit(currentSubscription)}
               </p>
             </div>
             <div>
@@ -684,7 +767,7 @@ export default function BillingPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-neutral-500">
+                    <TableCell colSpan={6} className="text-center py-8 text-neutral-500">
                       No billing history found.
                     </TableCell>
                   </TableRow>
@@ -724,22 +807,42 @@ export default function BillingPage() {
                   </div>
                 </div>
 
-                {/* Always Visible Stripe Payment Form */}
-                {paymentUrl ? (
+                {setupIntentError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    {setupIntentError}
+                  </div>
+                )}
+
+                {/* Prefer embedded card form when client_secret exists (works without Checkout redirect URL) */}
+                {paymentClientSecret && !setupIntentError ? (
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret: paymentClientSecret,
+                      appearance: { theme: "stripe" },
+                    }}
+                  >
+                    <StripeCardForm
+                      clientSecret={paymentClientSecret}
+                      onSuccess={() => handlePaymentSuccess()}
+                      onCancel={() => setIsAddPaymentModalOpen(false)}
+                    />
+                  </Elements>
+                ) : paymentUrl && !setupIntentError ? (
                   <StripeOnlinePayment
                     checkoutUrl={paymentUrl}
                     mode="setup"
                     onSuccess={() => handleStripeOnlineSuccess("")}
                     onCancel={() => {
-                      // Do nothing or maybe show a message
+                      setIsAddPaymentModalOpen(false)
                     }}
                   />
-                ) : (
+                ) : !setupIntentError ? (
                   <div className="text-center py-4">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto text-indigo-600 mb-2" />
                     <p className="text-neutral-600 text-sm">Initializing secure payment...</p>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

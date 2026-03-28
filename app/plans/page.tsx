@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Button } from "@/components/ui/button"
-import { Check, Loader2, CreditCard } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { subscriptionApi, paymentMethodApi } from "@/lib/api"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
+import { useToast } from "@/components/ui/toast"
 
 interface Plan {
     id: number
@@ -15,6 +16,12 @@ interface Plan {
     amount: number
     type_name?: string
     nurse_slots?: number
+    unlimited_job_postings?: boolean
+    short_description?: string | null
+    inclusions?: string[] | null
+    billing_period_label?: string | null
+    billing_period_display?: string
+    updates_note?: string | null
 }
 
 interface Subscription {
@@ -32,7 +39,61 @@ interface PaymentMethod {
     expiry_year: number
 }
 
+/**
+ * Normalize API `inclusions`: accept array, JSON string, or a single string; split each entry on newlines
+ * so multiple lines saved in one field become separate bullets (fixes "6 lines but 1 bullet").
+ */
+function normalizeInclusionsFromApi(raw: unknown): string[] {
+    const pieces: string[] = []
+
+    const pushChunk = (chunk: string): void => {
+        const lines = chunk.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+        if (lines.length) {
+            pieces.push(...lines)
+        }
+    }
+
+    if (raw == null) {
+        return []
+    }
+
+    if (Array.isArray(raw)) {
+        for (const item of raw) {
+            if (item == null) {
+                continue
+            }
+            pushChunk(typeof item === "string" ? item : String(item))
+        }
+    } else if (typeof raw === "string") {
+        const t = raw.trim()
+        if (!t) {
+            return []
+        }
+        try {
+            const parsed = JSON.parse(t) as unknown
+            if (Array.isArray(parsed)) {
+                return normalizeInclusionsFromApi(parsed)
+            }
+        } catch {
+            /* treat as plain text */
+        }
+        pushChunk(t)
+    }
+
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const line of pieces) {
+        if (seen.has(line)) {
+            continue
+        }
+        seen.add(line)
+        out.push(line)
+    }
+    return out
+}
+
 export default function PlansPage() {
+    const { success, error, info, warning } = useToast()
     const router = useRouter()
     const [plans, setPlans] = useState<Plan[]>([])
     const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null)
@@ -40,33 +101,31 @@ export default function PlansPage() {
     const [loading, setLoading] = useState(true)
     const [upgrading, setUpgrading] = useState<number | null>(null)
 
+    const hasPaymentMethod = paymentMethods.length > 0
+
     useEffect(() => {
         // Handle Stripe Checkout return
         const params = new URLSearchParams(window.location.search)
         const status = params.get('status')
         const sessionId = params.get('session_id')
 
-        console.log("Plans Page Mounted. Status:", status, "Session ID:", sessionId)
-
         if (status === 'success' && sessionId) {
-            console.log("Starting verification for session:", sessionId)
-            const toastId = toast.loading("Verifying subscription...")
+            info("Verifying subscription...")
 
             // Verify session and create subscription if needed
             subscriptionApi.verifyCheckoutSession(sessionId)
                 .then(response => {
-                    console.log("Verification response:", response)
                     if (response.success) {
-                        toast.success("Subscription upgraded successfully!", { id: toastId })
+                        success("Subscription upgraded successfully!")
                         fetchData()
                     } else {
-                        toast.warning("Subscription verification pending. Please refresh in a moment.", { id: toastId })
+                        warning("Subscription verification pending. Please refresh in a moment.")
                         fetchData()
                     }
                 })
                 .catch(err => {
                     console.error("Verification error:", err)
-                    toast.error("Failed to verify subscription", { id: toastId })
+                    error("Failed to verify subscription")
                     fetchData()
                 })
                 .finally(() => {
@@ -74,12 +133,14 @@ export default function PlansPage() {
                     window.history.replaceState({}, '', window.location.pathname)
                 })
         } else if (status === 'cancelled') {
-            toast.info("Checkout cancelled")
+            info("Checkout cancelled")
             window.history.replaceState({}, '', window.location.pathname)
             fetchData()
         } else {
             fetchData()
         }
+        // Intentionally run once on mount (Stripe return query + initial load).
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- toast helpers are stable from context
     }, [])
 
     const fetchData = async () => {
@@ -102,69 +163,57 @@ export default function PlansPage() {
             if (paymentMethodsRes.success && paymentMethodsRes.data) {
                 setPaymentMethods(paymentMethodsRes.data)
             }
-        } catch (error) {
-            console.error("Failed to fetch data:", error)
-            toast.error("Failed to load plans")
+        } catch (err) {
+            console.error("Failed to fetch data:", err)
+            error("Failed to load plans")
         } finally {
             setLoading(false)
         }
     }
 
+    const isCurrentPlan = (plan: Plan) => {
+        return currentSubscription?.plan?.id === plan.id
+    }
+
     const handleUpgrade = async (plan: Plan) => {
+        if (isCurrentPlan(plan)) {
+            return
+        }
+
+        // Paid plans require a saved card in Billing before Stripe Checkout
+        if (plan.amount > 0 && !hasPaymentMethod) {
+            warning("Add a payment method in Billing before you can subscribe to a paid plan.", {
+                title: "Payment method required",
+                duration: 7000,
+            })
+            router.push("/billing?redirect=/plans")
+            return
+        }
+
         setUpgrading(plan.id)
-        const toastId = toast.loading(`Preparing checkout for ${plan.name}...`)
 
         try {
             const response = await subscriptionApi.createCheckoutSession(plan.id)
+            const payload = response.data as { url?: string; checkout_url?: string } | undefined
+            const checkoutUrl = payload?.url ?? payload?.checkout_url
 
-            if (response.success && response.data?.url) {
-                toast.success("Redirecting to Stripe Checkout...", { id: toastId })
-                // Redirect to Stripe Checkout
-                window.location.href = response.data.url
-            } else {
-                toast.error(response.message || "Failed to create checkout session", { id: toastId })
-                setUpgrading(null)
+            if (response.success && checkoutUrl) {
+                success("Redirecting to Stripe Checkout...")
+                window.location.href = checkoutUrl
+                return
             }
-        } catch (error: any) {
-            console.error("Checkout error:", error)
-            toast.error(error.message || "An error occurred", { id: toastId })
+
+            error(response.message || "Failed to create checkout session")
+            setUpgrading(null)
+        } catch (err: unknown) {
+            console.error("Checkout error:", err)
+            const message =
+                err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
+                    ? (err as { message: string }).message
+                    : "An error occurred"
+            error(message)
             setUpgrading(null)
         }
-    }
-
-    const getPlanFeatures = (plan: Plan) => {
-        const features = []
-
-        if (plan.nurse_slots) {
-            if (plan.nurse_slots === 1) {
-                features.push("Post 1 active job")
-            } else if (plan.nurse_slots < 100) {
-                features.push(`Post up to ${plan.nurse_slots} active jobs simultaneously`)
-            } else {
-                features.push("Unlimited job postings")
-            }
-        }
-
-        features.push("Access to a curated pool of registered nurse profiles")
-        features.push("Basic applicant tracking via dashboard")
-
-        if (plan.nurse_slots && plan.nurse_slots > 1) {
-            features.push("Access full candidate profiles with direct messaging")
-            features.push("Featured placement in search results for higher visibility")
-        }
-
-        if (plan.nurse_slots && plan.nurse_slots > 5) {
-            features.push("Enhanced candidate search: filter by license, specialization, location")
-            features.push("Priority placement in search results and job alerts")
-            features.push("Advanced analytics: application sources, time-to-fill, detailed performance data")
-            features.push("Dedicated account support / onboarding assistance")
-        }
-
-        return features
-    }
-
-    const isCurrentPlan = (plan: Plan) => {
-        return currentSubscription?.plan?.id === plan.id
     }
 
     const getButtonText = (plan: Plan) => {
@@ -173,6 +222,9 @@ export default function PlansPage() {
         }
         if (upgrading === plan.id) {
             return "Upgrading..."
+        }
+        if (plan.amount > 0 && !hasPaymentMethod) {
+            return "Add payment method"
         }
         return "Upgrade"
     }
@@ -199,14 +251,35 @@ export default function PlansPage() {
                     <p className="text-lg text-neutral-600">
                         Choose the plan that fits your recruitment needs. Upgrade or cancel anytime.
                     </p>
+                    {!hasPaymentMethod && (
+                        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950">
+                            <p className="font-medium text-amber-900">Payment method required for paid plans</p>
+                            <p className="mt-1 text-amber-900/90">
+                                Add a card in{" "}
+                                <Link href="/billing" className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-800">
+                                    Billing &amp; Subscriptions
+                                </Link>{" "}
+                                before subscribing. Free plans do not require a card.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Plans Grid */}
                 <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
                     {plans.map((plan, index) => {
-                        const features = getPlanFeatures(plan)
+                        const features = normalizeInclusionsFromApi(plan.inclusions)
                         const isCurrent = isCurrentPlan(plan)
                         const isPopular = index === 1 // Middle plan is popular
+
+                        const shortDescription = plan.short_description?.trim() || null
+
+                        const periodLabel =
+                            plan.billing_period_display?.trim() ||
+                            plan.billing_period_label?.trim() ||
+                            (plan.type_name && plan.type_name !== "Unknown"
+                                ? plan.type_name.toLowerCase()
+                                : "month")
 
                         return (
                             <div
@@ -228,11 +301,19 @@ export default function PlansPage() {
 
                                 <div className="mb-8">
                                     <h3 className="text-lg font-bold text-neutral-900 mb-2">{plan.name}</h3>
-                                    <p className="text-sm text-neutral-500 leading-relaxed min-h-[40px]">
-                                        {plan.nurse_slots === 1 && "Small clinics or practices hiring occasionally"}
-                                        {plan.nurse_slots && plan.nurse_slots > 1 && plan.nurse_slots <= 5 && "Medium-sized facilities and agencies filling multiple roles"}
-                                        {plan.nurse_slots && plan.nurse_slots > 5 && "Large hospitals or recruiters managing multiple hires"}
-                                    </p>
+                                    {shortDescription ? (
+                                        <p className="text-sm text-neutral-500 leading-relaxed min-h-[40px]">
+                                            {shortDescription}
+                                        </p>
+                                    ) : (
+                                        <div className="min-h-[40px]" aria-hidden />
+                                    )}
+
+                                    {plan.updates_note?.trim() && (
+                                        <p className="text-xs text-sky-900 bg-sky-50 border border-sky-100 rounded-lg px-3 py-2 mt-3 leading-snug">
+                                            {plan.updates_note.trim()}
+                                        </p>
+                                    )}
 
                                     <div className="mt-6 flex items-baseline">
                                         <span className="text-3xl font-bold text-neutral-900 tracking-tight">
@@ -240,7 +321,7 @@ export default function PlansPage() {
                                         </span>
                                         {plan.amount > 0 && (
                                             <span className="text-neutral-500 ml-1 font-medium">
-                                                /{plan.type_name?.toLowerCase() || 'month'}
+                                                /{periodLabel}
                                             </span>
                                         )}
                                         {plan.amount === 0 && (
@@ -251,20 +332,25 @@ export default function PlansPage() {
                                     </div>
                                 </div>
 
-                                <ul className="space-y-4 mb-8 flex-1">
-                                    {features.map((feature) => (
-                                        <li key={feature} className="flex items-start gap-3">
-                                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center mt-0.5">
-                                                <Check className="w-3 h-3 text-sky-600 stroke-[3]" />
-                                            </div>
-                                            <span className="text-sm text-neutral-600 leading-snug">
-                                                {feature}
-                                            </span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                {features.length > 0 ? (
+                                    <ul className="space-y-4 mb-8 flex-1">
+                                        {features.map((feature, idx) => (
+                                            <li key={`${plan.id}-inclusion-${idx}`} className="flex items-start gap-3">
+                                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center mt-0.5">
+                                                    <Check className="w-3 h-3 text-sky-600 stroke-[3]" />
+                                                </div>
+                                                <span className="text-sm text-neutral-600 leading-snug whitespace-pre-wrap">
+                                                    {feature}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <div className="mb-8 flex-1 min-h-[1rem]" />
+                                )}
 
                                 <Button
+                                    type="button"
                                     className={cn(
                                         "w-full rounded-full py-6 text-base font-semibold transition-all duration-200",
                                         isCurrent
@@ -283,7 +369,9 @@ export default function PlansPage() {
                                 {/* Payment method indicator */}
                                 {!isCurrent && (
                                     <p className="mt-3 text-xs text-center text-neutral-500">
-                                        You'll be redirected to Stripe Checkout
+                                        {plan.amount > 0 && !hasPaymentMethod
+                                            ? "Add a payment method in Billing to subscribe"
+                                            : "You'll be redirected to Stripe Checkout"}
                                     </p>
                                 )}
                             </div>

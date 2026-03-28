@@ -12,8 +12,10 @@ import { Modal } from "@/components/ui/modal"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 import { jobPostApi, employerProfileApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
+import { useSubscriptionFeatures } from "@/hooks/useSubscriptionFeatures"
 import dynamic from "next/dynamic"
 import "react-quill-new/dist/quill.snow.css"
+import { cn } from "@/lib/utils"
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
@@ -22,6 +24,19 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
 
 export default function CreateJobPage() {
   const router = useRouter()
+  const {
+    canPostJob,
+    activeJobs: slotJobs,
+    jobSlots,
+    hasSubscription,
+    loading: featuresLoading,
+  } = useSubscriptionFeatures()
+
+  const slotsLabel =
+    jobSlots == null && hasSubscription
+      ? "Unlimited"
+      : String(jobSlots ?? 1)
+
   const toast = useToast() as {
     success: (message: string, options?: { title?: string; duration?: number }) => void
     error: (message: string, options?: { title?: string; duration?: number }) => void
@@ -150,6 +165,19 @@ export default function CreateJobPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (featuresLoading) {
+      toast.warning("Please wait while we verify your plan limits.")
+      return
+    }
+    if (!canPostJob) {
+      toast.error(
+        "You have reached your job posting limit for your current plan. Upgrade your plan to create new jobs.",
+        { title: "Upgrade required", duration: 5000 }
+      )
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -224,6 +252,10 @@ export default function CreateJobPage() {
     }
   }
 
+  const planBlocksCreate = !featuresLoading && !canPostJob
+  const saveDisabled =
+    isSubmitting || featuresLoading || planBlocksCreate
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -232,7 +264,28 @@ export default function CreateJobPage() {
           <h1 className="text-2xl font-bold text-neutral-900">Create Job</h1>
         </div>
 
+        {!featuresLoading && !canPostJob && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950 space-y-3">
+            <p>
+              Job posts in use: {slotJobs} / {slotsLabel}. You cannot create a new job until you free a slot or upgrade
+              your plan.
+            </p>
+            <Link
+              href="/plans"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-sky-500 px-4 text-sm font-medium text-white hover:bg-sky-600"
+            >
+              View plans and upgrade
+            </Link>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8">
+          <div
+            className={cn(
+              "space-y-8",
+              planBlocksCreate && "pointer-events-none opacity-[0.65] select-none"
+            )}
+          >
           {/* Job Details Section */}
           <div className="bg-white rounded-lg border border-neutral-200 p-6 space-y-6">
             <h2 className="text-lg font-semibold text-neutral-900">Job Details</h2>
@@ -581,6 +634,7 @@ export default function CreateJobPage() {
                   <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
                     <ReactQuill
                       theme="snow"
+                      readOnly={planBlocksCreate}
                       value={formData.overview}
                       onChange={(content: string) => handleInputChange("overview", content)}
                       placeholder="Enter job description..."
@@ -606,6 +660,7 @@ export default function CreateJobPage() {
                   <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
                     <ReactQuill
                       theme="snow"
+                      readOnly={planBlocksCreate}
                       value={formData.qualifications}
                       onChange={(content: string) => handleInputChange("qualifications", content)}
                       placeholder="Enter required qualifications..."
@@ -631,6 +686,7 @@ export default function CreateJobPage() {
                   <div className="bg-white rounded-md border border-neutral-300 overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-neutral-200 [&_.ql-container]:border-none">
                     <ReactQuill
                       theme="snow"
+                      readOnly={planBlocksCreate}
                       value={formData.applicationProcess}
                       onChange={(content: string) => handleInputChange("applicationProcess", content)}
                       placeholder="Enter application process details..."
@@ -649,6 +705,7 @@ export default function CreateJobPage() {
               )}
             </div>
           </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-4 pb-6">
@@ -657,7 +714,11 @@ export default function CreateJobPage() {
                 Cancel
               </Button>
             </Link>
-            <Button type="submit" className="bg-sky-500 hover:bg-sky-600 text-white rounded-full" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              className="bg-sky-500 hover:bg-sky-600 text-white rounded-full"
+              disabled={saveDisabled}
+            >
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
           </div>

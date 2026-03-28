@@ -58,7 +58,7 @@ export default function JobPostingExample() {
                         </p>
                         {remainingSlots !== null && (
                             <p className="text-xs text-neutral-500">
-                                {remainingSlots} slots remaining
+                                {remainingSlots} job posts remaining
                             </p>
                         )}
                     </div>
@@ -71,7 +71,7 @@ export default function JobPostingExample() {
                         <AlertDescription className="text-red-800">
                             You've reached your job posting limit ({jobSlots} jobs).
                             Please <Link href="/plans" className="font-semibold underline">upgrade your plan</Link> to post more jobs,
-                            or close an existing job to free up a slot.
+                            or close an existing job to free a job post.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -81,7 +81,7 @@ export default function JobPostingExample() {
                     <Alert className="border-yellow-200 bg-yellow-50">
                         <AlertCircle className="h-4 w-4 text-yellow-600" />
                         <AlertDescription className="text-yellow-800">
-                            You have {remainingSlots} job slot{remainingSlots !== 1 ? 's' : ''} remaining.
+                            You have {remainingSlots} job post{remainingSlots !== 1 ? 's' : ''} remaining.
                             Consider <Link href="/plans" className="font-semibold underline">upgrading</Link> for more capacity.
                         </AlertDescription>
                     </Alert>
