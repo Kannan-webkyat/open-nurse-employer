@@ -24,6 +24,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
 
 export default function CreateJobPage() {
   const router = useRouter()
+  const today = new Date().toISOString().split("T")[0]
   const {
     canPostJob,
     activeJobs: slotJobs,
@@ -59,7 +60,7 @@ export default function CreateJobPage() {
     formatted_address: "",
     employmentType: "",
     yearsOfExperience: "",
-    postedDate: "",
+    postedDate: today,
     closedDate: "",
     numberOfOpenings: "",
     status: "",
