@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { loadStripe } from "@stripe/stripe-js"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Button } from "@/components/ui/button"
 import { Check, Loader2 } from "lucide-react"
@@ -10,10 +11,13 @@ import { cn } from "@/lib/utils"
 import { subscriptionApi, paymentMethodApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
+
 interface Plan {
     id: number
     name: string
     amount: number
+    type: number
     type_name?: string
     nurse_slots?: number
     unlimited_job_postings?: boolean
@@ -30,7 +34,8 @@ interface Subscription {
 }
 
 interface PaymentMethod {
-    id: string
+    id: number
+    stripe_payment_method_id: string
     card_brand: string
     card_last_four: string
     is_default: boolean
@@ -193,17 +198,47 @@ export default function PlansPage() {
         setUpgrading(plan.id)
 
         try {
-            const response = await subscriptionApi.createCheckoutSession(plan.id)
-            const payload = response.data as { url?: string; checkout_url?: string } | undefined
-            const checkoutUrl = payload?.url ?? payload?.checkout_url
-
-            if (response.success && checkoutUrl) {
-                success("Redirecting to Stripe Checkout...")
-                window.location.href = checkoutUrl
+            const defaultMethod = paymentMethods.find((pm) => pm.is_default) ?? paymentMethods[0]
+            if (!defaultMethod) {
+                warning("Please add a payment method in Billing first.")
+                router.push("/billing?redirect=/plans")
                 return
             }
 
-            error(response.message || "Failed to create checkout session")
+            const billing_cycle =
+                plan.type === 1 ? "yearly" : plan.type === 2 ? "lifetime" : "monthly"
+
+            const response = await subscriptionApi.upgradeSubscription({
+                plan_id: plan.id,
+                payment_method_id: defaultMethod.id,
+                billing_cycle,
+            })
+
+            if (!response.success) {
+                error(response.message || "Failed to upgrade subscription")
+                setUpgrading(null)
+                return
+            }
+
+            const clientSecret = (response.data as any)?.client_secret as string | undefined
+            if (clientSecret) {
+                const stripe = await stripePromise
+                if (!stripe) {
+                    error("Stripe is not configured correctly")
+                    setUpgrading(null)
+                    return
+                }
+
+                const { error: stripeError } = await stripe.confirmCardPayment(clientSecret)
+                if (stripeError) {
+                    error(stripeError.message || "Payment requires additional action")
+                    setUpgrading(null)
+                    return
+                }
+            }
+
+            success("Subscription upgraded successfully!")
+            await fetchData()
             setUpgrading(null)
         } catch (err: unknown) {
             console.error("Checkout error:", err)

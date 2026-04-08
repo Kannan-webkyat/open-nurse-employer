@@ -228,9 +228,21 @@ export default function BillingPage() {
     }
   }, [isStripeConfigured])
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (stripePaymentMethodId?: string) => {
     try {
       setIsPageLoading(true)
+
+      if (stripePaymentMethodId) {
+        const saveResponse = await paymentMethodApi.add({
+          stripe_payment_method_id: stripePaymentMethodId,
+          is_default: true,
+        })
+
+        if (!saveResponse.success) {
+          error(saveResponse.message || "Failed to save payment method")
+        }
+      }
+
       const response = await paymentMethodApi.getAll()
 
       if (response.success && response.data) {
@@ -824,7 +836,7 @@ export default function BillingPage() {
                   >
                     <StripeCardForm
                       clientSecret={paymentClientSecret}
-                      onSuccess={() => handlePaymentSuccess()}
+                      onSuccess={(paymentMethodId) => handlePaymentSuccess(paymentMethodId)}
                       onCancel={() => setIsAddPaymentModalOpen(false)}
                     />
                   </Elements>
