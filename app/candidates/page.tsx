@@ -12,6 +12,7 @@ import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, 
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
+import { formatInAppTimezone } from "@/lib/appTimezone"
 import { useToast } from "@/components/ui/toast"
 
 interface WorkExperience {
@@ -1615,13 +1616,13 @@ export default function CandidatesPage() {
                     <div>
                       <label className="text-sm font-medium text-neutral-600">Scheduled At</label>
                       <p className="text-sm text-neutral-900 mt-1">
-                        {new Date(viewCandidate.interviewAt).toLocaleString([], {
+                        {formatInAppTimezone(viewCandidate.interviewAt, {
                           weekday: 'short',
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
                           hour: '2-digit',
-                          minute: '2-digit'
+                          minute: '2-digit',
                         })}
                       </p>
                     </div>
