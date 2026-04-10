@@ -376,17 +376,24 @@ function LoginForm() {
                 <div className="absolute top-10 right-10 w-32 h-32 bg-sky-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
                 <div className="absolute bottom-10 left-1/3 w-64 h-64 bg-blue-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-                {/* Content Overlay */}
-                <div className="absolute bottom-0 left-0 w-full p-12 md:p-16 lg:p-20 text-white">
-                    <div className="max-w-2xl">
-                        <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight tracking-tight">
-                            Build Your <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-300">Dream Medical Team</span>
-                        </h2>
-
-                        <p className="text-lg text-slate-300 max-w-xl leading-relaxed font-light mb-10">
-                            Connect with skilled, trusted healthcare professionals tailored to your needs.
-                        </p>
+                {/* Content Overlay (simple text like other logins) */}
+                <div className="absolute inset-0 flex items-center justify-center p-12">
+                    <div className="relative z-10 w-full max-w-xl">
+                        <div className="bg-white/20 backdrop-blur-2xl rounded-3xl p-10 border border-white/30 shadow-2xl">
+                            <p className="text-[10px] font-black text-white/80 uppercase tracking-[0.18em]">
+                                Employer Portal
+                            </p>
+                            <h2 className="mt-4 text-5xl font-black text-white leading-tight tracking-tight drop-shadow-xl">
+                                Build your team.<br />
+                                Hire with confidence.
+                            </h2>
+                            <p className="mt-5 text-sm text-white/80 leading-relaxed font-medium max-w-md">
+                                Secure access to your dashboard, candidate pipeline, and hiring activity — all in one place.
+                            </p>
+                            <div className="mt-6 text-xs text-white/70 font-semibold">
+                                Sign in to continue.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
