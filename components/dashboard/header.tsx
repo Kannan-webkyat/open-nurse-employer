@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut, Menu } from "lucide-react"
+import { Bell, MessageCircle, User, FileText, MessageSquare, Calendar, Briefcase, RefreshCw, LogOut, Menu, X } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { useNotifications, Notification } from "@/components/providers/notification-provider"
 import { useUser } from "@/components/providers/user-provider"
@@ -173,6 +173,8 @@ export function Header() {
       })
     }
   }, [user])
+
+
 
   // Listen for profile update events to refresh header data
   useEffect(() => {
@@ -430,6 +432,7 @@ export function Header() {
                     )}
                   </div>
                 </div>
+
                 <div className="p-2">
                   <button
                     onClick={async () => {
@@ -460,6 +463,8 @@ export function Header() {
           </div>
         </div>
       </div>
+
+
     </header>
   )
 }
