@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { CreditCard, ChevronRight, Download, ChevronDown, Building2, ChevronUp, Loader2 } from "lucide-react"
 import { Modal } from "@/components/ui/modal"
+import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { paymentMethodApi, paymentApi, subscriptionApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
@@ -98,6 +99,7 @@ export default function BillingPage() {
   const [setupIntentError, setSetupIntentError] = useState<string | null>(null)
   const [transactions, setTransactions] = useState<any[]>([])
   const [isCancellingSubscription, setIsCancellingSubscription] = useState(false)
+  const [isCancelSubscriptionDialogOpen, setIsCancelSubscriptionDialogOpen] = useState(false)
 
   // Check if Stripe is configured
   const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -479,7 +481,7 @@ export default function BillingPage() {
     setPaymentUrl(null)
   }
 
-  const handleCancelSubscription = async () => {
+  const handleCancelSubscriptionClick = () => {
     if (isCancellingSubscription) {
       return
     }
@@ -493,10 +495,10 @@ export default function BillingPage() {
       return
     }
 
-    if (!confirm("Cancel your subscription at the end of the current billing period?")) {
-      return
-    }
+    setIsCancelSubscriptionDialogOpen(true)
+  }
 
+  const handleCancelSubscriptionConfirm = async () => {
     try {
       setIsCancellingSubscription(true)
       const response = await subscriptionApi.cancelSubscription({
@@ -590,7 +592,7 @@ export default function BillingPage() {
                     variant="outline"
                     size="sm"
                     disabled={isCancellingSubscription || currentSubscription?.cancel_at_period_end}
-                    onClick={handleCancelSubscription}
+                    onClick={handleCancelSubscriptionClick}
                     className="text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
                     {isCancellingSubscription ? (
@@ -940,6 +942,16 @@ export default function BillingPage() {
             )}
           </div>
         </Modal>
+
+        <AlertDialog
+          isOpen={isCancelSubscriptionDialogOpen}
+          onClose={() => setIsCancelSubscriptionDialogOpen(false)}
+          onConfirm={handleCancelSubscriptionConfirm}
+          title="Cancel subscription"
+          description="Cancel your subscription at the end of the current billing period? You will keep access until then."
+          confirmText="Cancel subscription"
+          cancelText="Keep subscription"
+        />
       </div>
     </DashboardLayout>
   )
