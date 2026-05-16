@@ -10,13 +10,14 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { TablePagination } from "@/components/ui/table-pagination"
 import { Modal } from "@/components/ui/modal"
 import { AlertDialog } from "@/components/ui/alert-dialog"
-import { Search, Filter, Eye, Pencil, Trash2, X, Copy, QrCode, Download, Check, ExternalLink } from "lucide-react"
+import { Search, Filter, Eye, Pencil, Trash2, X, Copy, QrCode } from "lucide-react"
 import Link from "next/link"
 import { jobPostApi, employerProfileApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import { useSubscriptionFeatures } from "@/hooks/useSubscriptionFeatures"
 import { sanitizeHtml } from "@/lib/utils"
-import QRCodeSVG from "react-qr-code"
+import { downloadPrintableQrCard } from "@/lib/qr-print-card"
+import { QrShareModal } from "@/components/jobs/qr-share-modal"
 
 interface Job {
   id: number
@@ -95,6 +96,7 @@ export default function JobsPage() {
   // QR Code state
   const [isQrModalOpen, setIsQrModalOpen] = useState(false)
   const [employerUserId, setEmployerUserId] = useState<string | null>(null)
+  const [employerCompanyName, setEmployerCompanyName] = useState<string | null>(null)
   const [qrLinkCopied, setQrLinkCopied] = useState(false)
 
   const websiteUrl = (process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3001').replace(/\/$/, '')
@@ -107,6 +109,13 @@ export default function JobsPage() {
         const res = await employerProfileApi.getProfile() as any
         if (res.success && res.data?.id) {
           setEmployerUserId(String(res.data.id))
+          const company =
+            res.data?.employer?.company_name ??
+            res.data?.company_name ??
+            null
+          if (company) {
+            setEmployerCompanyName(String(company))
+          }
         }
       } catch (err) {
         console.error('Failed to fetch employer profile:', err)
@@ -115,29 +124,17 @@ export default function JobsPage() {
     fetchProfile()
   }, [])
 
-  // Download QR as PNG
   const handleDownloadQr = () => {
     const container = document.getElementById('employer-qr-container')
     const svgEl = container?.querySelector('svg')
-    if (!svgEl) return
-    const svgData = new XMLSerializer().serializeToString(svgEl)
-    const canvas = document.createElement('canvas')
-    const size = 512
-    canvas.width = size
-    canvas.height = size
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const img = new Image()
-    img.onload = () => {
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, size, size)
-      ctx.drawImage(img, 56, 56, size - 112, size - 112)
-      const link = document.createElement('a')
-      link.download = 'employer-qr-code.png'
-      link.href = canvas.toDataURL('image/png')
-      link.click()
-    }
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
+    if (!svgEl || !qrUrl) return
+    downloadPrintableQrCard({
+      svgElement: svgEl,
+      scanUrl: qrUrl,
+      companyName: employerCompanyName,
+      fileName: 'open-nurses-job-qr.png',
+    })
+    toast.success('Printable QR card downloaded')
   }
 
   const handleCopyQrLink = async () => {
@@ -683,122 +680,15 @@ export default function JobsPage() {
           confirmText="Delete"
           cancelText="Cancel"
         />
-
-        {/* QR Code Modal */}
-        {isQrModalOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4"
-              onClick={() => setIsQrModalOpen(false)}
-            >
-              {/* Modal card */}
-              <div
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden relative"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Header gradient */}
-                <div className="bg-gradient-to-br from-sky-500 to-indigo-600 p-6 text-white relative overflow-hidden">
-                  <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
-                  <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/10" />
-                  <button
-                    onClick={() => setIsQrModalOpen(false)}
-                    className="absolute top-4 right-4 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-1">
-                      <QrCode className="w-5 h-5 text-sky-200" />
-                      <span className="text-sky-200 text-xs font-semibold uppercase tracking-wider">QR Share</span>
-                    </div>
-                    <h2 className="text-xl font-black tracking-tight">Share Your Jobs</h2>
-                    <p className="text-sky-100 text-sm mt-1 leading-snug">
-                      Clients scan this to view all your active job listings
-                    </p>
-                  </div>
-                </div>
-
-                {/* QR Code area */}
-                <div className="p-6">
-                  {qrUrl ? (
-                    <>
-                      <div className="flex justify-center mb-5">
-                        <div className="bg-white rounded-2xl p-4 shadow-lg border border-neutral-100 relative">
-                          {/* Corner decorators */}
-                          <div className="absolute top-1.5 left-1.5 w-5 h-5 border-t-2 border-l-2 border-sky-400 rounded-tl-lg" />
-                          <div className="absolute top-1.5 right-1.5 w-5 h-5 border-t-2 border-r-2 border-sky-400 rounded-tr-lg" />
-                          <div className="absolute bottom-1.5 left-1.5 w-5 h-5 border-b-2 border-l-2 border-sky-400 rounded-bl-lg" />
-                          <div className="absolute bottom-1.5 right-1.5 w-5 h-5 border-b-2 border-r-2 border-sky-400 rounded-br-lg" />
-                          <div id="employer-qr-container">
-                            <QRCodeSVG
-                              value={qrUrl}
-                              size={220}
-                              bgColor="#ffffff"
-                              fgColor="#0f172a"
-                              level="H"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* URL pill */}
-                      <div className="bg-neutral-50 border border-neutral-200 rounded-xl px-3 py-2 flex items-center gap-2 mb-4">
-                        <span className="text-xs text-neutral-500 truncate flex-1 font-mono" title={qrUrl}>
-                          {qrUrl}
-                        </span>
-                        <a
-                          href={qrUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 text-neutral-400 hover:text-sky-600 transition-colors"
-                          title="Open link"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </a>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          onClick={handleDownloadQr}
-                          className="bg-sky-500 hover:bg-sky-600 text-white rounded-xl font-semibold text-sm gap-2"
-                        >
-                          <Download className="w-4 h-4" />
-                          Download
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={handleCopyQrLink}
-                          className={`rounded-xl font-semibold text-sm gap-2 transition-all ${
-                            qrLinkCopied
-                              ? 'border-emerald-400 text-emerald-600 bg-emerald-50'
-                              : 'border-neutral-300 text-neutral-700'
-                          }`}
-                        >
-                          {qrLinkCopied ? (
-                            <><Check className="w-4 h-4" /> Copied!</>
-                          ) : (
-                            <><Copy className="w-4 h-4" /> Copy Link</>
-                          )}
-                        </Button>
-                      </div>
-
-                      <p className="text-center text-xs text-neutral-400 mt-4 leading-relaxed">
-                        Download and share this QR code with clients. When scanned, they'll see all your active job listings.
-                      </p>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 text-neutral-400">
-                      <div className="w-10 h-10 border-2 border-neutral-200 border-t-sky-500 rounded-full animate-spin mb-3" />
-                      <p className="text-sm">Generating QR code…</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        <QrShareModal
+          open={isQrModalOpen}
+          onClose={() => setIsQrModalOpen(false)}
+          qrUrl={qrUrl}
+          companyName={employerCompanyName}
+          qrLinkCopied={qrLinkCopied}
+          onDownload={handleDownloadQr}
+          onCopyLink={handleCopyQrLink}
+        />
 
         {/* Filter Panel */}
         {isFilterOpen && (
