@@ -100,6 +100,7 @@ export default function BillingPage() {
   const [transactions, setTransactions] = useState<any[]>([])
   const [isCancellingSubscription, setIsCancellingSubscription] = useState(false)
   const [isCancelSubscriptionDialogOpen, setIsCancelSubscriptionDialogOpen] = useState(false)
+  const [isDeletePaymentMethodDialogOpen, setIsDeletePaymentMethodDialogOpen] = useState(false)
 
   // Check if Stripe is configured
   const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -390,13 +391,20 @@ export default function BillingPage() {
     setIsViewPaymentModalOpen(true)
   }
 
-  const handleDeletePaymentMethod = async (id: any) => {
-    if (!confirm("Are you sure you want to delete this payment method?")) {
+  const handleDeletePaymentMethodClick = () => {
+    if (!selectedPaymentMethod) {
+      return
+    }
+    setIsDeletePaymentMethodDialogOpen(true)
+  }
+
+  const handleDeletePaymentMethodConfirm = async () => {
+    if (!selectedPaymentMethod) {
       return
     }
 
     try {
-      const response = await paymentMethodApi.delete(id);
+      const response = await paymentMethodApi.delete(selectedPaymentMethod.id)
 
       if (response.success) {
         success("Payment method deleted successfully")
@@ -911,11 +919,7 @@ export default function BillingPage() {
             <Button
               variant="outline"
               className="mr-auto bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
-              onClick={() => {
-                if (selectedPaymentMethod) {
-                  handleDeletePaymentMethod(selectedPaymentMethod.id)
-                }
-              }}
+              onClick={handleDeletePaymentMethodClick}
             >
               Delete
             </Button>
@@ -951,6 +955,20 @@ export default function BillingPage() {
           description="Cancel your subscription at the end of the current billing period? You will keep access until then."
           confirmText="Cancel subscription"
           cancelText="Keep subscription"
+        />
+
+        <AlertDialog
+          isOpen={isDeletePaymentMethodDialogOpen}
+          onClose={() => setIsDeletePaymentMethodDialogOpen(false)}
+          onConfirm={handleDeletePaymentMethodConfirm}
+          title="Delete payment method"
+          description={
+            selectedPaymentMethod
+              ? `Are you sure you want to delete the payment method ending in ${selectedPaymentMethod.lastFour}? This action cannot be undone.`
+              : "Are you sure you want to delete this payment method? This action cannot be undone."
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
         />
       </div>
     </DashboardLayout>
