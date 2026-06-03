@@ -11,6 +11,11 @@ import { EchoProvider } from '@/components/providers/echo-provider'
 export const metadata: Metadata = {
   title: 'Open Nurses - Dashboard',
   description: 'Open Nurses Dashboard',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
