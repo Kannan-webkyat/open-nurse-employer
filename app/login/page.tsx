@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { authApi } from '@/lib/api/auth';
 import { useUser } from '@/components/providers/user-provider';
+import { TERMS_PDF_URL } from '@/lib/terms-url';
 import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
 function LoginForm() {
@@ -355,6 +356,17 @@ function LoginForm() {
                             </div>
                         )}
                     </form>
+
+                    <div className="mt-8 text-center">
+                        <a
+                            href={TERMS_PDF_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-slate-400 hover:text-sky-600 transition-colors font-medium"
+                        >
+                            Terms of Service
+                        </a>
+                    </div>
                 </div>
             </div>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { authApi } from '@/lib/api/auth';
+import { TERMS_PDF_URL } from '@/lib/terms-url';
 import { GooglePlacesInput } from '@/components/ui/google-places-input';
 import { Loader2, Eye, EyeOff, Building2, User, Mail, Phone, Lock } from 'lucide-react';
 
@@ -247,6 +248,16 @@ export default function RegisterPage() {
                         </div>
                     </form>
 
+                    <div className="mt-8 text-center">
+                        <a
+                            href={TERMS_PDF_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-slate-400 hover:text-sky-600 transition-colors font-medium"
+                        >
+                            Terms of Service
+                        </a>
+                    </div>
                 </div>
             </div>
 

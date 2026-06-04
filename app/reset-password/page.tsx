@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authApi } from '@/lib/api/auth';
+import { TERMS_PDF_URL } from '@/lib/terms-url';
 import { Loader2, Eye, EyeOff, ArrowLeft, Building2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 function ResetPasswordForm() {
@@ -231,6 +232,14 @@ function ResetPasswordForm() {
 
                 {/* Footer */}
                 <div className="text-center relative z-10">
+                    <a
+                        href={TERMS_PDF_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-neutral-400 hover:text-emerald-600 transition-colors font-medium"
+                    >
+                        Terms of Service
+                    </a>
                     <p className="mt-3 text-xs text-neutral-400 font-medium">
                         © 2024 Open Nurses. All rights reserved.
                     </p>
