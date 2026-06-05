@@ -1013,6 +1013,16 @@ export default function CandidatesPage() {
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3 relative">
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-sky-600 hover:bg-sky-100 transition-colors group relative"
+                            title="Message"
+                            onClick={() => handleMessageClick(candidate)}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Message
+                            </span>
+                          </button>
                           {/* Quick Action Button - context aware based on status */}
                           {candidate.status === "new" ? (
                             /* No quick action for new candidates - must review first */
@@ -1126,18 +1136,6 @@ export default function CandidatesPage() {
                                 style={{ top: menuPosition.top, right: menuPosition.right }}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {/* Message - always available */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMessageClick(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                  Message
-                                </button>
-
                                 {/* Shortlist - only for reviewed status */}
                                 {candidate.status === "reviewed" && (
                                   <button
