@@ -234,7 +234,7 @@ export default function CandidatesPage() {
           // Transform backend data to frontend format
           const transformedCandidates: Candidate[] = applications.map((app: any) => ({
             id: app.id,
-            nurseId: app.user?.nurse?.id,
+            nurseId: app.nurse_id || app.user?.nurse?.id,
             candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
             jobAppliedFor: app.job_title || app.jobPost?.title || "",
             jobId: app.job_id || app.jobPost?.job_id || "",
@@ -403,32 +403,21 @@ export default function CandidatesPage() {
     setOpenMenuId(null)
 
     try {
-      // Find job ID (assuming jobId is string like 'JOB-123' might need parsing, 
-      // but backend takes job_post_id.
-      // Wait, app.job_id is mapped to jobId. If it's the external reference ID (string), 
-      // we might need the internal ID for `job_post_id`.
-      // However, let's assume `app.job_id` IS the internal ID or we don't pass it if it's the external formatted string.
-      // If jobId is string "JOB-...", we can't use it directly if backend expects integer.
-      // Let's rely on `app.job_post_id` if available or assume `jobId` is the ID.
-      // Looking at transformation: `jobId: app.job_id || app.jobPost?.job_id || ""`
-      // `job_id` suggests database foreign key in `job_applications`.
-
-      // Actually, let's check transformation again.
-      // `nurseId: app.nurse_id`
-
       const response = await apiMiddleware.post('/conversations', {
         nurse_id: candidate.nurseId,
-        job_post_id: candidate.jobPostId
+        job_post_id: candidate.jobPostId,
+        job_application_id: candidate.id,
       });
 
       if (response.data?.success) {
         router.push(`/messages?conversation_id=${response.data.data.id}`);
       } else {
-        toast.error('Failed to start conversation');
+        toast.error(response.data?.message || 'Failed to start conversation');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error starting chat:", error);
-      toast.error("Failed to connect to chat");
+      const apiError = error as { response?: { data?: { message?: string } } };
+      toast.error(apiError.response?.data?.message || 'Failed to connect to chat');
     }
   }
 
@@ -738,7 +727,7 @@ export default function CandidatesPage() {
         const app = response.data as any
         const transformedCandidate: Candidate = {
           id: app.id,
-          nurseId: app.user?.nurse?.id,
+          nurseId: app.nurse_id || app.user?.nurse?.id,
           candidateName: app.full_name || `${app.first_name} ${app.last_name}`,
           jobAppliedFor: app.job_title || app.jobPost?.title || "",
           jobId: app.job_id || app.jobPost?.job_id || "",
@@ -943,7 +932,7 @@ export default function CandidatesPage() {
         {/* Table */}
         <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <Table className="min-w-[1000px]">
+            <Table className="min-w-[1080px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>#</TableHead>
@@ -951,19 +940,20 @@ export default function CandidatesPage() {
                   <TableHead>Role</TableHead>
                   <TableHead>Job ID</TableHead>
                   <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center w-[80px]">Message</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
+                    <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : paginatedCandidates.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
+                    <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
                       No candidates found
                     </TableCell>
                   </TableRow>
@@ -1010,6 +1000,18 @@ export default function CandidatesPage() {
                             })()
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <button
+                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-sky-600 hover:bg-sky-100 transition-colors group relative mx-auto"
+                          title="Message"
+                          onClick={() => handleMessageClick(candidate)}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                            Message
+                          </span>
+                        </button>
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3 relative">
@@ -1126,18 +1128,6 @@ export default function CandidatesPage() {
                                 style={{ top: menuPosition.top, right: menuPosition.right }}
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                {/* Message - always available */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleMessageClick(candidate)
-                                  }}
-                                  className="w-full px-4 py-2 text-sm text-left text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                  Message
-                                </button>
-
                                 {/* Shortlist - only for reviewed status */}
                                 {candidate.status === "reviewed" && (
                                   <button
