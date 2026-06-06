@@ -7,6 +7,33 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
+
+function getAlertHref(alert: { action_url?: string }) {
+    if (!alert.action_url) return '/jobs'
+    const match = alert.action_url.match(/^\/jobs\/(\d+)$/)
+    if (match) return `/jobs/edit/${match[1]}`
+    return alert.action_url
+}
+
+function getActivityHref(activity: { type?: string; id?: number | string }) {
+    if (activity.type === 'application') return '/candidates?status=new'
+    if (activity.type === 'job') {
+        const jobId = String(activity.id ?? '').replace(/_job$/, '')
+        if (jobId) return `/jobs/edit/${jobId}`
+    }
+    return '/candidates'
+}
+
+function getPipelineHref(stageName: string) {
+    const links: Record<string, string> = {
+        'New Applications': '/candidates?status=new',
+        'Shortlisted': '/candidates?status=shortlisted',
+        'Interviewing': '/candidates?status=interviewing',
+        'Hired': '/candidates?status=hired',
+        'Rejected': '/candidates?status=rejected',
+    }
+    return links[stageName] || '/candidates'
+}
 import {
     Briefcase,
     Users,
@@ -184,7 +211,7 @@ const DashboardPage = () => {
             icon: Calendar,
             color: "sky",
             description: "Upcoming sessions",
-            link: "/candidates"
+            link: "/candidates?status=interviewing"
         },
         {
             title: "Hired Candidates",
@@ -193,7 +220,7 @@ const DashboardPage = () => {
             icon: CheckCircle,
             color: "amber",
             description: "Successfully hired",
-            link: "/candidates"
+            link: "/candidates?status=hired"
         }
     ]
 
@@ -573,16 +600,16 @@ const DashboardPage = () => {
 
                                     <div className="flex-1 w-full space-y-3">
                                         {[
-                                            { label: 'Active Positions', value: data.stats.active_jobs, color: 'bg-emerald-500' },
-                                            { label: 'Closed/Drafts', value: data.stats.total_jobs - data.stats.active_jobs, color: 'bg-slate-400' }
+                                            { label: 'Active Positions', value: data.stats.active_jobs, color: 'bg-emerald-500', href: '/jobs' },
+                                            { label: 'Closed/Drafts', value: data.stats.total_jobs - data.stats.active_jobs, color: 'bg-slate-400', href: '/jobs' }
                                         ].map((item, i) => (
-                                            <div key={i} className="flex items-center justify-between">
+                                            <Link key={i} href={item.href} className="flex items-center justify-between rounded-lg px-1 -mx-1 hover:bg-white/5 transition-colors">
                                                 <div className="flex items-center gap-2">
                                                     <div className={`w-2.5 h-2.5 rounded-full ${item.color}`}></div>
                                                     <span className="text-xs font-bold text-neutral-300">{item.label}</span>
                                                 </div>
                                                 <span className="text-xs font-black text-white">{item.value || 0}</span>
-                                            </div>
+                                            </Link>
                                         ))}
                                         <div className="pt-2 border-t border-white/10 mt-2">
                                             <div className="flex justify-between items-center bg-white/5 p-2 rounded-xl">
@@ -650,7 +677,7 @@ const DashboardPage = () => {
                                             const percent = (stage.value / max) * 100;
 
                                             return (
-                                                <div key={i} className="group/bar">
+                                                <Link key={i} href={getPipelineHref(stage.name)} className="group/bar block rounded-lg hover:bg-white/5 px-1 -mx-1 transition-colors">
                                                     <div className="flex justify-between text-[10px] font-bold mb-1.5 uppercase tracking-wider">
                                                         <span className="text-emerald-200/70 group-hover/bar:text-sky-400 transition-colors uppercase">{stage.name}</span>
                                                         <span className="text-white font-black">{stage.value}</span>
@@ -672,7 +699,7 @@ const DashboardPage = () => {
                                                             <div className="absolute inset-0 bg-white/20 animate-pulse" />
                                                         </motion.div>
                                                     </div>
-                                                </div>
+                                                </Link>
                                             )
                                         })}
                                 </div>
@@ -698,9 +725,11 @@ const DashboardPage = () => {
                                         <h3 className="text-lg font-black text-neutral-900 tracking-tight">Top Jobs</h3>
                                         <p className="text-xs text-neutral-400 font-medium mt-1">Most popular positions</p>
                                     </div>
-                                    <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg px-2">
-                                        View All
-                                    </Button>
+                                    <Link href="/jobs">
+                                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg px-2">
+                                            View All
+                                        </Button>
+                                    </Link>
                                 </div>
 
                                 <div className="space-y-3">
@@ -713,8 +742,8 @@ const DashboardPage = () => {
                                             const intensity = (job.applications / maxApps);
 
                                             return (
-                                                <div key={i} className="group flex items-center justify-between p-3 rounded-2xl bg-white border border-neutral-100/80 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300 cursor-pointer">
-                                                    <div className="flex items-center gap-3">
+                                                <div key={i} className="group flex items-center justify-between p-3 rounded-2xl bg-white border border-neutral-100/80 shadow-sm hover:shadow-md hover:border-amber-200 transition-all duration-300">
+                                                    <Link href={`/jobs/edit/${job.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-300 shadow-sm ${i === 0 ? 'bg-amber-100 text-amber-600' :
                                                             i === 1 ? 'bg-neutral-100 text-neutral-500' :
                                                                 i === 2 ? 'bg-orange-50 text-orange-400' :
@@ -722,25 +751,24 @@ const DashboardPage = () => {
                                                             } group-hover:scale-110`}>
                                                             {job.title.charAt(0)}
                                                         </div>
-                                                        <div>
+                                                        <div className="min-w-0">
                                                             <h4 className="font-bold text-neutral-900 text-sm group-hover:text-amber-700 transition-colors truncate max-w-[120px] sm:max-w-[150px]">{job.title}</h4>
                                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                                 <span className="text-[10px] font-medium text-neutral-400">ID: {job.jobId}</span>
                                                                 {job.status === 'active' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
                                                             </div>
                                                         </div>
-                                                    </div>
+                                                    </Link>
 
-                                                    <div className="flex flex-col items-end gap-1">
+                                                    <Link href={`/candidates?job_post_id=${job.id}`} className="flex flex-col items-end gap-1 shrink-0">
                                                         <div className="flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded-lg border border-neutral-100 group-hover:bg-white group-hover:border-amber-100 transition-colors">
                                                             <Users className="w-3 h-3 text-amber-500" />
                                                             <span className="text-xs font-black text-neutral-900">{job.applications}</span>
                                                         </div>
-                                                        {/* Subtle progress bar at bottom of card */}
                                                         <div className="w-12 h-1 bg-neutral-100 rounded-full overflow-hidden">
                                                             <div className="h-full bg-amber-500 rounded-full" style={{ width: `${intensity * 100}%` }}></div>
                                                         </div>
-                                                    </div>
+                                                    </Link>
                                                 </div>
                                             )
                                         })}
@@ -886,20 +914,20 @@ const DashboardPage = () => {
 
                             <div className="space-y-3 relative z-10">
                                 {data.recent_jobs.slice(0, 4).map((job: any, i: number) => (
-                                    <div key={i} className="group flex items-center justify-between p-4 rounded-2xl bg-white border border-neutral-100 hover:border-sky-200 hover:shadow-md hover:shadow-sky-100 hover:-translate-x-1 transition-all duration-300 cursor-pointer">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-black text-sm group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                                    <Link key={i} href={`/jobs/edit/${job.id}`} className="group flex items-center justify-between p-4 rounded-2xl bg-white border border-neutral-100 hover:border-sky-200 hover:shadow-md hover:shadow-sky-100 hover:-translate-x-1 transition-all duration-300 cursor-pointer">
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-black text-sm group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition-all duration-300 shadow-sm shrink-0">
                                                 {job.title.charAt(0)}
                                             </div>
-                                            <div>
-                                                <h4 className="font-bold text-neutral-900 group-hover:text-sky-700 transition-colors">{job.title}</h4>
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-neutral-900 group-hover:text-sky-700 transition-colors truncate">{job.title}</h4>
                                                 <div className="flex items-center gap-2 mt-0.5">
                                                     <span className="text-[10px] font-bold text-neutral-400 bg-neutral-50 px-1.5 py-0.5 rounded">ID: {job.jobId}</span>
                                                     <span className="text-[10px] text-neutral-400">• {job.postedDate}</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 shrink-0">
                                             <div className="flex -space-x-2">
                                                 {[...Array(3)].map((_, idx) => (
                                                     <div key={idx} className="w-6 h-6 rounded-full bg-neutral-100 border-2 border-white flex items-center justify-center text-[8px] font-bold text-neutral-400 group-hover:border-sky-100 transition-colors">
@@ -912,7 +940,7 @@ const DashboardPage = () => {
                                                 {job.status}
                                             </Badge>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </motion.div>
@@ -975,15 +1003,15 @@ const DashboardPage = () => {
                         {data.alerts && data.alerts.length > 0 && (
                             <div className="space-y-2">
                                 {data.alerts.map((alert: any, idx: number) => (
-                                    <div key={idx} className="bg-orange-50/50 border border-orange-100 p-3 rounded-xl flex items-center justify-between text-[10px] hover:bg-orange-100 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
-                                        <div className="flex items-center gap-2">
-                                            <div className="p-1 rounded bg-orange-100 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                                    <Link key={idx} href={getAlertHref(alert)} className="bg-orange-50/50 border border-orange-100 p-3 rounded-xl flex items-center justify-between text-[10px] hover:bg-orange-100 hover:shadow-sm hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="p-1 rounded bg-orange-100 text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors shrink-0">
                                                 <Activity className="w-3 h-3" />
                                             </div>
-                                            <span className="font-bold text-orange-800">{alert.message}</span>
+                                            <span className="font-bold text-orange-800 truncate">{alert.message}</span>
                                         </div>
-                                        {alert.action_url && <ArrowUpRight className="w-3 h-3 text-orange-400 group-hover:text-orange-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />}
-                                    </div>
+                                        <ArrowUpRight className="w-3 h-3 text-orange-400 group-hover:text-orange-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
+                                    </Link>
                                 ))}
                             </div>
                         )}
@@ -1054,15 +1082,15 @@ const DashboardPage = () => {
                             <h3 className="text-xs font-bold text-neutral-900 mb-3 px-1 relative z-10">Recent Activity</h3>
                             <div className="space-y-4 relative z-10">
                                 {data.recent_activities.slice(0, 4).map((activity: any, i: number) => (
-                                    <div key={i} className="flex gap-3 p-2 rounded-xl hover:bg-neutral-50 transition-colors cursor-default group/activity">
+                                    <Link key={i} href={getActivityHref(activity)} className="flex gap-3 p-2 rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer group/activity">
                                         <div className={`w-2 h-2 rounded-full mt-1.5 flex-none ${activity.type === 'job' ? 'bg-sky-500' : 'bg-emerald-500'} group-hover/activity:scale-125 transition-transform`}></div>
-                                        <div>
+                                        <div className="min-w-0">
                                             <p className="text-xs font-bold text-neutral-800 leading-tight line-clamp-1 group-hover/activity:text-sky-700 transition-colors">
                                                 {activity.description || `${activity.user} ${activity.title}`}
                                             </p>
                                             <p className="text-[10px] text-neutral-400 font-medium">{activity.time}</p>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         </motion.div>
@@ -1074,17 +1102,19 @@ const DashboardPage = () => {
                             className="bg-white rounded-3xl p-5 shadow-sm border border-neutral-50 relative overflow-hidden group hover:shadow-lg transition-all duration-500"
                         >                            <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xs font-bold text-neutral-900">Upcoming Interviews</h3>
-                                <Button variant="ghost" size="sm" className="h-6 text-[10px] text-neutral-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg px-2">
-                                    Calendar
-                                </Button>
+                                <Link href="/candidates?status=interviewing">
+                                    <Button variant="ghost" size="sm" className="h-6 text-[10px] text-neutral-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg px-2">
+                                        Calendar
+                                    </Button>
+                                </Link>
                             </div>
 
                             <div className="space-y-3">
                                 {data.upcoming_interviews && data.upcoming_interviews.length > 0 ? (
                                     data.upcoming_interviews.map((interview: any, i: number) => (
-                                        <div key={i} className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-50/50 border border-neutral-100 hover:bg-white hover:border-sky-100 hover:shadow-md transition-all duration-300 group/interview">
+                                        <Link key={i} href="/candidates?status=interviewing" className="flex items-center gap-3 p-3 rounded-2xl bg-neutral-50/50 border border-neutral-100 hover:bg-white hover:border-sky-100 hover:shadow-md transition-all duration-300 group/interview">
                                             {/* Date Badge */}
-                                            <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-white border border-neutral-100 shadow-sm text-center group-hover/interview:border-sky-200 group-hover/interview:bg-sky-50 transition-colors">
+                                            <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-white border border-neutral-100 shadow-sm text-center group-hover/interview:border-sky-200 group-hover/interview:bg-sky-50 transition-colors shrink-0">
                                                 <span className="text-[10px] font-bold text-neutral-400 uppercase leading-none group-hover/interview:text-sky-400">{interview.date?.split(' ')[0]}</span>
                                                 <span className="text-sm font-black text-neutral-900 leading-none mt-0.5 group-hover/interview:text-sky-700">{interview.date?.split(' ')[1]}</span>
                                             </div>
@@ -1098,16 +1128,27 @@ const DashboardPage = () => {
                                                 </div>
                                             </div>
 
-                                            <Button variant="ghost" size="sm" className="h-8 w-8 rounded-full p-0 text-neutral-400 hover:text-white hover:bg-sky-500 transition-all">
-                                                <div className="w-4 h-4 flex items-center justify-center">📹</div>
-                                            </Button>
-                                        </div>
+                                            {interview.meeting_link ? (
+                                                <span
+                                                    onClick={(e) => {
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        window.open(interview.meeting_link, '_blank', 'noopener,noreferrer')
+                                                    }}
+                                                    className="h-8 w-8 rounded-full p-0 text-neutral-400 hover:text-white hover:bg-sky-500 transition-all flex items-center justify-center shrink-0"
+                                                >
+                                                    <div className="w-4 h-4 flex items-center justify-center">📹</div>
+                                                </span>
+                                            ) : null}
+                                        </Link>
                                     ))
                                 ) : (
                                     <div className="text-center py-6">
                                         <div className="w-12 h-12 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-2 text-2xl grayscale opacity-50">☕️</div>
                                         <p className="text-xs font-bold text-neutral-400">No interviews coming up</p>
-                                        <Button variant="ghost" className="text-[10px] text-sky-500 hover:text-sky-600 h-auto p-0 mt-1 hover:bg-transparent underline-offset-4 hover:underline" size="sm">Schedule Now</Button>
+                                        <Link href="/candidates?status=interviewing">
+                                            <Button variant="ghost" className="text-[10px] text-sky-500 hover:text-sky-600 h-auto p-0 mt-1 hover:bg-transparent underline-offset-4 hover:underline" size="sm">Schedule Now</Button>
+                                        </Link>
                                     </div>
                                 )}
                             </div>

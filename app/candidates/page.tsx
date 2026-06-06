@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useRef, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -143,8 +143,18 @@ const statusLabels = {
   hired: "Hired",
 }
 
-export default function CandidatesPage() {
+type StatusTab = "all" | "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "interviewed" | "rejected" | "hired"
+
+function normalizeStatusTab(param: string | null): StatusTab {
+  const valid: StatusTab[] = ["all", "new", "reviewed", "shortlisted", "contacting", "interviewing", "interviewed", "rejected", "hired"]
+  if (!param || param === "all") return "all"
+  if (valid.includes(param as StatusTab)) return param as StatusTab
+  return "all"
+}
+
+function CandidatesPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const toast = useToast() as {
     success: (message: string, options?: { title?: string; duration?: number }) => void
     error: (message: string, options?: { title?: string; duration?: number }) => void
@@ -158,7 +168,11 @@ export default function CandidatesPage() {
   const [rowsPerPage, setRowsPerPage] = useState(15)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
-  const [activeTab, setActiveTab] = useState<"all" | "new" | "reviewed" | "shortlisted" | "contacting" | "interviewing" | "interviewed" | "rejected" | "hired">("all")
+  const [activeTab, setActiveTab] = useState<StatusTab>(() => normalizeStatusTab(searchParams.get("status")))
+  const [jobPostFilter, setJobPostFilter] = useState<number | null>(() => {
+    const id = searchParams.get("job_post_id")
+    return id && !Number.isNaN(Number(id)) ? Number(id) : null
+  })
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [filters, setFilters] = useState({
     location: "",
@@ -208,6 +222,34 @@ export default function CandidatesPage() {
     "We would like to schedule an interview. Please share your availability."
   ]
 
+  useEffect(() => {
+    setActiveTab(normalizeStatusTab(searchParams.get("status")))
+    const id = searchParams.get("job_post_id")
+    setJobPostFilter(id && !Number.isNaN(Number(id)) ? Number(id) : null)
+  }, [searchParams])
+
+  const updateCandidatesUrl = (status: StatusTab, jobPostId: number | null = jobPostFilter) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (status === "all") {
+      params.delete("status")
+    } else {
+      params.set("status", status)
+    }
+    if (jobPostId) {
+      params.set("job_post_id", String(jobPostId))
+    } else {
+      params.delete("job_post_id")
+    }
+    const query = params.toString()
+    router.replace(query ? `/candidates?${query}` : "/candidates", { scroll: false })
+  }
+
+  const handleTabChange = (key: StatusTab) => {
+    setActiveTab(key)
+    setCurrentPage(1)
+    updateCandidatesUrl(key)
+  }
+
   // Reusable function to fetch candidates
   const fetchCandidates = async (showLoading = true) => {
     if (showLoading) setIsLoading(true)
@@ -221,6 +263,7 @@ export default function CandidatesPage() {
         status: statusParam,
         search: searchQuery || undefined,
         location: filters.location || undefined,
+        job_post_id: jobPostFilter || undefined,
       })
 
       if (response.success && 'data' in response && response.data) {
@@ -322,7 +365,7 @@ export default function CandidatesPage() {
   // Fetch candidates from API
   useEffect(() => {
     fetchCandidates()
-  }, [currentPage, rowsPerPage, activeTab, searchQuery, filters.location])
+  }, [currentPage, rowsPerPage, activeTab, searchQuery, filters.location, jobPostFilter])
 
   // Fetch filter options
   useEffect(() => {
@@ -907,10 +950,7 @@ export default function CandidatesPage() {
           ] as const).map(({ key, label }) => (
             <button
               key={key}
-              onClick={() => {
-                setActiveTab(key)
-                setCurrentPage(1)
-              }}
+              onClick={() => handleTabChange(key)}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === key
                 ? "border-sky-500 text-sky-600"
                 : "border-transparent text-neutral-600 hover:text-neutral-900"
@@ -1907,5 +1947,17 @@ export default function CandidatesPage() {
         )}
       </div>
     </DashboardLayout >
+  )
+}
+
+export default function CandidatesPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh] text-neutral-600">Loading...</div>
+      </DashboardLayout>
+    }>
+      <CandidatesPageContent />
+    </Suspense>
   )
 }
