@@ -2,24 +2,17 @@
 
 import Image from 'next/image'
 import QRCodeSVG from 'react-qr-code'
-import {
-  NURSING_QR_QUOTES,
-  QR_BRAND_NAME,
-  QR_HEADER_TAGLINE,
-} from '@/lib/qr-print-card'
+import { QR_BRAND_NAME, QR_HEADER_TAGLINE } from '@/lib/qr-print-card'
 
 type QrPrintablePreviewProps = {
   qrUrl: string
   companyName?: string | null
-  quoteIndex?: number
 }
 
 export function QrPrintablePreview({
   qrUrl,
   companyName,
-  quoteIndex = 0,
 }: QrPrintablePreviewProps) {
-  const quote = NURSING_QR_QUOTES[quoteIndex % NURSING_QR_QUOTES.length]
   const subtitle = companyName?.trim() || QR_HEADER_TAGLINE
 
   return (
@@ -43,7 +36,7 @@ export function QrPrintablePreview({
           </div>
         </div>
 
-        <div className="flex flex-col items-center bg-white px-4 pt-3 pb-2">
+        <div className="flex flex-col items-center bg-white px-4 pt-3 pb-4">
           <div
             id="employer-qr-container"
             className="relative flex items-center justify-center"
@@ -66,13 +59,6 @@ export function QrPrintablePreview({
           </div>
           <p className="mt-2 text-[10px] font-medium text-slate-400 tracking-wide">
             Scan to open jobs
-          </p>
-        </div>
-
-        <div className="border-t border-slate-100 bg-slate-50/50 px-3.5 py-2.5 text-center">
-          <p className="text-[10px] leading-snug text-slate-500 italic line-clamp-2">
-            &ldquo;{quote.text}&rdquo;
-            <span className="not-italic text-slate-400"> — {quote.author}</span>
           </p>
         </div>
       </div>

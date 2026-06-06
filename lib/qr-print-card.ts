@@ -1,37 +1,11 @@
-/** Branding + quotes for downloadable / printable employer QR cards */
+/** Branding for downloadable / printable employer QR cards */
 
 export const QR_BRAND_NAME = 'Open Nurses'
 
 export const QR_HEADER_TAGLINE = 'Scan to view our job openings'
 
-export const NURSING_QR_QUOTES = [
-  { text: 'Caring is the essence of nursing.', author: 'Jean Watson' },
-  { text: 'Nurses are the heart of healthcare.', author: 'Open Nurses' },
-  {
-    text: 'To know even one life has breathed easier because you have lived — that is to have succeeded.',
-    author: 'Ralph Waldo Emerson',
-  },
-  {
-    text: 'Wherever the art of medicine is loved, there is also a love of humanity.',
-    author: 'Hippocrates',
-  },
-  {
-    text: 'Every nurse was drawn to the profession because a desire to care is embedded in their souls.',
-    author: 'Open Nurses',
-  },
-  {
-    text: 'Compassion is the true foundation of nursing.',
-    author: 'Open Nurses',
-  },
-] as const
-
-export function pickNursingQrQuote(): (typeof NURSING_QR_QUOTES)[number] {
-  const index = Math.floor(Math.random() * NURSING_QR_QUOTES.length)
-  return NURSING_QR_QUOTES[index]
-}
-
 const CARD_WIDTH = 900
-const CARD_HEIGHT = 1200
+const CARD_HEIGHT = 1000
 
 function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -53,35 +27,6 @@ function roundRect(
   ctx.lineTo(x, y + radius)
   ctx.quadraticCurveTo(x, y, x + radius, y)
   ctx.closePath()
-}
-
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  lineHeight: number,
-): number {
-  const words = text.split(/\s+/)
-  let line = ''
-  let currentY = y
-
-  for (let i = 0; i < words.length; i++) {
-    const testLine = line ? `${line} ${words[i]}` : words[i]
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      ctx.fillText(line, x, currentY)
-      line = words[i]
-      currentY += lineHeight
-    } else {
-      line = testLine
-    }
-  }
-  if (line) {
-    ctx.fillText(line, x, currentY)
-    currentY += lineHeight
-  }
-  return currentY
 }
 
 function drawCardFrame(ctx: CanvasRenderingContext2D) {
@@ -139,44 +84,17 @@ function drawHeader(
   ctx.textAlign = 'left'
 }
 
-function drawFooter(
-  ctx: CanvasRenderingContext2D,
-  quote: (typeof NURSING_QR_QUOTES)[number],
-  scanUrl: string,
-) {
-  const padX = 72
-  const footerTop = CARD_HEIGHT - 200
-
-  roundRect(ctx, padX, footerTop, CARD_WIDTH - padX * 2, 120, 12)
-  ctx.fillStyle = '#f8fafc'
-  ctx.fill()
-
-  ctx.textAlign = 'center'
-  ctx.fillStyle = '#64748b'
-  ctx.font = 'italic 20px Georgia, "Times New Roman", serif'
-  wrapText(
-    ctx,
-    `"${quote.text}" — ${quote.author}`,
-    CARD_WIDTH / 2,
-    footerTop + 40,
-    CARD_WIDTH - padX * 2 - 24,
-    26,
-  )
-
-  ctx.textAlign = 'left'
-}
-
 function drawQrOnCard(
   ctx: CanvasRenderingContext2D,
   qrImage: HTMLImageElement,
 ) {
   const headerBottom = 40 + 108
-  const footerTop = CARD_HEIGHT - 200
-  const zoneTop = headerBottom + 16
-  const zoneBottom = footerTop - 16
+  const cardBottom = CARD_HEIGHT - 40 - 40
+  const zoneTop = headerBottom + 24
+  const zoneBottom = cardBottom - 48
   const zoneHeight = zoneBottom - zoneTop
 
-  const qrSize = Math.min(580, CARD_WIDTH - 100, zoneHeight - 40)
+  const qrSize = Math.min(620, CARD_WIDTH - 100, zoneHeight - 40)
   const qrX = (CARD_WIDTH - qrSize) / 2
   const qrY = zoneTop + (zoneHeight - qrSize) / 2
 
@@ -209,16 +127,14 @@ export type DownloadPrintableQrOptions = {
   scanUrl: string
   companyName?: string | null
   fileName?: string
-  quote?: (typeof NURSING_QR_QUOTES)[number]
 }
 
-/** Renders a printable card (header, QR, footer quote) and triggers PNG download. */
+/** Renders a printable card (header + QR) and triggers PNG download. */
 export function downloadPrintableQrCard({
   svgElement,
   scanUrl,
   companyName,
   fileName = 'open-nurses-job-qr.png',
-  quote = pickNursingQrQuote(),
 }: DownloadPrintableQrOptions): void {
   const svgData = new XMLSerializer().serializeToString(svgElement)
   const qrImage = new Image()
@@ -232,7 +148,6 @@ export function downloadPrintableQrCard({
     drawCardFrame(ctx)
     drawHeader(ctx, companyName)
     drawQrOnCard(ctx, qrImage)
-    drawFooter(ctx, quote, scanUrl)
 
     const link = document.createElement('a')
     link.download = fileName
