@@ -972,7 +972,7 @@ function CandidatesPageContent() {
         {/* Table */}
         <div className="bg-white rounded-lg border border-neutral-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <Table className="min-w-[1080px]">
+            <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>#</TableHead>
@@ -980,20 +980,19 @@ function CandidatesPageContent() {
                   <TableHead>Role</TableHead>
                   <TableHead>Job ID</TableHead>
                   <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center w-[80px]">Message</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
+                    <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : paginatedCandidates.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-neutral-600">
+                    <TableCell colSpan={6} className="text-center py-8 text-neutral-600">
                       No candidates found
                     </TableCell>
                   </TableRow>
@@ -1040,18 +1039,6 @@ function CandidatesPageContent() {
                             })()
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <button
-                          className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-sky-600 hover:bg-sky-100 transition-colors group relative mx-auto"
-                          title="Message"
-                          onClick={() => handleMessageClick(candidate)}
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                          <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            Message
-                          </span>
-                        </button>
                       </TableCell>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-3 relative">
@@ -1126,6 +1113,16 @@ function CandidatesPageContent() {
                               </span>
                             </button>
                           ) : null}
+                          <button
+                            className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-sky-600 hover:bg-sky-100 transition-colors group relative"
+                            title="Message"
+                            onClick={() => handleMessageClick(candidate)}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-neutral-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                              Message
+                            </span>
+                          </button>
                           <button
                             className="bg-neutral-100 rounded-full p-1 text-neutral-600 hover:text-blue-600 hover:bg-blue-100 transition-colors group relative"
                             title="View"
