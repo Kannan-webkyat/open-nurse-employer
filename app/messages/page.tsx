@@ -1,7 +1,8 @@
 
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { Suspense, useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { DashboardLayout } from "@/components/dashboard/layout"
 import { Search, User, Paperclip, Send, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ListOrdered, Image as ImageIcon, Link as LinkIcon, MessageSquare, File, Download, XCircle, Check, CheckCheck, ArrowLeft } from "lucide-react"
 import { useEcho } from "@/components/providers/echo-provider"
@@ -52,7 +53,9 @@ interface Conversation {
   unread_messages_count?: number
 }
 
-export default function MessagesPage() {
+function MessagesPageContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -124,6 +127,57 @@ export default function MessagesPage() {
     fetchInitialData()
 
   }, []) // Run only once on mount
+
+  // Open conversation from ?conversation_id= query (e.g. from candidates page)
+  useEffect(() => {
+    if (isLoading) return
+
+    const conversationIdParam = searchParams.get("conversation_id")
+    if (!conversationIdParam) return
+
+    const conversationId = Number(conversationIdParam)
+    if (Number.isNaN(conversationId)) return
+
+    if (selectedConversation?.id === conversationId) {
+      router.replace("/messages", { scroll: false })
+      return
+    }
+
+    let cancelled = false
+
+    const openConversation = async () => {
+      const existing = conversations.find((c) => c.id === conversationId)
+
+      if (existing) {
+        if (!cancelled) {
+          await handleConversationSelect(existing)
+          router.replace("/messages", { scroll: false })
+        }
+        return
+      }
+
+      try {
+        const res = await apiMiddleware.get(`/conversations/${conversationId}`)
+        if (res.data?.success && !cancelled) {
+          const conv = res.data.data as Conversation
+          setConversations((prev) => {
+            if (prev.some((c) => c.id === conv.id)) return prev
+            return [conv, ...prev]
+          })
+          await handleConversationSelect(conv)
+          router.replace("/messages", { scroll: false })
+        }
+      } catch (error) {
+        console.error("Failed to load conversation from URL", error)
+      }
+    }
+
+    openConversation()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLoading, searchParams, conversations, selectedConversation?.id, router])
 
   // Track selected conversation ID for listener
   const selectedConversationIdRef = useRef<number | null>(null)
@@ -705,5 +759,21 @@ export default function MessagesPage() {
         </div>
       </div>
     </DashboardLayout >
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[60vh] text-neutral-600">
+            Loading...
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <MessagesPageContent />
+    </Suspense>
   )
 }
