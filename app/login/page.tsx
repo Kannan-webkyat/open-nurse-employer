@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { authApi } from '@/lib/api/auth';
 import { useUser } from '@/components/providers/user-provider';
 import { TERMS_PDF_URL } from '@/lib/terms-url';
-import { Loader2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
+
+const websiteHomeUrl = (process.env.NEXT_PUBLIC_WEBSITE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 function LoginForm() {
     const router = useRouter();
@@ -217,16 +219,26 @@ function LoginForm() {
 
                 <div className="w-full max-w-xl p-6 md:p-10 flex flex-col justify-center mx-auto">
                     {/* Header */}
-                    <div className="mb-6">
-                        <Link href="/" className="inline-block mb-4">
-                            <Image src="/logo.svg" alt="Open Nurses" width={120} height={35} className="h-3 w-auto" />
-                        </Link>
-                        <h1 className="text-[40px] font-semibold text-slate-900 leading-tight">
-                            {showOtpInput ? 'Verify Identity' : 'Welcome Back'}
-                        </h1>
-                        <p className="text-sm text-slate-500 mt-1">
-                            {showOtpInput ? 'Enter the code sent to your email.' : 'Sign in to access your dashboard.'}
-                        </p>
+                    <div className="mb-6 space-y-6">
+                        <a
+                            href={websiteHomeUrl}
+                            className="flex w-fit items-center gap-1.5 text-sm text-slate-500 hover:text-sky-600 transition-colors font-medium"
+                        >
+                            <ArrowLeft size={16} className="shrink-0" />
+                            Back to Open Nurses website
+                        </a>
+
+                        <div>
+                            <Link href="/" className="inline-block mb-4">
+                                <Image src="/logo.svg" alt="Open Nurses" width={120} height={35} className="h-8 w-auto" />
+                            </Link>
+                            <h1 className="text-[40px] font-semibold text-slate-900 leading-tight">
+                                {showOtpInput ? 'Verify Identity' : 'Welcome Back'}
+                            </h1>
+                            <p className="text-sm text-slate-500 mt-1">
+                                {showOtpInput ? 'Enter the code sent to your email.' : 'Sign in to access your dashboard.'}
+                            </p>
+                        </div>
                     </div>
 
                     <form onSubmit={showOtpInput ? handleVerifyOtp : handleSubmit} className="space-y-3 flex-1">

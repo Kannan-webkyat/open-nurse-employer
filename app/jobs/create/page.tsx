@@ -6,11 +6,10 @@ import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { LocationInput } from "@/components/LocationInput"
 import { Button } from "@/components/ui/button"
-import { Calendar, X, Plus } from "lucide-react"
+import { Calendar } from "lucide-react"
 import Link from "next/link"
-import { Modal } from "@/components/ui/modal"
 import { SearchableSelect } from "@/components/ui/searchable-select"
-import { jobPostApi, employerProfileApi } from "@/lib/api"
+import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import { useSubscriptionFeatures } from "@/hooks/useSubscriptionFeatures"
 import dynamic from "next/dynamic"
@@ -78,8 +77,6 @@ export default function CreateJobPage() {
 
   const [categories, setCategories] = useState<any[]>([])
   const [jobRoles, setJobRoles] = useState<any[]>([])
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
-  const [newCategory, setNewCategory] = useState("")
 
   const fetchData = async () => {
     try {
@@ -106,44 +103,6 @@ export default function CreateJobPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleConfirmAddCategory = async () => {
-    if (newCategory.trim()) {
-      const categoryName = newCategory.trim()
-
-      // Optimistically add to list or just set it
-      // For now we just treat it as a string that will be sent to backend
-      // But we should also update the local categories list so it appears in dropdown
-      const newCat = { id: Date.now(), name: categoryName } // Temporary ID
-      setCategories(prev => [...prev, newCat])
-      setFormData(prev => ({ ...prev, category: categoryName }))
-      setIsCategoryModalOpen(false)
-      setNewCategory("")
-
-      // Update backend profile to include this category so it appears in profile page too
-      try {
-        const profileRes = await employerProfileApi.getProfile()
-        if (profileRes.success && profileRes.data) {
-          const user = profileRes.data as any
-          const employer = user.employer || {}
-          let currentCategories: string[] = []
-          if (employer.job_categories && Array.isArray(employer.job_categories)) {
-            currentCategories = employer.job_categories.map((c: any) => c.name || c.slug)
-          }
-
-          if (!currentCategories.includes(categoryName)) {
-            const updatedCategories = [...currentCategories, categoryName]
-            await employerProfileApi.updateProfile({
-              preferred_job_categories: updatedCategories
-            })
-            toast.success("Category added to your profile")
-          }
-        }
-      } catch (error) {
-        console.error("Failed to update profile categories", error)
-      }
-    }
   }
 
   const handleLocationChange = (value: string, details?: any) => {
@@ -345,29 +304,18 @@ export default function CreateJobPage() {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
-                  <select
-                    value={formData.category}
-                    onChange={(e) => handleInputChange("category", e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.name}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="shrink-0"
-                    onClick={() => setIsCategoryModalOpen(true)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    New
-                  </Button>
-                </div>
+                <select
+                  value={formData.category}
+                  onChange={(e) => handleInputChange("category", e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -725,35 +673,6 @@ export default function CreateJobPage() {
           </div>
         </form>
       </div>
-
-      <Modal
-        isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        title="Add Job Category"
-        description="Enter the name of the job category you want to create."
-        footer={
-          <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setIsCategoryModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleConfirmAddCategory} className="bg-sky-500 hover:bg-sky-600 text-white">Add Category</Button>
-          </div>
-        }
-      >
-        <div className="py-4">
-          <label className="text-sm font-medium text-neutral-700 mb-2 block">Category Name</label>
-          <Input
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            placeholder="e.g. Critical Care, Pediatrics"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleConfirmAddCategory();
-              }
-            }}
-          />
-        </div>
-      </Modal>
     </DashboardLayout>
   )
 }

@@ -6,9 +6,8 @@ import { DashboardLayout } from "@/components/dashboard/layout"
 import { Input } from "@/components/ui/input"
 import { LocationInput } from "@/components/LocationInput"
 import { Button } from "@/components/ui/button"
-import { Calendar, Plus } from "lucide-react"
+import { Calendar } from "lucide-react"
 import Link from "next/link"
-import { Modal } from "@/components/ui/modal"
 import { SearchableSelect } from "@/components/ui/searchable-select"
 import { jobPostApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
@@ -67,8 +66,6 @@ export default function EditJobPage() {
 
   const [categories, setCategories] = useState<any[]>([])
   const [jobRoles, setJobRoles] = useState<any[]>([])
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
-  const [newCategory, setNewCategory] = useState("")
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -168,16 +165,6 @@ export default function EditJobPage() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  const handleConfirmAddCategory = () => {
-    if (newCategory.trim()) {
-      const newCat = { id: Date.now(), name: newCategory.trim() }
-      setCategories(prev => [...prev, newCat])
-      setFormData(prev => ({ ...prev, category: newCategory.trim() }))
-      setIsCategoryModalOpen(false)
-      setNewCategory("")
-    }
   }
 
   const handleLocationChange = (value: string, details?: any) => {
@@ -343,6 +330,27 @@ export default function EditJobPage() {
                     onChange={(e) => handleInputChange("specialization", e.target.value)}
                     className="w-full"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => handleInputChange("category", e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
+                  >
+                    <option value="">Select Category</option>
+                    {formData.category && !categories.some((cat) => cat.name === formData.category) && (
+                      <option value={formData.category}>{formData.category}</option>
+                    )}
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

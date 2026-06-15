@@ -5,21 +5,25 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { authApi } from '@/lib/api/auth';
 import { TERMS_PDF_URL } from '@/lib/terms-url';
+import { getForgotPasswordErrorDisplay } from '@/lib/auth-error-message';
 import { Loader2, ArrowLeft, Building2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState<{ title: string; message: string } | null>(null);
     const [successMessage, setSuccessMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError('');
+        setError(null);
         setSuccessMessage('');
 
         if (!email) {
-            setError('Please enter your email address');
+            setError({
+                title: 'Email required',
+                message: 'Please enter your email address.',
+            });
             return;
         }
 
@@ -32,10 +36,15 @@ export default function ForgotPasswordPage() {
                 setSuccessMessage(response.message || 'Password reset link sent to your email.');
                 setEmail('');
             } else {
-                setError(response.message || 'Failed to send reset link. Please try again.');
+                setError(getForgotPasswordErrorDisplay(response.message, response.errors));
             }
         } catch (err: any) {
-            setError(err.response?.data?.message || err.message || 'An error occurred. Please try again.');
+            setError(
+                getForgotPasswordErrorDisplay(
+                    err.response?.data?.message,
+                    err.response?.data?.errors
+                )
+            );
         } finally {
             setIsLoading(false);
         }
@@ -102,9 +111,12 @@ export default function ForgotPasswordPage() {
 
                     {/* Error Message */}
                     {error && (
-                        <div className="mb-6 flex items-center space-x-3 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-600 shadow-sm">
-                            <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-500" />
-                            <span className="font-bold">{error}</span>
+                        <div className="mb-6 flex items-start space-x-3 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-600 shadow-sm">
+                            <AlertCircle className="h-5 w-5 flex-shrink-0 text-rose-500 mt-0.5" />
+                            <div>
+                                <p className="font-bold text-rose-800">{error.title}</p>
+                                <p className="mt-1 leading-relaxed font-medium text-rose-600/90">{error.message}</p>
+                            </div>
                         </div>
                     )}
 
