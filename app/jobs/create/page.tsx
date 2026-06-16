@@ -15,6 +15,7 @@ import { useSubscriptionFeatures } from "@/hooks/useSubscriptionFeatures"
 import dynamic from "next/dynamic"
 import "react-quill-new/dist/quill.snow.css"
 import { cn } from "@/lib/utils"
+import { EMPLOYMENT_TYPES } from "@/lib/jobs/employmentTypes"
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
   ssr: false,
@@ -46,7 +47,6 @@ export default function CreateJobPage() {
   const [activeTab, setActiveTab] = useState("overview")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    jobTitle: "",
     specialization: "",
     jobRole: "",
     location: "",
@@ -143,7 +143,7 @@ export default function CreateJobPage() {
     try {
       // Prepare API payload
       const payload: any = {
-        title: formData.jobTitle,
+        title: formData.jobRole,
         job_role: formData.jobRole,
         specialization: formData.specialization,
         location: formData.location,
@@ -255,24 +255,11 @@ export default function CreateJobPage() {
                 <label className="block text-sm font-medium text-neutral-700 mb-2">
                   Job Title <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  placeholder="Enter job title"
-                  value={formData.jobTitle}
-                  onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                  Job Role <span className="text-red-500">*</span>
-                </label>
                 <SearchableSelect
                   options={jobRoles.map((role) => ({ value: role.name, label: role.name }))}
                   value={formData.jobRole}
                   onChange={(value) => handleInputChange("jobRole", value as string)}
-                  placeholder="Select Job Role"
+                  placeholder="Select Job Title"
                 />
               </div>
 
@@ -328,10 +315,11 @@ export default function CreateJobPage() {
                   className="flex h-10 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-0 focus-visible:border-[#0576B8]"
                 >
                   <option value="">Select Employment type</option>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Part-time">Part-time</option>
-                  <option value="Temporary">Temporary</option>
-                  <option value="Contract">Contract</option>
+                  {EMPLOYMENT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
                 </select>
               </div>
 

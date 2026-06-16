@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { subscriptionApi } from '@/lib/api'
+import { FREE_PLAN_NAME } from '@/lib/subscription/freePlan'
 
 export function useSubscriptionFeatures() {
     const [features, setFeatures] = useState(null)
@@ -43,6 +44,6 @@ export function useSubscriptionFeatures() {
         hasFeaturedListings: features?.has_featured_listings ?? false,
         hasDirectMessaging: features?.has_direct_messaging ?? false,
         hasAnalytics: features?.has_analytics ?? false,
-        planName: features?.plan_name ?? 'No Plan',
+        planName: features?.plan_name ?? FREE_PLAN_NAME,
     }
 }

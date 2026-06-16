@@ -59,8 +59,12 @@ export function SearchableSelect({
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
+    const selectedLabel = getDisplayValue()
+    const filterTerm =
+        isOpen && inputValue.trim() === selectedLabel.trim() ? "" : inputValue
+
     const filteredOptions = options.filter((option) =>
-        option.label.toLowerCase().includes(inputValue.toLowerCase())
+        option.label.toLowerCase().includes(filterTerm.toLowerCase())
     )
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,13 +121,18 @@ export function SearchableSelect({
                     value={inputValue}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    onFocus={() => setIsOpen(true)}
+                    onFocus={(e) => {
+                        setIsOpen(true)
+                        e.currentTarget.select()
+                    }}
                     placeholder={placeholder}
                     className="w-full h-9 sm:h-10 rounded-lg border border-neutral-300 bg-white pl-3 pr-10 text-xs sm:text-sm focus-visible:outline-none focus-ring-none focus-visible:ring-0 focus-visible:border-[#0576B8] disabled:cursor-not-allowed disabled:opacity-50 transition-all"
                 />
                 <div
                     className="absolute right-0 top-0 h-full px-3 flex items-center justify-center cursor-pointer"
-                    onClick={() => setIsOpen(!isOpen)}
+                    onClick={() => {
+                        setIsOpen((open) => !open)
+                    }}
                 >
                     <ChevronDown
                         className={`w-4 h-4 text-neutral-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -131,21 +140,27 @@ export function SearchableSelect({
                 </div>
             </div>
 
-            {isOpen && filteredOptions.length > 0 && (
+            {isOpen && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg max-h-60 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-100">
                     <div className="overflow-y-auto flex-1 p-1">
-                        {filteredOptions.map((option) => (
-                            <div
-                                key={option.value}
-                                onClick={() => handleOptionSelect(option)}
-                                className={`px-3 py-2 text-xs sm:text-sm cursor-pointer rounded-md transition-colors ${option.value === value
-                                    ? "bg-sky-50 text-sky-700 font-medium"
-                                    : "text-neutral-700 hover:bg-neutral-50"
-                                    }`}
-                            >
-                                {option.label}
+                        {filteredOptions.length > 0 ? (
+                            filteredOptions.map((option) => (
+                                <div
+                                    key={option.value}
+                                    onClick={() => handleOptionSelect(option)}
+                                    className={`px-3 py-2 text-xs sm:text-sm cursor-pointer rounded-md transition-colors ${option.value === value
+                                        ? "bg-sky-50 text-sky-700 font-medium"
+                                        : "text-neutral-700 hover:bg-neutral-50"
+                                        }`}
+                                >
+                                    {option.label}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="px-3 py-2 text-xs sm:text-sm text-neutral-500">
+                                No matching options
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             )}

@@ -17,6 +17,7 @@ import { paymentMethodApi, paymentApi, subscriptionApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
 import { StripeCardForm } from "@/components/billing/StripeCardForm"
 import { StripeOnlinePayment } from "@/components/billing/StripeOnlinePayment"
+import { FREE_PLAN_NAME } from "@/lib/subscription/freePlan"
 
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
@@ -590,9 +591,9 @@ export default function BillingPage() {
             <div>
               <p className="text-sm text-neutral-600 mb-1">Plan</p>
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-base font-medium text-neutral-900">{currentSubscription?.plan?.name || 'No Plan'}</p>
+                <p className="text-base font-medium text-neutral-900">{currentSubscription?.plan?.name || FREE_PLAN_NAME}</p>
                 <Link href="/plans" className="text-xs text-sky-600 hover:text-sky-700 font-medium bg-sky-100 px-2 py-1 rounded-full">
-                  {currentSubscription?.plan?.name ? "Change Plan" : "Get Plan"}
+                  {currentSubscription?.plan?.name ? "Change Plan" : "Upgrade Plan"}
                 </Link>
                 {["active", "trialing", "past_due"].includes((currentSubscription?.status || "").toLowerCase()) && (
                   <Button

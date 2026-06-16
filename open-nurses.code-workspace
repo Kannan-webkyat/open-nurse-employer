@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "../open-nurse-admin"
+		},
+		{
+			"path": "../open-nurse-copartner"
+		},
+		{
+			"path": "../open-nurse-cp-employer"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../open-nurse-telecaller"
+		},
+		{
+			"path": "../open-nurse-website"
+		},
+		{
+			"path": "../open-nurses-api"
+		}
+	]
+}

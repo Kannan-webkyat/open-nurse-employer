@@ -10,6 +10,7 @@ import { Check, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { subscriptionApi, paymentMethodApi } from "@/lib/api"
 import { useToast } from "@/components/ui/toast"
+import { FREE_PLAN } from "@/lib/subscription/freePlan"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "")
 
@@ -177,11 +178,17 @@ export default function PlansPage() {
     }
 
     const isCurrentPlan = (plan: Plan) => {
+        if (plan.id === FREE_PLAN.id) {
+            return !currentSubscription?.plan?.id
+        }
+
         return currentSubscription?.plan?.id === plan.id
     }
 
+    const displayPlans: Plan[] = [FREE_PLAN as Plan, ...plans]
+
     const handleUpgrade = async (plan: Plan) => {
-        if (isCurrentPlan(plan)) {
+        if (plan.id === FREE_PLAN.id || isCurrentPlan(plan)) {
             return
         }
 
@@ -252,6 +259,10 @@ export default function PlansPage() {
     }
 
     const getButtonText = (plan: Plan) => {
+        if (plan.id === FREE_PLAN.id) {
+            return isCurrentPlan(plan) ? "Current plan" : "Default tier"
+        }
+
         if (isCurrentPlan(plan)) {
             return "Current plan"
         }
@@ -301,11 +312,12 @@ export default function PlansPage() {
                 </div>
 
                 {/* Plans Grid */}
-                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {plans.map((plan, index) => {
+                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+                    {displayPlans.map((plan, index) => {
                         const features = normalizeInclusionsFromApi(plan.inclusions)
                         const isCurrent = isCurrentPlan(plan)
-                        const isPopular = index === 1 // Middle plan is popular
+                        const isStaticFreePlan = plan.id === FREE_PLAN.id
+                        const isPopular = !isStaticFreePlan && index === 2
 
                         const shortDescription = plan.short_description?.trim() || null
 
@@ -359,7 +371,7 @@ export default function PlansPage() {
                                                 /{periodLabel}
                                             </span>
                                         )}
-                                        {plan.amount === 0 && (
+                                        {plan.amount === 0 && !isStaticFreePlan && (
                                             <span className="text-neutral-500 ml-1 font-medium text-sm">
                                                 Pay only on hire
                                             </span>
@@ -392,7 +404,7 @@ export default function PlansPage() {
                                             ? "bg-neutral-100 text-neutral-400 hover:bg-neutral-100 cursor-not-allowed shadow-none border border-neutral-200"
                                             : "bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow-md hover:shadow-lg active:scale-[0.98]"
                                     )}
-                                    disabled={isCurrent || upgrading === plan.id}
+                                    disabled={isCurrent || upgrading === plan.id || isStaticFreePlan}
                                     onClick={() => handleUpgrade(plan)}
                                 >
                                     {upgrading === plan.id && (
@@ -402,7 +414,7 @@ export default function PlansPage() {
                                 </Button>
 
                                 {/* Payment method indicator */}
-                                {!isCurrent && (
+                                {!isCurrent && !isStaticFreePlan && (
                                     <p className="mt-3 text-xs text-center text-neutral-500">
                                         {plan.amount > 0 && !hasPaymentMethod
                                             ? "Add a payment method in Billing to subscribe"

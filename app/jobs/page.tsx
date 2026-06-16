@@ -18,10 +18,12 @@ import { useSubscriptionFeatures } from "@/hooks/useSubscriptionFeatures"
 import { sanitizeHtml } from "@/lib/utils"
 import { downloadPrintableQrCard } from "@/lib/qr-print-card"
 import { QrShareModal } from "@/components/jobs/qr-share-modal"
+import { EMPLOYMENT_TYPES } from "@/lib/jobs/employmentTypes"
 
 interface Job {
   id: number
   title: string
+  job_role?: string
   job_id: string
   location: string
   employment_type: string
@@ -457,7 +459,7 @@ export default function JobsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-neutral-800">
-                        {job.title}
+                        {job.job_role || job.title}
                       </TableCell>
                       <TableCell className="text-neutral-800">
                         {job.location || "N/A"}
@@ -524,7 +526,7 @@ export default function JobsPage() {
           <Modal
             isOpen={isViewModalOpen}
             onClose={closeModal}
-            title={`Job Details - ${selectedJob.title}`}
+            title={`Job Details - ${selectedJob.job_role || selectedJob.title}`}
             footer={
               <div className="flex items-center justify-end gap-4">
                 <Button variant="outline" onClick={closeModal}>
@@ -545,7 +547,7 @@ export default function JobsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Job Title</label>
-                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.title}</p>
+                    <p className="text-sm text-neutral-900 mt-1">{selectedJob.job_role || selectedJob.title}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-neutral-600">Job ID</label>
@@ -676,7 +678,7 @@ export default function JobsPage() {
           onClose={closeDeleteDialog}
           onConfirm={handleDeleteConfirm}
           title="Delete Job"
-          description={`Are you sure you want to delete "${jobToDelete?.title}"? This action cannot be undone.`}
+          description={`Are you sure you want to delete "${jobToDelete?.job_role || jobToDelete?.title}"? This action cannot be undone.`}
           confirmText="Delete"
           cancelText="Cancel"
         />
@@ -746,8 +748,8 @@ export default function JobsPage() {
                 {/* Employment Type Filter */}
                 <div>
                   <label className="text-sm font-semibold text-neutral-900 mb-3 block">Employment Type</label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {(["Full-time", "Part-time", "Temporary"] as const).map((type) => (
+                  <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto">
+                    {EMPLOYMENT_TYPES.map((type) => (
                       <button
                         key={type}
                         onClick={() => handleFilterChange("employmentType", filters.employmentType === type ? "" : type)}
