@@ -23,7 +23,7 @@ interface Plan {
     nurse_slots?: number
     unlimited_job_postings?: boolean
     short_description?: string | null
-    inclusions?: string[] | null
+    inclusions?: readonly string[] | null
     billing_period_label?: string | null
     billing_period_display?: string
     updates_note?: string | null
@@ -185,7 +185,7 @@ export default function PlansPage() {
         return currentSubscription?.plan?.id === plan.id
     }
 
-    const displayPlans: Plan[] = [FREE_PLAN as Plan, ...plans]
+    const displayPlans: Plan[] = [FREE_PLAN, ...plans]
 
     const handleUpgrade = async (plan: Plan) => {
         if (plan.id === FREE_PLAN.id || isCurrentPlan(plan)) {
