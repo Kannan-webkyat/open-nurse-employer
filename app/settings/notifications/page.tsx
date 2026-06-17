@@ -6,20 +6,34 @@ import { Button } from "@/components/ui/button"
 import { notificationApi } from "@/lib/api/notifications"
 import { useToast } from "@/components/ui/toast"
 
+type UiFrequency = "instant" | "daily" | "weekly"
+
+const API_TO_UI_FREQUENCY: Record<string, UiFrequency> = {
+  instant: "instant",
+  daily_digest: "daily",
+  weekly_summary: "weekly",
+}
+
+const UI_TO_API_FREQUENCY: Record<UiFrequency, string> = {
+  instant: "instant",
+  daily: "daily_digest",
+  weekly: "weekly_summary",
+}
+
+const DEFAULT_NOTIFICATIONS = {
+  jobApplicationAlerts: true,
+  billingSubscriptionUpdates: true,
+  systemAnnouncementsUpdates: true,
+  realTimeAlerts: true,
+  candidateActivityInsights: true,
+  frequency: "instant" as UiFrequency,
+}
+
 export default function NotificationsPage() {
   const { success, error } = useToast() as any
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [notifications, setNotifications] = useState({
-    jobApplicationAlerts: true,
-    candidateShortlistUpdates: false,
-    interviewScheduledNotifications: true,
-    billingSubscriptionUpdates: false,
-    systemAnnouncementsUpdates: true,
-    realTimeAlerts: true,
-    candidateActivityInsights: false,
-    frequency: "weekly" as "instant" | "daily" | "weekly",
-  })
+  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS)
 
   useEffect(() => {
     fetchSettings()
@@ -36,19 +50,19 @@ export default function NotificationsPage() {
         const emailPrefs: any = {}
         email_notifications.forEach((item: any) => {
           if (item.type === 'job_application') emailPrefs.jobApplicationAlerts = item.enabled
-          if (item.type === 'candidate_shortlist') emailPrefs.candidateShortlistUpdates = item.enabled
-          if (item.type === 'interview_scheduled') emailPrefs.interviewScheduledNotifications = item.enabled
           if (item.type === 'billing_subscription') emailPrefs.billingSubscriptionUpdates = item.enabled
           if (item.type === 'system_announcement') emailPrefs.systemAnnouncementsUpdates = item.enabled
         })
 
-        setNotifications(prev => ({
-          ...prev,
+        setNotifications({
+          ...DEFAULT_NOTIFICATIONS,
           ...emailPrefs,
-          realTimeAlerts: in_app_notifications.real_time_alerts,
-          candidateActivityInsights: in_app_notifications.candidate_activity_insights,
-          frequency: preferences.frequency
-        }))
+          realTimeAlerts: in_app_notifications?.real_time_alerts ?? DEFAULT_NOTIFICATIONS.realTimeAlerts,
+          candidateActivityInsights: in_app_notifications?.candidate_activity_insights ?? DEFAULT_NOTIFICATIONS.candidateActivityInsights,
+          frequency: API_TO_UI_FREQUENCY[preferences?.frequency] ?? DEFAULT_NOTIFICATIONS.frequency,
+        })
+      } else {
+        error(response.message || 'Failed to load settings')
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err)
@@ -63,7 +77,7 @@ export default function NotificationsPage() {
     setNotifications(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
-  const handleFrequencyChange = (frequency: "instant" | "daily" | "weekly") => {
+  const handleFrequencyChange = (frequency: UiFrequency) => {
     setNotifications(prev => ({ ...prev, frequency }))
   }
 
@@ -73,8 +87,6 @@ export default function NotificationsPage() {
       const payload = {
         email_notifications: [
           { type: 'job_application', enabled: notifications.jobApplicationAlerts },
-          { type: 'candidate_shortlist', enabled: notifications.candidateShortlistUpdates },
-          { type: 'interview_scheduled', enabled: notifications.interviewScheduledNotifications },
           { type: 'billing_subscription', enabled: notifications.billingSubscriptionUpdates },
           { type: 'system_announcement', enabled: notifications.systemAnnouncementsUpdates },
         ],
@@ -83,15 +95,17 @@ export default function NotificationsPage() {
           candidate_activity_insights: notifications.candidateActivityInsights
         },
         preferences: {
-          frequency: notifications.frequency
+          frequency: UI_TO_API_FREQUENCY[notifications.frequency],
         }
       }
 
       const response = await notificationApi.updateSettings(payload)
       if (response.success) {
-        success('Settings saved successfully')
-        // Dispatch event to update other components (like NotificationProvider)
+        success(response.message || 'Settings saved successfully')
         window.dispatchEvent(new Event('notificationSettingsUpdated'))
+        await fetchSettings()
+      } else {
+        error(response.message || 'Failed to save settings')
       }
     } catch (err) {
       console.error('Failed to save settings:', err)
@@ -134,40 +148,6 @@ export default function NotificationsPage() {
                       type="checkbox"
                       checked={notifications.jobApplicationAlerts}
                       onChange={() => handleToggle("jobApplicationAlerts")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00EB23]"></div>
-                  </label>
-                </div>
-
-                {/* Candidate Shortlist Updates */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">Candidate Shortlist Updates</p>
-                    <p className="text-sm text-neutral-600 mt-1">Get notified when candidates are shortlisted</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notifications.candidateShortlistUpdates}
-                      onChange={() => handleToggle("candidateShortlistUpdates")}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00EB23]"></div>
-                  </label>
-                </div>
-
-                {/* Interview Scheduled Notifications */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-neutral-900">Interview Scheduled Notifications</p>
-                    <p className="text-sm text-neutral-600 mt-1">Receive alerts when interviews are scheduled</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notifications.interviewScheduledNotifications}
-                      onChange={() => handleToggle("interviewScheduledNotifications")}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00EB23]"></div>
@@ -340,6 +320,8 @@ export default function NotificationsPage() {
                 type="button"
                 variant="outline"
                 className="border-neutral-300 text-neutral-700 bg-white hover:bg-neutral-50"
+                onClick={fetchSettings}
+                disabled={isSaving}
               >
                 Cancel
               </Button>

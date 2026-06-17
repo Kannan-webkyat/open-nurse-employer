@@ -374,26 +374,34 @@ function PlanCard({
                     <div className="flex-1 py-4 border-t border-neutral-100" />
                 )}
 
-                <Button
-                    type="button"
-                    className={cn(
-                        "w-full rounded-full h-11 text-sm font-semibold transition-all duration-200",
-                        isCurrent || isStaticFreePlan
-                            ? "bg-neutral-100 text-neutral-500 hover:bg-neutral-100 cursor-default shadow-none border border-neutral-200"
-                            : needsPaymentMethod
-                                ? "bg-white text-sky-700 border border-sky-200 hover:bg-sky-50"
-                                : "bg-sky-600 hover:bg-sky-700 text-white shadow-sm hover:shadow-md",
-                    )}
-                    disabled={isCurrent || upgrading || isStaticFreePlan}
-                    onClick={onUpgrade}
-                >
-                    {upgrading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    {!upgrading && needsPaymentMethod && <CreditCard className="w-4 h-4 mr-2" />}
-                    {!upgrading && !needsPaymentMethod && !isCurrent && !isStaticFreePlan && (
-                        <ArrowRight className="w-4 h-4 mr-2" />
-                    )}
-                    {buttonText}
-                </Button>
+                {needsPaymentMethod ? (
+                    <button
+                        type="button"
+                        onClick={onUpgrade}
+                        className="inline-flex w-full h-11 items-center justify-center gap-0 rounded-full bg-sky-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-700"
+                    >
+                        <CreditCard className="mr-2 h-4 w-4 shrink-0" />
+                        Add payment method
+                    </button>
+                ) : (
+                    <Button
+                        type="button"
+                        variant={isCurrent || isStaticFreePlan ? "outline" : "default"}
+                        className={cn(
+                            "w-full h-11 text-sm font-semibold shadow-sm",
+                            (isCurrent || isStaticFreePlan) &&
+                                "bg-neutral-100 text-neutral-600 border-neutral-200 hover:bg-neutral-100 hover:text-neutral-600 cursor-default",
+                        )}
+                        disabled={isCurrent || upgrading || isStaticFreePlan}
+                        onClick={onUpgrade}
+                    >
+                        {upgrading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        {!upgrading && !isCurrent && !isStaticFreePlan && (
+                            <ArrowRight className="w-4 h-4 mr-2" />
+                        )}
+                        {buttonText}
+                    </Button>
+                )}
 
                 {!isCurrent && !isStaticFreePlan && (
                     <p className="mt-3 text-[11px] text-center text-neutral-500 leading-relaxed">

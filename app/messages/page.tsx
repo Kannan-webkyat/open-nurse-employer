@@ -67,6 +67,7 @@ function MessagesPageContent() {
   const [userId, setUserId] = useState<number | null>(null)
   const [isTyping, setIsTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const conversationChannelRef = useRef<any>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { decrementUnreadCount, setActiveConversationId, updateUnreadCount } = useMessages()
@@ -195,6 +196,19 @@ function MessagesPageContent() {
       const e = event.detail as { message: ChatMessage, conversation_id: number };
       console.log('MessagesPage: Received messageSentEvent', e);
 
+      const isOpen = selectedConversationIdRef.current === e.message.conversation_id
+
+      if (isOpen) {
+        setMessages(prev => {
+          if (prev.find(m => m.id === e.message.id)) return prev
+          return [...prev, e.message]
+        })
+
+        if (e.message.sender_id !== userId) {
+          chatApi.markAsRead(e.message.conversation_id).catch(err => console.error("Mark as read failed", err))
+        }
+      }
+
       setConversations(prev => {
         const updated = prev.map(c => {
           if (c.id === e.message.conversation_id) {
@@ -231,6 +245,69 @@ function MessagesPageContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // Subscribe to the active conversation channel (messages, read receipts, typing)
+  useEffect(() => {
+    if (!selectedConversation || !echo || !userId) {
+      conversationChannelRef.current = null
+      return
+    }
+
+    const channelName = `conversation.${selectedConversation.id}`
+    const channel = echo.private(channelName)
+    conversationChannelRef.current = channel
+
+    const onMessageSent = (e: { message: ChatMessage }) => {
+      setMessages(prev => {
+        if (prev.find(m => m.id === e.message.id)) return prev
+        return [...prev, e.message]
+      })
+
+      setConversations(prev => prev.map(c => {
+        if (c.id === selectedConversation.id) {
+          return {
+            ...c,
+            last_message: e.message,
+            last_message_at: e.message.created_at
+          }
+        }
+        return c
+      }).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()))
+
+      if (e.message.sender_id !== userId) {
+        chatApi.markAsRead(selectedConversation.id).catch(err => console.error("Mark as read failed", err))
+      }
+    }
+
+    const onMessageRead = (e: { messageIds: number[], readAt: string, userId: number }) => {
+      setMessages(prev => prev.map(msg => {
+        if (e.messageIds.includes(msg.id)) {
+          return { ...msg, read_at: e.readAt }
+        }
+        return msg
+      }))
+    }
+
+    const onTyping = (e: { user_id: number }) => {
+      if (e.user_id !== userId) {
+        setIsTyping(true)
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000)
+      }
+    }
+
+    channel.listen('MessageSent', onMessageSent)
+    channel.listen('.message.read', onMessageRead)
+    channel.listenForWhisper('typing', onTyping)
+
+    return () => {
+      channel.stopListening('MessageSent', onMessageSent)
+      channel.stopListening('.message.read', onMessageRead)
+      channel.stopListeningForWhisper('typing', onTyping)
+      echo.leave(`private-${channelName}`)
+      conversationChannelRef.current = null
+    }
+  }, [selectedConversation?.id, echo, userId])
+
   // Fetch messages when conversation selected
   useEffect(() => {
     if (!selectedConversation) return
@@ -247,59 +324,7 @@ function MessagesPageContent() {
     }
 
     fetchMessages()
-
-    // Listen for new messages
-    if (echo && userId) {
-      const channel = echo.private(`conversation.${selectedConversation.id}`)
-      channel.listen('MessageSent', (e: { message: ChatMessage }) => {
-        setMessages(prev => {
-          if (prev.find(m => m.id === e.message.id)) return prev
-          return [...prev, e.message]
-        })
-
-        setConversations(prev => prev.map(c => {
-          if (c.id === selectedConversation.id) {
-            return {
-              ...c,
-              last_message: e.message,
-              last_message_at: e.message.created_at
-            }
-          }
-          return c
-        }).sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()))
-
-        // If we receive a message in the currently open conversation, mark it as read immediately?
-        // Or wait for user interaction? Usually immediately if focused.
-        console.log("MessageSent received in Employer", e.message);
-        if (e.message.sender_id !== userId) {
-          console.log("Marking as read for conversation", selectedConversation.id);
-          chatApi.markAsRead(selectedConversation.id)
-            .then(() => console.log("Mark as read success"))
-            .catch(err => console.error("Mark as read failed", err));
-        } else {
-          console.log("Sender is self, skipping mark as read");
-        }
-      })
-
-      // Listen for read receipts
-      channel.listen('.message.read', (e: { messageIds: number[], readAt: string, userId: number }) => {
-        console.log("Event: MessageRead received", e);
-        // Update messages state to show read status
-        setMessages(prev => prev.map(msg => {
-          if (e.messageIds.includes(msg.id)) {
-            return { ...msg, read_at: e.readAt }
-          }
-          return msg
-        }))
-      })
-
-      return () => {
-        channel.stopListening('MessageSent')
-        channel.stopListening('.message.read')
-      }
-    }
-
-  }, [selectedConversation?.id, echo, userId])
+  }, [selectedConversation?.id])
 
   const handleSendMessage = async () => {
     if (!selectedConversation || (!messageText.trim() && !selectedFile)) return
@@ -375,30 +400,10 @@ function MessagesPageContent() {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
   }
 
-  // Typing listener
-  useEffect(() => {
-    if (selectedConversation?.id && echo && userId) {
-      const channel = echo.private(`conversation.${selectedConversation.id}`)
-
-      channel.listenForWhisper('typing', (e: { user_id: number }) => {
-        if (e.user_id !== userId) {
-          setIsTyping(true)
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
-          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000)
-        }
-      })
-
-      return () => {
-        channel.stopListeningForWhisper('typing')
-      }
-    }
-  }, [selectedConversation?.id, echo, userId])
-
   // Handle typing broadcast
   const handleTyping = () => {
-    if (selectedConversation?.id && echo && userId) {
-      const channel = echo.private(`conversation.${selectedConversation.id}`)
-      channel.whisper('typing', { user_id: userId })
+    if (conversationChannelRef.current && userId) {
+      conversationChannelRef.current.whisper('typing', { user_id: userId })
     }
   }
 

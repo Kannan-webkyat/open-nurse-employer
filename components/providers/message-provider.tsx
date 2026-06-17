@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import apiMiddleware, { chatApi } from '@/lib/api'
 import { useEcho } from '@/components/providers/echo-provider'
 import { useUser } from '@/components/providers/user-provider'
@@ -19,6 +19,11 @@ const MessageContext = createContext<MessageContextType | undefined>(undefined)
 export function MessageProvider({ children }: { children: React.ReactNode }) {
     const [unreadCount, setUnreadCount] = useState(0)
     const [activeConversationId, setActiveConversationId] = useState<number | null>(null)
+    const activeConversationIdRef = useRef<number | null>(null)
+
+    useEffect(() => {
+        activeConversationIdRef.current = activeConversationId
+    }, [activeConversationId])
 
     const updateUnreadCount = useCallback(async () => {
         try {
@@ -72,8 +77,7 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
             
             // If message is from someone else and not in active conversation, increment unread count
             if (data.message.sender_id !== userId) {
-                console.log("MessageProvider: Sender is not us. ActiveConv:", activeConversationId, "MsgConv:", data.message.conversation_id);
-                if (data.message.conversation_id !== activeConversationId) {
+                if (data.message.conversation_id !== activeConversationIdRef.current) {
                     console.log("MessageProvider: Incrementing unread count");
                     incrementUnreadCount()
                 } else {
@@ -86,7 +90,7 @@ export function MessageProvider({ children }: { children: React.ReactNode }) {
             console.log("MessageProvider: Cleaning up listeners");
             channel.stopListening('MessageSent')
         }
-    }, [echo, user, incrementUnreadCount, activeConversationId])
+    }, [echo, user?.id, incrementUnreadCount])
 
     return (
         <MessageContext.Provider value={{ unreadCount, updateUnreadCount, incrementUnreadCount, decrementUnreadCount, activeConversationId, setActiveConversationId }}>

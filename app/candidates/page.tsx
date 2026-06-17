@@ -12,7 +12,7 @@ import { Search, Filter, Eye, Check, MoreVertical, X, MessageSquare, Maximize2, 
 import { AlertDialog } from "@/components/ui/alert-dialog"
 import { Modal } from "@/components/ui/modal"
 import apiMiddleware, { jobApplicationApi } from "@/lib/api"
-import { formatInAppTimezone } from "@/lib/appTimezone"
+import { formatInAppTimezone, buildInterviewSchedulePayload, toAppDateInputValue, toAppTimeInputValue, todayAppDateInputValue } from "@/lib/appTimezone"
 import { useToast } from "@/components/ui/toast"
 
 interface WorkExperience {
@@ -628,11 +628,8 @@ function CandidatesPageContent() {
 
     // Pre-fill form data if exists
     if (candidate.interviewAt) {
-      const dateObj = new Date(candidate.interviewAt);
-      // Format YYYY-MM-DD
-      const dateStr = dateObj.toISOString().split('T')[0];
-      // Format HH:MM
-      const timeStr = dateObj.toTimeString().slice(0, 5);
+      const dateStr = toAppDateInputValue(candidate.interviewAt);
+      const timeStr = toAppTimeInputValue(candidate.interviewAt);
 
       setInterviewFormData({
         date: dateStr,
@@ -655,18 +652,11 @@ function CandidatesPageContent() {
   const handleInterviewSubmit = async () => {
     if (candidateToAction && interviewFormData.date && interviewFormData.time && interviewFormData.meetingUrl) {
       try {
-        const interviewDateTime = (() => {
-          // Build a Date object from the local date + time the employer picked
-          const [year, month, day] = interviewFormData.date.split('-').map(Number);
-          const [hours, minutes] = interviewFormData.time.split(':').map(Number);
-          const localDate = new Date(year, month - 1, day, hours, minutes, 0);
-          // Send as ISO string which includes timezone offset so Laravel stores correct UTC
-          return localDate.toISOString();
-        })();
-        const payload = {
-          interview_at: interviewDateTime,
-          meeting_link: interviewFormData.meetingUrl
-        }
+        const payload = buildInterviewSchedulePayload(
+          interviewFormData.date,
+          interviewFormData.time,
+          interviewFormData.meetingUrl,
+        );
         const response = await jobApplicationApi.scheduleInterview(candidateToAction.id, payload)
 
         if (response.success) {
@@ -1893,14 +1883,14 @@ function CandidatesPageContent() {
                       value={interviewFormData.date}
                       onChange={(e) => {
                         const selectedDate = e.target.value
-                        const today = new Date().toISOString().split('T')[0]
-                        // Only allow dates from today onwards
+                        const today = todayAppDateInputValue()
+                        // Only allow dates from today onwards (Europe/London)
                         if (selectedDate >= today || selectedDate === "") {
                           setInterviewFormData(prev => ({ ...prev, date: selectedDate }))
                         }
                       }}
                       className="w-full pr-10 bg-white font-mono"
-                      min={new Date().toISOString().split('T')[0]}
+                        min={todayAppDateInputValue()}
                     />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none group-focus-within:text-sky-500 transition-colors" />
                   </div>
