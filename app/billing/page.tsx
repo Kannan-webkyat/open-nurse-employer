@@ -102,6 +102,14 @@ function normalizeTransactionStatus(status: string): "paid" | "pending" | "faile
   return "other"
 }
 
+function isIncompleteSubscriptionStatus(status?: string | null): boolean {
+  return ["incomplete", "unpaid", "incomplete_expired"].includes((status || "").toLowerCase())
+}
+
+function canCancelSubscription(status?: string | null): boolean {
+  return ["active", "trialing", "past_due", "incomplete", "unpaid"].includes((status || "").toLowerCase())
+}
+
 export default function BillingPage() {
   const { success, error, warning, info } = useToast() as any
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>([])
@@ -508,12 +516,8 @@ export default function BillingPage() {
       return
     }
 
-    const hasActiveSubscription = ["active", "trialing", "past_due"].includes(
-      (currentSubscription?.status || "").toLowerCase()
-    )
-
-    if (!hasActiveSubscription) {
-      warning("No active subscription available to cancel.")
+    if (!canCancelSubscription(currentSubscription?.status)) {
+      warning("No subscription available to cancel.")
       return
     }
 
@@ -521,14 +525,22 @@ export default function BillingPage() {
   }
 
   const handleCancelSubscriptionConfirm = async () => {
+    const isIncomplete = isIncompleteSubscriptionStatus(currentSubscription?.status)
+
     try {
       setIsCancellingSubscription(true)
       const response = await subscriptionApi.cancelSubscription({
-        cancel_immediately: false,
+        cancel_immediately: isIncomplete,
+        reason: isIncomplete ? "Incomplete subscription removed by employer" : undefined,
       })
 
       if (response.success) {
-        success(response.message || "Subscription cancellation has been requested.")
+        success(
+          response.message
+            || (isIncomplete
+              ? "Incomplete subscription removed."
+              : "Subscription cancellation has been requested.")
+        )
         await fetchSubscription()
         await fetchTransactions()
       } else {
@@ -539,6 +551,7 @@ export default function BillingPage() {
       error("Failed to cancel subscription.")
     } finally {
       setIsCancellingSubscription(false)
+      setIsCancelSubscriptionDialogOpen(false)
     }
   }
   // Optionally refresh payment history or subscription status
@@ -596,10 +609,18 @@ export default function BillingPage() {
         <div className="bg-white rounded-lg border border-neutral-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-200 p-6 gap-4 sm:gap-0">
             <h2 className="text-lg font-semibold text-neutral-900">Current Subscription</h2>
-            <Badge variant={currentSubscription?.status === 'active' ? 'active' : 'default'} className="w-fit">
+            <Badge
+              variant={currentSubscription?.status === 'active' ? 'active' : 'default'}
+              className={`w-fit ${isIncompleteSubscriptionStatus(currentSubscription?.status) ? 'bg-amber-50 text-amber-700 border-amber-200' : ''}`}
+            >
               {currentSubscription?.status ? currentSubscription.status.charAt(0).toUpperCase() + currentSubscription.status.slice(1) : 'Inactive'}
             </Badge>
           </div>
+          {isIncompleteSubscriptionStatus(currentSubscription?.status) && (
+            <div className="mx-6 mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Payment for this plan was not completed. You can finish upgrading from Plans, or remove this incomplete subscription below.
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div>
               <p className="text-sm text-neutral-600 mb-1">Plan</p>
@@ -608,20 +629,22 @@ export default function BillingPage() {
                 <Link href="/plans" className="text-xs text-sky-600 hover:text-sky-700 font-medium bg-sky-100 px-2 py-1 rounded-full">
                   {currentSubscription?.plan?.name ? "Change Plan" : "Upgrade Plan"}
                 </Link>
-                {["active", "trialing", "past_due"].includes((currentSubscription?.status || "").toLowerCase()) && (
+                {canCancelSubscription(currentSubscription?.status) && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={isCancellingSubscription || currentSubscription?.cancel_at_period_end}
+                    disabled={isCancellingSubscription || (!isIncompleteSubscriptionStatus(currentSubscription?.status) && currentSubscription?.cancel_at_period_end)}
                     onClick={handleCancelSubscriptionClick}
                     className="text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
                     {isCancellingSubscription ? (
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="w-3 h-3 animate-spin" />
-                        Cancelling...
+                        {isIncompleteSubscriptionStatus(currentSubscription?.status) ? "Removing..." : "Cancelling..."}
                       </span>
+                    ) : isIncompleteSubscriptionStatus(currentSubscription?.status) ? (
+                      "Remove incomplete plan"
                     ) : currentSubscription?.cancel_at_period_end ? (
                       "Cancellation Scheduled"
                     ) : (
@@ -977,10 +1000,14 @@ export default function BillingPage() {
           isOpen={isCancelSubscriptionDialogOpen}
           onClose={() => setIsCancelSubscriptionDialogOpen(false)}
           onConfirm={handleCancelSubscriptionConfirm}
-          title="Cancel subscription"
-          description="Cancel your subscription at the end of the current billing period? You will keep access until then."
-          confirmText="Cancel subscription"
-          cancelText="Keep subscription"
+          title={isIncompleteSubscriptionStatus(currentSubscription?.status) ? "Remove incomplete plan" : "Cancel subscription"}
+          description={
+            isIncompleteSubscriptionStatus(currentSubscription?.status)
+              ? "Remove this incomplete subscription? No payment has been taken. You can choose a plan again from Plans at any time."
+              : "Cancel your subscription at the end of the current billing period? You will keep access until then."
+          }
+          confirmText={isIncompleteSubscriptionStatus(currentSubscription?.status) ? "Remove plan" : "Cancel subscription"}
+          cancelText={isIncompleteSubscriptionStatus(currentSubscription?.status) ? "Keep for now" : "Keep subscription"}
         />
 
         <AlertDialog
