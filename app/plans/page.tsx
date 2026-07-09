@@ -562,6 +562,7 @@ export default function PlansPage() {
             }
 
             success("Subscription upgraded successfully!")
+            await subscriptionApi.getCurrentSubscription()
             await fetchData()
             setUpgrading(null)
         } catch (err: unknown) {

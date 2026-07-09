@@ -88,6 +88,20 @@ function formatJobPostLimit(sub: {
   return String(Math.max(FREE_TIER_JOB_POST_LIMIT, plan.nurse_slots ?? 0))
 }
 
+function normalizeTransactionStatus(status: string): "paid" | "pending" | "failed" | "other" {
+  const normalized = status.toLowerCase()
+  if (["paid", "succeeded", "active", "trialing"].includes(normalized)) {
+    return "paid"
+  }
+  if (["pending", "incomplete", "processing", "requires_payment_method", "requires_action"].includes(normalized)) {
+    return "pending"
+  }
+  if (["failed", "canceled", "cancelled", "rejected"].includes(normalized)) {
+    return "failed"
+  }
+  return "other"
+}
+
 export default function BillingPage() {
   const { success, error, warning, info } = useToast() as any
   const [paymentMethodsList, setPaymentMethodsList] = useState<PaymentMethod[]>([])
@@ -176,11 +190,9 @@ export default function BillingPage() {
       }
       setIsPageLoading(true)
       try {
-        await Promise.all([
-          fetchPaymentMethods(),
-          fetchSubscription(),
-          fetchTransactions(),
-        ])
+        await fetchPaymentMethods()
+        await fetchSubscription()
+        await fetchTransactions()
       } catch (err) {
         console.error("Failed to load billing data:", err)
       } finally {
@@ -208,10 +220,11 @@ export default function BillingPage() {
 
       const toastId = info("Verifying payment...")
       paymentApi.verify(sessionId)
-        .then((response) => {
+        .then(async (response) => {
           if (response.success) {
             success("Payment verified and completed!", { id: toastId })
-            fetchTransactions()
+            await fetchSubscription()
+            await fetchTransactions()
           } else {
             warning("Payment successful but verification returned unexpected status.", { id: toastId })
           }
@@ -431,7 +444,7 @@ export default function BillingPage() {
       // Optimistic check, though backend also validates
       const txn = transactions.find(t => t.id === invoiceId)
 
-      const validStatuses = ['paid', 'succeeded', 'active']
+      const validStatuses = ['paid', 'succeeded', 'active', 'trialing']
       if (txn && !validStatuses.includes(txn.status.toLowerCase())) {
         error("Invoice is available only for successful payments", { id: "download-invoice" })
         setDownloadingId(null)
@@ -749,35 +762,47 @@ export default function BillingPage() {
                         {txn.amount}
                       </TableCell>
                       <TableCell>
-                        {txn.status === "paid" || txn.status === "active" ? (
-                          <Badge variant="default" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 shadow-none font-normal">
-                            Paid
-                          </Badge>
-                        ) : txn.status === "pending" || txn.status === "incomplete" ? (
-                          <Badge variant="default" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200 shadow-none font-normal">
-                            Pending
-                          </Badge>
-                        ) : txn.status === "failed" || txn.status === "canceled" || txn.status === "rejected" ? (
-                          <Badge variant="default" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200 shadow-none font-normal">
-                            {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
-                          </Badge>
-                        ) : (
-                          <Badge variant="default" className="font-normal text-neutral-500 bg-transparent border border-neutral-200 shadow-none hover:bg-neutral-50">
-                            {txn.status}
-                          </Badge>
-                        )}
+                        {(() => {
+                          const displayStatus = normalizeTransactionStatus(txn.status)
+                          if (displayStatus === "paid") {
+                            return (
+                              <Badge variant="default" className="bg-green-50 text-green-700 hover:bg-green-50 border-green-200 shadow-none font-normal">
+                                Paid
+                              </Badge>
+                            )
+                          }
+                          if (displayStatus === "pending") {
+                            return (
+                              <Badge variant="default" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-50 border-yellow-200 shadow-none font-normal">
+                                Pending
+                              </Badge>
+                            )
+                          }
+                          if (displayStatus === "failed") {
+                            return (
+                              <Badge variant="default" className="bg-red-50 text-red-700 hover:bg-red-50 border-red-200 shadow-none font-normal">
+                                {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
+                              </Badge>
+                            )
+                          }
+                          return (
+                            <Badge variant="default" className="font-normal text-neutral-500 bg-transparent border border-neutral-200 shadow-none hover:bg-neutral-50">
+                              {txn.status}
+                            </Badge>
+                          )
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={`h-9 w-9 p-0 rounded-full transition-all duration-200 ${['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())
+                          className={`h-9 w-9 p-0 rounded-full transition-all duration-200 ${normalizeTransactionStatus(txn.status) === "paid"
                             ? "bg-gradient-to-b from-white to-slate-50 border border-slate-200 text-slate-600 shadow-sm hover:from-blue-50 hover:to-white hover:text-blue-600 hover:border-blue-300 hover:shadow-md"
                             : "text-gray-300 cursor-not-allowed bg-transparent"
                             }`}
                           onClick={() => handleDownloadInvoice(txn.id)}
-                          disabled={downloadingId === txn.id || !['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase())}
-                          title={['paid', 'succeeded', 'active', 'trialing', 'canceled'].includes(txn.status.toLowerCase()) ? "Download Invoice" : "Invoice unavailable"}
+                          disabled={downloadingId === txn.id || normalizeTransactionStatus(txn.status) !== "paid"}
+                          title={normalizeTransactionStatus(txn.status) === "paid" ? "Download Invoice" : "Invoice unavailable"}
                         >
                           {downloadingId === txn.id ? (
                             <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
