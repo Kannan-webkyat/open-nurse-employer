@@ -544,8 +544,14 @@ export default function PlansPage() {
                 return
             }
 
-            const clientSecret = (response.data as { client_secret?: string })?.client_secret
-            if (clientSecret) {
+            const upgradeData = response.data as {
+                client_secret?: string
+                subscription_status?: string
+                is_active?: boolean
+                requires_payment_action?: boolean
+            } | undefined
+
+            if (upgradeData?.client_secret) {
                 const stripe = await stripePromise
                 if (!stripe) {
                     error("Stripe is not configured correctly")
@@ -553,7 +559,7 @@ export default function PlansPage() {
                     return
                 }
 
-                const { error: stripeError } = await stripe.confirmCardPayment(clientSecret)
+                const { error: stripeError } = await stripe.confirmCardPayment(upgradeData.client_secret)
                 if (stripeError) {
                     error(stripeError.message || "Payment requires additional action")
                     setUpgrading(null)
@@ -561,8 +567,20 @@ export default function PlansPage() {
                 }
             }
 
+            const current = await subscriptionApi.getCurrentSubscription()
+            const status = (current.data?.status || upgradeData?.subscription_status || "").toLowerCase()
+
+            if (!["active", "trialing"].includes(status)) {
+                warning(
+                    "Payment was not completed. Your subscription is still incomplete. Open Billing to remove it or try upgrading again.",
+                    { title: "Subscription not activated", duration: 9000 }
+                )
+                await fetchData()
+                setUpgrading(null)
+                return
+            }
+
             success("Subscription upgraded successfully!")
-            await subscriptionApi.getCurrentSubscription()
             await fetchData()
             setUpgrading(null)
         } catch (err: unknown) {
